@@ -1,4 +1,3 @@
-import './style.less';
 import { useEffect, useRef, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { Store } from '../../../store';
@@ -8,6 +7,7 @@ import { loadVersionUi, versionUi } from '../../../version';
 import type { PregameBackdrop } from '../../../version/uiContract';
 import { setSceneCovered } from '../../../common/sceneCover';
 import { pregameLoad } from '../../../common/pregameLoad';
+import { RondaLoadingView } from '../../components/rondaLoading';
 
 /**
  * Mu La Ronda's opening screen, in place of the upstream world picker
@@ -32,13 +32,6 @@ const LEAVE_MS = 400;
 
 /** The share of the bar the character scene's scenery takes, after the login scene. */
 const CHARACTERS_SHARE = 0.2;
-
-const TIPS = [
-  'Servidor en beta: rates altos para que pruebes todo.',
-  'Al llegar a nivel 400 escribí /reset para resetear.',
-  'Con /resetinfo ves tus resets y lo que cuesta el próximo.',
-  'Encontraste un bug? Avisanos, estamos en beta.',
-];
 
 /** Same reading of the loading behind the page as the upstream preloader. */
 function backgroundLoad(backdrop: PregameBackdrop | null): {
@@ -85,7 +78,6 @@ export const RondaLoader = observer(() => {
   );
   const [timedOut, setTimedOut] = useState(false);
   const [leaving, setLeaving] = useState(false);
-  const [tip] = useState(() => TIPS[Math.floor(Math.random() * TIPS.length)]);
   const timer = useRef(0);
 
   useEffect(() => {
@@ -135,34 +127,17 @@ export const RondaLoader = observer(() => {
     return () => window.clearTimeout(handOver);
   }, [leaving]);
 
-  const percent = Math.round((load.done ? 1 : load.progress) * 100);
+  const progress = load.done ? 1 : load.progress;
 
   return (
-    <div className={`ronda-loader${leaving ? ' is-leaving' : ''}`}>
-      <div className="ronda-glow" aria-hidden />
-
-      <main className="ronda-center">
-        <h1 className="ronda-title">
-          <img src="./brand/la-ronda.png" alt="Mu La Ronda" draggable={false} />
-        </h1>
-        <p className="ronda-kicker">MU Online · Season 6 Episode 3</p>
-        <span className="ronda-beta">BETA</span>
-
-        <div
-          className="ronda-bar"
-          role="progressbar"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={percent}
-        >
-          <div className="ronda-bar-fill" style={{ width: `${percent}%` }} />
-        </div>
-        <p className="ronda-status">
-          {ready ? 'Entrando…' : `Cargando el mundo… ${percent}%`}
-        </p>
-      </main>
-
-      <footer className="ronda-tip">{tip}</footer>
-    </div>
+    <RondaLoadingView
+      progress={progress}
+      status={
+        ready
+          ? 'Entrando…'
+          : `Cargando el mundo… ${Math.round(progress * 100)}%`
+      }
+      leaving={leaving}
+    />
   );
 });

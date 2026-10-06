@@ -23,6 +23,13 @@
     opacity: 0;
     pointer-events: none;
   }
+
+  // Pantalla de carga de cambio de mapa: por encima de toda la UI del juego,
+  // y tragandose los clicks como la original.
+  &.is-overlay {
+    z-index: 100;
+    pointer-events: auto;
+  }
 }
 
 .ronda-glow {
