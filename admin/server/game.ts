@@ -456,10 +456,10 @@ export async function setPlugin(sql: Sql, id: string, active: boolean) {
 
 export async function getFastSettings(sql: Sql) {
   const [exists] = await sql`SELECT to_regclass('mlr.settings') IS NOT NULL AS ok`;
-  if (!exists.ok) return { spawnFactor: 3, respawnSeconds: 3, available: false };
+  if (!exists.ok) return { spawnFactor: 1, respawnSeconds: 3, available: false };
   const rows = await sql`SELECT key, value FROM mlr.settings`;
   const get = (k: string, d: number) => Number(rows.find(r => r.key === k)?.value ?? d);
-  return { spawnFactor: get('spawn_factor', 3), respawnSeconds: get('respawn_seconds', 3), available: true };
+  return { spawnFactor: get('spawn_factor', 1), respawnSeconds: get('respawn_seconds', 3), available: true };
 }
 
 export async function updateFastSettings(sql: Sql, patch: { spawnFactor?: number; respawnSeconds?: number }) {

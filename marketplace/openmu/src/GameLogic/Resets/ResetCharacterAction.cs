@@ -217,8 +217,10 @@ public class ResetCharacterAction
         if (homeMapDef is { }
             && await this._player.GameContext.GetMapAsync((ushort)homeMapDef.Number).ConfigureAwait(false) is { SafeZoneSpawnGate: { } spawnGate } homeMap)
         {
-            // Mu La Ronda: a random cell of the gate as before, but never a blocked one.
-            var target = new Point((byte)Rand.NextInt(spawnGate.X1, spawnGate.X2), (byte)Rand.NextInt(spawnGate.Y1, spawnGate.Y2));
+            // Mu La Ronda: always the center of the home map's spawn gate (the town square
+            // where new characters of the class appear), never a blocked cell. A random cell
+            // of the gate felt like being dropped anywhere in town.
+            var target = new Point((byte)((spawnGate.X1 + spawnGate.X2) / 2), (byte)((spawnGate.Y1 + spawnGate.Y2) / 2));
             if (!homeMap.Terrain.WalkMap[target.X, target.Y] && homeMap.Terrain.GetWalkableCoordinate(spawnGate) is { } walkable)
             {
                 target = walkable;

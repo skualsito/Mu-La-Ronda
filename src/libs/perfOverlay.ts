@@ -71,6 +71,23 @@ const histGpu = new Float32Array(HISTORY);
 let histAt = 0;
 let histCount = 0;
 
+/**
+ * Mu La Ronda: frames per second and frame time of the frames actually drawn,
+ * averaged over the last second of history. Babylon's `engine.getFps()` and
+ * `getDeltaTime()` count every animation frame, including the ones the FPS cap
+ * skips (boot.tsx), so with "60 FPS" on a 144 Hz screen they read ~120.
+ */
+export function drawnFrameRate(): { fps: number; frameMs: number } {
+  let total = 0;
+  let frames = 0;
+  for (let i = 1; i <= histCount && total < 1000; i++) {
+    total += histFrame[(histAt - i + HISTORY) % HISTORY];
+    frames++;
+  }
+  if (frames === 0 || total <= 0) return { fps: 0, frameMs: 0 };
+  return { fps: (frames * 1000) / total, frameMs: total / frames };
+}
+
 export function recordFrame(
   totalUpdateMs: number,
   deltaMs: number,
@@ -611,8 +628,6 @@ function settingsLine(): string {
 }
 
 function render(scene: Scene): void {
-  const engine = scene.getEngine();
-
   const slowest = [...systemMs.entries()]
     .sort((a, b) => b[1] - a[1])
     .slice(0, SYSTEM_ROWS);
@@ -636,7 +651,7 @@ function render(scene: Scene): void {
 
   const lines = [
     ...gpuLines(scene),
-    `fps        ${engine.getFps().toFixed(0)}`,
+    `fps        ${drawnFrameRate().fps.toFixed(0)}`,
     `frame      ${frameMs.toFixed(2)} ms`,
     `cpu        ${cpuMs.toFixed(2)} ms   ecs ${updateMs.toFixed(2)} ms`,
     gpuMsLine(),

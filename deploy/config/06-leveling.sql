@@ -14,6 +14,10 @@
 --   Spot 3  niveles 300-385   Dark Phoenix Shield (106)        este       x80-99  y84-100
 --   Spot 4  niveles 385-400   Dark Elf (135), Soram (134)       sureste    x88-97  y110-117
 --
+-- Cada spot se arma con cajas de 5x5 celdas de 8 bichos (en los spots de dos
+-- monstruos, 4 y 4): asi quedan grupos de 8 separados en vez de 20-40 bichos
+-- desparramados. OpenMU (SpawnSpots.cs) deja estas cajas tal cual.
+--
 -- Se llega y se reaparece entre el spot 1 y el 2 (x53-57 y113-116), lejos de
 -- los fuertes. Todas las coordenadas estan verificadas contra el terreno del
 -- cliente (Data/World7, celdas caminables). El norte de Arena no conecta con
@@ -52,13 +56,27 @@ BEGIN
   FOR spot IN
     SELECT * FROM (VALUES
       -- monstruo, cantidad, x1, y1, x2, y2
-      (21::smallint,  20, 37, 108, 50, 117),  -- Spot 1: Assassin
-      (17::smallint,  20, 37, 108, 50, 117),  --         Cyclops
-      (37::smallint,  14, 69, 112, 82, 117),  -- Spot 2: Devil
-      (40::smallint,  14, 69, 112, 82, 117),  --         Death Knight
-      (76::smallint,  36, 80,  84, 99, 100),  -- Spot 3: Dark Phoenix Shield
-      (440::smallint, 14, 88, 110, 97, 117),  -- Spot 4: Dark Elf
-      (437::smallint, 14, 88, 110, 97, 117)   --         Soram (Trainee)
+      (21::smallint, 4, 37, 108, 41, 112),  -- Spot 1 Assassin/Cyclops caja 1
+      (17::smallint, 4, 37, 108, 41, 112),  -- Spot 1 Assassin/Cyclops caja 1
+      (21::smallint, 4, 44, 108, 48, 112),  -- Spot 1 Assassin/Cyclops caja 2
+      (17::smallint, 4, 44, 108, 48, 112),  -- Spot 1 Assassin/Cyclops caja 2
+      (21::smallint, 4, 37, 113, 41, 117),  -- Spot 1 Assassin/Cyclops caja 3
+      (17::smallint, 4, 37, 113, 41, 117),  -- Spot 1 Assassin/Cyclops caja 3
+      (21::smallint, 4, 44, 113, 48, 117),  -- Spot 1 Assassin/Cyclops caja 4
+      (17::smallint, 4, 44, 113, 48, 117),  -- Spot 1 Assassin/Cyclops caja 4
+      (37::smallint, 4, 69, 112, 73, 116),  -- Spot 2 Devil/Death Knight caja 1
+      (40::smallint, 4, 69, 112, 73, 116),  -- Spot 2 Devil/Death Knight caja 1
+      (37::smallint, 4, 75, 112, 79, 116),  -- Spot 2 Devil/Death Knight caja 2
+      (40::smallint, 4, 75, 112, 79, 116),  -- Spot 2 Devil/Death Knight caja 2
+      (76::smallint, 7, 80, 84, 84, 88),  -- Spot 3 Dark Phoenix Shield caja 1
+      (76::smallint, 7, 92, 84, 96, 88),  -- Spot 3 Dark Phoenix Shield caja 2
+      (76::smallint, 7, 86, 90, 90, 94),  -- Spot 3 Dark Phoenix Shield caja 3
+      (76::smallint, 7, 80, 96, 84, 100),  -- Spot 3 Dark Phoenix Shield caja 4
+      (76::smallint, 7, 92, 96, 96, 100),  -- Spot 3 Dark Phoenix Shield caja 5
+      (440::smallint, 4, 88, 110, 92, 114),  -- Spot 4 Dark Elf/Soram caja 1
+      (437::smallint, 4, 88, 110, 92, 114),  -- Spot 4 Dark Elf/Soram caja 1
+      (440::smallint, 4, 93, 113, 97, 117),  -- Spot 4 Dark Elf/Soram caja 2
+      (437::smallint, 4, 93, 113, 97, 117)  -- Spot 4 Dark Elf/Soram caja 2
     ) AS t(num, qty, x1, y1, x2, y2)
   LOOP
     SELECT "Id" INTO monster FROM config."MonsterDefinition" WHERE "Number" = spot.num;

@@ -41,8 +41,9 @@ UPDATE config."GameServerDefinition" SET
 -- RequiredMoney se multiplica por la cantidad de resets (reset 5 = 5.000.000).
 -- Puntos: el reset NO saca los stats (ResetStats false): fuerza, agilidad,
 -- etc. quedan como estaban, y los puntos libres que tenias tambien. Cada reset
--- suma PointsPerReset (500) puntos libres mas (ReplacePointsPerReset false,
--- sin multiplicar por la cantidad de resets).
+-- suma PointsPerReset (500) multiplicado por el numero de reset: el reset 1
+-- da 500, el 2 da 1.000, el 3 da 1.500... (MultiplyPointsByResetCount true,
+-- ReplacePointsPerReset false: se suman a los que ya tenias).
 DO $$
 DECLARE
   reset_type uuid := '6a9d585d-79d7-4674-b6ea-7e87392fa501';
@@ -56,7 +57,7 @@ DECLARE
     "ItemCostTiers": [],
     "ResetStats": false,
     "PointsPerReset": 500,
-    "MultiplyPointsByResetCount": false,
+    "MultiplyPointsByResetCount": true,
     "ReplacePointsPerReset": false,
     "PointsTiers": [],
     "MoveHome": true,

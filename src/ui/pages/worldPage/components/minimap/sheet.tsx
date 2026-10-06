@@ -18,7 +18,7 @@ import {
   HERO_SIZE,
   HERO_SPRITE,
   isPanned,
-  MAP_ROTATION,
+  useMapRotation,
   MARKER_SIZE,
   MARKER_SPRITE,
   NO_PAN,
@@ -37,7 +37,8 @@ import {
 /**
  * `CNewUIMiniMap` (NewUIMiniMap.cpp): TAB drops a near-black sheet over the
  * play area and draws the world's `mini_map.ozt` rotated 45° so that the
- * hero sits at the centre, with the NPC and portal markers from the
+ * hero sits at the centre (Mu La Ronda: turned by the camera's yaw, see
+ * `currentMapRotation`), with the NPC and portal markers from the
  * localised `Minimap_World{n}.bmd` riding on it. Hovering a marker shows its
  * name in a tip box, the X at the top right (or TAB / ESC) closes it, and
  * while it is open every other hot key is swallowed (`NewUIHotKey.cpp:131`).
@@ -78,11 +79,13 @@ const Marker = ({
   marker,
   center,
   mapSize,
+  rotation,
   onHover,
 }: {
   marker: MinimapMarker;
   center: MapPoint;
   mapSize: number;
+  rotation: number;
   onHover: (marker: MinimapMarker | null) => void;
 }) => {
   const size = MARKER_SIZE[marker.kind] ?? NPC_SIZE;
@@ -98,7 +101,7 @@ const Marker = ({
         position: 'absolute',
         left: CENTER_X - size / 2,
         top: CENTER_Y - size / 2,
-        transform: `rotate(${MAP_ROTATION}deg) translate(${dx}px, ${dy}px) rotate(${marker.rotation - MAP_ROTATION}deg)`,
+        transform: `rotate(${rotation}deg) translate(${dx}px, ${dy}px) rotate(${marker.rotation - rotation}deg)`,
         pointerEvents: 'auto',
       }}
     >
@@ -115,15 +118,17 @@ const MarkerTip = ({
   marker,
   center,
   mapSize,
+  rotation,
 }: {
   marker: MinimapMarker;
   center: MapPoint;
   mapSize: number;
+  rotation: number;
 }) => {
   const size = MARKER_SIZE[marker.kind] ?? NPC_SIZE;
   const dx = ((marker.y - center.y) / TERRAIN_SIZE) * mapSize;
   const dy = ((marker.x - center.x) / TERRAIN_SIZE) * mapSize;
-  const rad = (MAP_ROTATION * Math.PI) / 180;
+  const rad = (rotation * Math.PI) / 180;
   const sx = CENTER_X + dx * Math.cos(rad) - dy * Math.sin(rad);
   const sy = CENTER_Y + dx * Math.sin(rad) + dy * Math.cos(rad);
 
@@ -194,7 +199,8 @@ const SheetView = ({
   const [pan, setPan] = useState<MapPan>(NO_PAN);
   const scale = useUiStageScale();
   const mapSize = ZOOM_LEVELS[zoom];
-  const { dragging, handlers } = useMapDrag(mapSize, scale, setPan);
+  const rotation = useMapRotation();
+  const { dragging, handlers } = useMapDrag(mapSize, scale, setPan, rotation);
 
   const center: MapPoint = { x: hero.x + pan.v, y: hero.y + pan.u };
   const tx = (center.y / TERRAIN_SIZE) * mapSize;
@@ -230,7 +236,7 @@ const SheetView = ({
               left: CENTER_X - tx,
               top: CENTER_Y - ty,
               transformOrigin: `${tx}px ${ty}px`,
-              transform: `rotate(${MAP_ROTATION}deg)`,
+              transform: `rotate(${rotation}deg)`,
               backgroundImage: `url(${minimap.image.url})`,
             }}
           />
@@ -240,6 +246,7 @@ const SheetView = ({
               marker={marker}
               center={center}
               mapSize={mapSize}
+              rotation={rotation}
               onHover={setHovered}
             />
           ))}
@@ -249,6 +256,7 @@ const SheetView = ({
               marker={marker}
               center={center}
               mapSize={mapSize}
+              rotation={rotation}
               onHover={setHovered}
             />
           ))}
@@ -259,10 +267,10 @@ const SheetView = ({
               position: 'absolute',
               left: CENTER_X - HERO_SIZE / 2,
               top: CENTER_Y - HERO_SIZE / 2,
-              transform: `rotate(${MAP_ROTATION}deg) translate(${heroDx}px, ${heroDy}px) rotate(${-MAP_ROTATION}deg)`,
+              transform: `rotate(${rotation}deg) translate(${heroDx}px, ${heroDy}px) rotate(${-rotation}deg)`,
             }}
           />
-          {hovered && <MarkerTip marker={hovered} center={center} mapSize={mapSize} />}
+          {hovered && <MarkerTip marker={hovered} center={center} mapSize={mapSize} rotation={rotation} />}
         </div>
         <Frame width={SHEET_WIDTH} height={SHEET_HEIGHT} />
         {isPanned(pan) && (

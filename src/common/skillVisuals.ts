@@ -82,6 +82,7 @@ import { inHellas } from './locomotion';
 import { fenrirVariant, mountKind } from './pets';
 import { skillDefinition, type SkillDefinition } from './skillsDatabase';
 import { storeRef } from './storeRef';
+import { skillVisualBudget } from './skillVisualBudget';
 import { heldWeapons } from './chaosCastleUnit';
 import { BLAST_LIGHT, BOSS_LASER_LIGHT, HELLFIRE_CIRCLE_LIGHT, METEOR_LIGHT, SUMMON_ARRIVAL_LIGHT } from '../lighting/skills';
 import { tierIndex } from './lightingQuality';
@@ -11869,12 +11870,18 @@ function runTravel(row: SkillVisual, ctx: SkillContext, target: Entity): void {
   });
 }
 
+/** Mu La Ronda: whether this cast is drawn at all (common/skillVisualBudget.ts). */
+function castIsDrawn(caster: Entity): boolean {
+  return skillVisualBudget.allow(caster, caster === storeRef().world?.playerEntity, performance.now());
+}
+
 export function playTargetedSkillVisual(
   scene: Scene,
   skill: number,
   caster: Entity,
   target: Entity | null
 ): void {
+  if (!castIsDrawn(caster)) return;
   if (caster.transform) {
     currentSkill = skill;
     const row = skillVisualFor(skill);
@@ -11908,6 +11915,7 @@ export function playAreaSkillVisual(
   terrainHeight: (x: number, y: number) => number,
   target: Entity | null = null
 ): void {
+  if (!castIsDrawn(caster)) return;
   const x = point ? point.x : caster.transform!.pos.x;
   const z = point ? point.y : caster.transform!.pos.z;
   const y = terrainHeight(x, z);
@@ -11981,6 +11989,7 @@ const ARROW_BURST = bomb(RGBS.fire);
 export function playBowShotVisual(scene: Scene, shooter: Entity, target: Entity): void {
   const launcher = combat.equippedLauncher(weaponsOf(shooter));
   if (!launcher || entityGone(shooter) || entityGone(target)) return;
+  if (!castIsDrawn(shooter)) return;
 
   const shot = LAUNCHER_ARROWS[launcher.num] ?? { model: MODEL.arrow, colour: RGBS.steel };
   const from = entityPos(shooter, BOW_MUZZLE_HEIGHT, new Vector3());

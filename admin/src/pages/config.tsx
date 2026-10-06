@@ -214,7 +214,7 @@ function FastTab({ config, onSave }: { config: Config; onSave: (body: unknown) =
       <Card title="Spots de todos los mapas">
         {!config.fast.available && <div className="notice notice-warn">Todavía no se aplicó 02-fast.sql: corré el deploy.</div>}
         <div className="form-grid">
-          <NumberField label="Multiplicador de monstruos" value={draft.spawnFactor} min={1} max={10} onChange={v => setDraft({ ...draft, spawnFactor: v ?? 1 })} hint="x1 = original, x3 = server fast" />
+          <NumberField label="Multiplicador de monstruos" value={draft.spawnFactor} min={1} max={10} onChange={v => setDraft({ ...draft, spawnFactor: v ?? 1 })} hint="x1 = original. Al arrancar, OpenMU reparte cada zona en spots de hasta 8 bichos" />
           <NumberField label="Respawn (segundos)" value={draft.respawnSeconds} min={1} max={30} onChange={v => setDraft({ ...draft, respawnSeconds: v ?? 3 })} hint="Solo bichos comunes; los bosses no se tocan" />
         </div>
         <SaveRow dirty={dirty} onSave={() => onSave(draft)} onReset={reset} />

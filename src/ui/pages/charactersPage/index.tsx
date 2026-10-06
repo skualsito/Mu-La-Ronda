@@ -21,6 +21,8 @@ import { TEXT_COLOR } from '../serversPage/layout';
 import { CharMakeWin } from './CharMakeWin';
 import { characterSelectView } from '../../../common/characterSelect';
 import { CharacterSelectionPlate } from './CharacterSelectionPlate';
+import { characterUiScale } from './layout';
+import { useUiViewport } from '../../components/uiStage';
 
 const BTN_WIDTH = 54;
 const BTN_HEIGHT = 30;
@@ -51,6 +53,8 @@ function isDeleteBlocked(
 
 export const CharactersPage = observer(() => {
   const [creating, setCreating] = useState(false);
+  const stage = useUiViewport();
+  const uiScale = characterUiScale(stage.height);
   // From the request until the world replaces this screen: a second
   // SelectCharacter finds OpenMU past CharacterSelection and it drops the
   // connection (SelectCharacterAction.cs:20-24). The original leaves for the
@@ -159,7 +163,17 @@ export const CharactersPage = observer(() => {
     <div className="characters-page">
       <CharacterSelectionPlate />
 
-      <div className="char-sel-bar" style={{ height: BTN_HEIGHT }}>
+      <div
+        className="char-sel-bar"
+        style={{
+          height: BTN_HEIGHT,
+          // Scaled from its bottom-left corner: laid out at 1/scale of the
+          // width it has to span, so after the scale it spans it exactly.
+          width: (stage.width - WIN_MARGIN_X * 2) / uiScale,
+          transform: `scale(${uiScale})`,
+          transformOrigin: 'left bottom',
+        }}
+      >
         {}
         <MuSpriteFrame
           file="deco.OZT"
@@ -241,7 +255,7 @@ export const CharactersPage = observer(() => {
       <MsgWindow />
 
       {}
-      {creating && <CharMakeWin onClose={() => setCreating(false)} />}
+      {creating && <CharMakeWin scale={uiScale} onClose={() => setCreating(false)} />}
     </div>
   );
 });

@@ -47,6 +47,24 @@ export type MoveReqEntry = {
   gate: number;
 };
 
+/**
+ * Mu La Ronda: rows the shipped file doesn't have, inserted after the row
+ * whose index is `after`. The server side (the WarpInfo with the same index)
+ * is in deploy/config/11-warps.sql.
+ */
+const EXTRA_ROWS: readonly (MoveReqEntry & { after: number })[] = [
+  { after: 27, index: 24, name: 'Crywolf', alias: 'Crywolf', reqLevel: 10, reqMaxLevel: 400, zen: 15000, gate: 118 },
+];
+
+function withExtraRows(entries: MoveReqEntry[]): MoveReqEntry[] {
+  for (const { after, ...row } of EXTRA_ROWS) {
+    if (entries.some(entry => entry.index === row.index)) continue;
+    const position = entries.findIndex(entry => entry.index === after);
+    entries.splice(position < 0 ? entries.length : position + 1, 0, row);
+  }
+  return entries;
+}
+
 let pending: Promise<readonly MoveReqEntry[]> | null = null;
 
 function readName(bytes: Uint8Array, offset: number): string {
@@ -86,7 +104,7 @@ function parse(bytes: Uint8Array): MoveReqEntry[] {
  */
 export function loadMoveReqList(): Promise<readonly MoveReqEntry[]> {
   if (!pending) {
-    pending = downloadLocalDataFile(FILE, undefined, true).then(parse, err => {
+    pending = downloadLocalDataFile(FILE, undefined, true).then(bytes => withExtraRows(parse(bytes)), err => {
       pending = null;
       throw err;
     });

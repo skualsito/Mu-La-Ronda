@@ -13,12 +13,24 @@ BEGIN;
 CREATE SCHEMA IF NOT EXISTS mlr;
 
 -- Multiplicador de spawns y respawn: los cambia el panel admin (admin.<DOMAIN>,
--- Configuracion > Server fast); por defecto x3 y 3 segundos.
+-- Configuracion > Server fast); por defecto x1 y 3 segundos.
 CREATE TABLE IF NOT EXISTS mlr.settings (key text PRIMARY KEY, value text NOT NULL);
+
+-- Desde que OpenMU arma spots de hasta 8 bichos (SpawnSpots.cs en el overlay),
+-- el multiplicador vuelve a x1: el x3 anterior llenaba los mapas. Se hace UNA
+-- vez; despues manda lo que se elija en el panel.
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM mlr.settings WHERE key = 'spots_v1') THEN
+    DELETE FROM mlr.settings WHERE key = 'spawn_factor';
+    INSERT INTO mlr.settings (key, value) VALUES ('spots_v1', now()::text);
+  END IF;
+END $$;
 
 -- ─── Spots ──────────────────────────────────────────────────────────────────
 -- Todos los spots normales de monstruos (no NPCs, no eventos, no bosses que
--- salen de a uno) con el triple de bichos, y respawn de 3 segundos.
+-- salen de a uno) por el multiplicador, y respawn de 3 segundos. Al arrancar,
+-- OpenMU reparte cada area en spots de hasta 8 bichos sobre terreno caminable.
 -- Los spots de la zona de leveleo (06-leveling.sql) ya tienen su cantidad.
 CREATE TABLE IF NOT EXISTS mlr.leveling_spawns ("Id" uuid PRIMARY KEY);
 
@@ -31,7 +43,7 @@ SELECT "Id", "Quantity" FROM config."MonsterSpawnArea"
 ON CONFLICT ("Id") DO NOTHING;
 
 UPDATE config."MonsterSpawnArea" s
-   SET "Quantity" = LEAST(b."Quantity" * COALESCE((SELECT value::int FROM mlr.settings WHERE key = 'spawn_factor'), 3), 32767)
+   SET "Quantity" = LEAST(b."Quantity" * COALESCE((SELECT value::int FROM mlr.settings WHERE key = 'spawn_factor'), 1), 32767)
   FROM mlr.spawn_quantity b, config."MonsterDefinition" m
  WHERE b."Id" = s."Id"
    AND m."Id" = s."MonsterDefinitionId"

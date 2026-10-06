@@ -10,6 +10,7 @@ import { useEventBus } from '../../../../../hooks/useEventBus';
 import { MuText } from '../../../../components/muText';
 import { useUiStageScale } from '../../../../components/uiStage';
 import { t } from '../../../../../i18n';
+import { drawnFrameRate } from '../../../../../libs/perfOverlay';
 
 /**
  * Frames, frame time and the server round trip, in the top left under the
@@ -40,14 +41,11 @@ type Reading = { fps: number; frameMs: number; roundTripMs: number | null };
 const EMPTY: Reading = { fps: 0, frameMs: 0, roundTripMs: null };
 
 function read(): Reading {
-  const engine = Store.world?.scene.getEngine();
-  if (!engine) return { ...EMPTY, roundTripMs: NetStats.roundTripMs };
+  if (!Store.world) return { ...EMPTY, roundTripMs: NetStats.roundTripMs };
 
-  return {
-    fps: engine.getFps(),
-    frameMs: engine.getDeltaTime(),
-    roundTripMs: NetStats.roundTripMs,
-  };
+  // The drawn frames: the engine's own counters include the frames the FPS cap skips.
+  const { fps, frameMs } = drawnFrameRate();
+  return { fps, frameMs, roundTripMs: NetStats.roundTripMs };
 }
 
 const Line = observer(({ label, value, index }: { label: string; value: string; index: number }) => (

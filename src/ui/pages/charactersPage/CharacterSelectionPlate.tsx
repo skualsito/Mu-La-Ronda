@@ -7,6 +7,7 @@ import { getClassName } from '../../../common/characterStats';
 import { characterSelectView } from '../../../common/characterSelect';
 import { t } from '../../../i18n';
 import { TEXT_COLOR } from '../serversPage/layout';
+import { characterUiScale } from './layout';
 
 /** How far above the model's root the plate hangs, in tiles (world units). */
 const HEAD_HEIGHT = 2.3;
@@ -74,7 +75,11 @@ export const CharacterSelectionPlate = observer(() => {
       const x = screen.x * ((canvas?.clientWidth || renderW) / renderW);
       const y = screen.y * ((canvas?.clientHeight || renderH) / renderH);
 
-      el.style.transform = `translate(${x}px, ${y}px) translate(-50%, -100%)`;
+      // Mu La Ronda: scaled like the rest of the screen (characterUiScale),
+      // around its bottom centre so it stays right above the head.
+      const scale = characterUiScale(canvas?.clientHeight || renderH);
+      el.style.transformOrigin = '50% 100%';
+      el.style.transform = `translate(${x}px, ${y}px) translate(-50%, -100%) scale(${scale})`;
     });
 
     return () => {

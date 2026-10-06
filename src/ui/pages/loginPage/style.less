@@ -54,11 +54,15 @@
     position: absolute;
     pointer-events: auto;
     cursor: pointer;
-    color: #b3b3b3;
-    font-size: 11px;
+    // Mu La Ronda: gold, bold and underlined - grey 11px over the stone art
+    // was nearly invisible, and it is how a new player gets an account.
+    color: #f2cf63;
+    font-size: 12px;
+    font-weight: bold;
     line-height: 1;
-    text-decoration: none;
-    text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.85);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    text-shadow: 1px 1px 0 #000, 0 0 4px rgba(0, 0, 0, 0.9);
     white-space: nowrap;
 
     &:hover {

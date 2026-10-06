@@ -1,23 +1,42 @@
--- Mu La Ronda - items de quest que de verdad caen.
+-- Mu La Ronda - items de quest: caen de los monstruos reales de cada quest.
 --
 -- OpenMU suma a cada kill los DropItemGroup de los items que pide la quest
--- activa (CharacterExtensions.GetQuestDropItemGroups), pero los de las quests
--- clasicas vienen con 0,1% por kill y solo de monstruos de cierto nivel
--- (Scroll of the Emperor: nivel 45-60; Broken Sword / Scroll +1: 72-108).
--- Y los de la 3ra quest (Evidence of Strength, Apostle Devin) solo caen de un
--- jefe puntual, que en todo el juego tiene un unico spawn:
---   Flame of Death Beam Knight -> Death Beam Knight (Tarkan, 3%)
---   Horn of Hell Maine         -> Hell Maine (Aida, 4%)
---   Feather of Dark Phoenix    -> Dark Phoenix (Icarus, 5%)
--- En este server se levelea en Arena con bichos de nivel 26/28 y 60+, asi que
--- con la quest activa practicamente no caian nunca.
+-- activa (CharacterExtensions.GetQuestDropItemGroups). Cada item tiene su grupo
+-- con el rango de nivel de monstruo (o el monstruo puntual) de MU original:
 --
--- Ahora: 10% por kill (o lo que ya tuvieran si era mas), de cualquier nivel
--- de monstruo y de cualquier monstruo (el jefe tambien sigue soltandolo).
--- Solo afecta a quien tiene la quest activa.
+--   Quest 0  Scroll of the Emperor            monstruos nivel 45-60
+--   Quest 1  Broken Sword / Tear of Elf /
+--            Soul Shard of Wizard / etc.      monstruos nivel 62-76
+--   Quest 2  Scroll of the Emperor +1         monstruos nivel 72-108
+--   Quest 3  Broken Sword +1                  monstruos nivel 78-108
+--   Quest 4  Flame of Death Beam Knight       solo Death Beam Knight (Tarkan)
+--            Horn of Hell Maine               solo Hell Maine (Aida)
+--            Feather of Dark Phoenix          solo Dark Phoenix (Icarus)
+--
+-- Una version anterior de este archivo los hacia caer de cualquier monstruo
+-- (por eso en Devias caian todos): aca se restauran los valores originales de
+-- forma explicita. Lo unico distinto de MU original es la chance: 10% por kill
+-- (el original es 0,1%, impracticable en este server). Solo cae para quien
+-- tiene la quest activa.
 UPDATE config."DropItemGroup" g
-   SET "Chance" = GREATEST(g."Chance", 0.10),
-       "MinimumMonsterLevel" = NULL,
-       "MaximumMonsterLevel" = NULL,
-       "MonsterId" = NULL
- WHERE g."Id" IN (SELECT "DropItemGroupId" FROM config."QuestItemRequirement" WHERE "DropItemGroupId" IS NOT NULL);
+   SET "MinimumMonsterLevel" = v.min_level,
+       "MaximumMonsterLevel" = v.max_level,
+       "MonsterId" = (SELECT m."Id" FROM config."MonsterDefinition" m WHERE m."Number" = v.monster LIMIT 1),
+       "Chance" = 0.10
+  FROM config."QuestItemRequirement" r
+  JOIN config."QuestDefinition" q ON q."Id" = r."QuestDefinitionId"
+  JOIN config."ItemDefinition" i ON i."Id" = r."ItemId",
+       (VALUES
+         (0, NULL::smallint, 45::smallint, 60::smallint,  NULL::smallint),
+         (1, NULL,           62,           76,            NULL),
+         (2, NULL,           72,           108,           NULL),
+         (3, NULL,           78,           108,           NULL),
+         (4, 65,             NULL,         NULL,          63),
+         (4, 66,             NULL,         NULL,          309),
+         (4, 67,             NULL,         NULL,          77)
+       ) AS v(quest, item, min_level, max_level, monster)
+ WHERE g."Id" = r."DropItemGroupId"
+   AND q."Group" = 0
+   AND q."Number" = v.quest
+   AND i."Group" = 14
+   AND (v.item IS NULL OR i."Number" = v.item);

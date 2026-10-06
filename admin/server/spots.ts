@@ -22,8 +22,7 @@ async function ensureBooks(sql: Sql) {
 async function spawnFactor(sql: Sql): Promise<number> {
   const [row] = await sql`SELECT value FROM mlr.settings WHERE key = 'spawn_factor'`;
   // 02-fast.sql's default when the panel never set one.
-  const [fast] = await sql`SELECT to_regclass('mlr.monster_respawn') IS NOT NULL AS applied`;
-  return Number(row?.value ?? (fast.applied ? 3 : 1));
+  return Number(row?.value ?? 1);
 }
 
 export async function listMonsters(sql: Sql) {

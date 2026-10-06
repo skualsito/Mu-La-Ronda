@@ -64,6 +64,8 @@ import {
 
 type CharMakeWinProps = {
   onClose: () => void;
+  /** Mu La Ronda: characterUiScale - the window is scaled from its centre. */
+  scale?: number;
 };
 
 /**
@@ -92,7 +94,7 @@ function holdUntilReleased(code: string): void {
   window.addEventListener('blur', release);
 }
 
-export const CharMakeWin = observer(({ onClose }: CharMakeWinProps) => {
+export const CharMakeWin = observer(({ onClose, scale = 1 }: CharMakeWinProps) => {
   const selected =
     CREATABLE_CLASSES.find(c => c.netClass === Store.newCharClass) ??
     CREATABLE_CLASSES[0];
@@ -193,7 +195,7 @@ export const CharMakeWin = observer(({ onClose }: CharMakeWinProps) => {
   return (
     <div
       className="char-make-win"
-      style={{ width: WIN_WIDTH, height: WIN_HEIGHT }}
+      style={{ width: WIN_WIDTH, height: WIN_HEIGHT, transform: `translate(-50%, -50%) scale(${scale})` }}
     >
       {}
       <div

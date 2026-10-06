@@ -52,6 +52,7 @@ const Panel = observer(({
   headerHeight = 0,
   contentKey,
   children,
+  noScroll = false,
 }: {
   id: string;
   title: string;
@@ -63,6 +64,8 @@ const Panel = observer(({
   /** Changes whenever the rows are refilled (for the scroll bar). */
   contentKey: string;
   children: React.ReactNode;
+  /** Content that always fits: no scroll bar, and the full width for the content (centred). */
+  noScroll?: boolean;
 }) => {
   const rowsRef = useRef<HTMLDivElement>(null);
   const close = () => {
@@ -114,18 +117,20 @@ const Panel = observer(({
         <div
           ref={rowsRef}
           className="ronda-mu-rows"
-          style={{ left: innerLeft, top: rowsTop, width: innerWidth - SCROLL_WIDTH - 4, height: rowsHeight }}
+          style={{ left: innerLeft, top: rowsTop, width: noScroll ? innerWidth : innerWidth - SCROLL_WIDTH - 4, height: rowsHeight }}
         >
           {children}
         </div>
-        <ScrollBar
-          target={rowsRef}
-          windowId={id}
-          left={innerLeft + innerWidth - SCROLL_WIDTH}
-          top={rowsTop}
-          height={rowsHeight}
-          contentKey={contentKey}
-        />
+        {!noScroll && (
+          <ScrollBar
+            target={rowsRef}
+            windowId={id}
+            left={innerLeft + innerWidth - SCROLL_WIDTH}
+            top={rowsTop}
+            height={rowsHeight}
+            contentKey={contentKey}
+          />
+        )}
 
         <OptionsButton
           label={tOptions('common.close')}
@@ -352,9 +357,10 @@ const VipWindow = observer(() => {
       width={620}
       height={450}
       headerHeight={44}
+      noScroll
       contentKey={`${current}-${vipState.until}-${vipState.buying}`}
       header={
-        <p className="ronda-note">
+        <p className="ronda-note ronda-vip-head">
           {!vipState.known
             ? 'Consultando tu VIP…'
             : current

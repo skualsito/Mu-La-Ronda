@@ -13,8 +13,37 @@ import { MuButton } from '../../../../components/muButton';
  * 640x480 UI space; each view scales them its own way.
  */
 
-export const MAP_ROTATION = 45;
+/**
+ * How far the map art is turned on screen, in degrees (CSS, clockwise). The
+ * original pins it at 45° because its camera always looks the same way. Mu La
+ * Ronda's camera does not (other default yaw, and Insert / Delete turn it), and
+ * with the fixed 45° the map came out a quarter turn off from the view. For
+ * this client's ArcRotateCamera the angle that lines the art up with the
+ * ground on screen is exactly the camera's `alpha`: tile Y (the art's U) then
+ * points where the world's +Z points on screen, and tile X (V) where +X does.
+ */
+export const DEFAULT_MAP_ROTATION = 45;
 export const TERRAIN_SIZE = 256;
+
+export function currentMapRotation(): number {
+  const camera = Store.world?.scene.activeCamera as { alpha?: unknown } | null | undefined;
+  return typeof camera?.alpha === 'number' ? (camera.alpha * 180) / Math.PI : DEFAULT_MAP_ROTATION;
+}
+
+/** `currentMapRotation`, followed while the view is up (the camera can turn). */
+export function useMapRotation(): number {
+  const [deg, setDeg] = useState(currentMapRotation);
+  useEffect(() => {
+    const id = setInterval(() => {
+      setDeg(previous => {
+        const next = currentMapRotation();
+        return Math.abs(next - previous) > 0.5 ? next : previous;
+      });
+    }, 200);
+    return () => clearInterval(id);
+  }, []);
+  return deg;
+}
 
 export const NPC_SIZE = 15;
 export const PORTAL_SIZE = 30;
@@ -244,11 +273,11 @@ export const isPanned = (pan: MapPan): boolean => pan.u !== 0 || pan.v !== 0;
 
 /**
  * A pointer moved `sx, sy` screen pixels with the picture in hand: undo the
- * view's CSS scale, then the 45° spin, and the tile under the fixed centre
+ * view's CSS scale, then the map's spin, and the tile under the fixed centre
  * went the other way.
  */
-export function dragToPan(sx: number, sy: number, mapSize: number, scale: number): MapPan {
-  const rad = (MAP_ROTATION * Math.PI) / 180;
+export function dragToPan(sx: number, sy: number, mapSize: number, scale: number, rotation: number): MapPan {
+  const rad = (rotation * Math.PI) / 180;
   const px = sx / scale;
   const py = sy / scale;
   const mu = px * Math.cos(rad) + py * Math.sin(rad);
@@ -267,7 +296,8 @@ export function dragToPan(sx: number, sy: number, mapSize: number, scale: number
 export function useMapDrag(
   mapSize: number,
   scale: number,
-  setPan: React.Dispatch<React.SetStateAction<MapPan>>
+  setPan: React.Dispatch<React.SetStateAction<MapPan>>,
+  rotation: number
 ): {
   dragging: boolean;
   handlers: Pick<
@@ -296,7 +326,7 @@ export function useMapDrag(
       onPointerMove: e => {
         const h = held.current;
         if (!h || h.id !== e.pointerId) return;
-        const d = dragToPan(e.clientX - h.x, e.clientY - h.y, mapSize, scale);
+        const d = dragToPan(e.clientX - h.x, e.clientY - h.y, mapSize, scale, rotation);
         h.x = e.clientX;
         h.y = e.clientY;
         setPan(p => ({ u: p.u + d.u, v: p.v + d.v }));

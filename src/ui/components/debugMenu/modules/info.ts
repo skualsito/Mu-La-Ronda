@@ -1,6 +1,7 @@
 import { registerDebugModule, type DebugRow } from '../../../../common/debugMenu';
 import { ENUM_WORLD } from '../../../../common/types';
 import { Store } from '../../../../store';
+import { drawnFrameRate } from '../../../../libs/perfOverlay';
 
 /**
  * Info: read-only counters off the live scene and engine - the perfOverlay's
@@ -27,8 +28,8 @@ registerDebugModule({
   order: 40,
   rows: () => [
     { kind: 'section', id: 'frame', label: 'Frame' },
-    row('FPS', scene(s => s.getEngine().getFps().toFixed(0))),
-    row('Frame time', scene(s => `${s.getEngine().getDeltaTime().toFixed(1)} ms`)),
+    row('FPS', scene(() => drawnFrameRate().fps.toFixed(0))),
+    row('Frame time', scene(() => `${drawnFrameRate().frameMs.toFixed(1)} ms`)),
     row(
       'Draw calls',
       scene(s => {

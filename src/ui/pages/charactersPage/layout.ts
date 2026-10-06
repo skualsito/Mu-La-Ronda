@@ -3,6 +3,16 @@ import { textTable, type TextKey } from '../../../i18n';
 import { CharacterClassNumber } from '../../../common';
 import { CharacterCreationUnlockFlagsEnum } from '../../../common/packets/ServerToClientPackets';
 
+/**
+ * Mu La Ronda: the character screen is authored in 800×600 pixels like the
+ * original, which made it tiny on a 1080p window. The bar, the creation window
+ * and the name plate are scaled by the window height against 600, never below
+ * 1 and capped so the bar still fits on very tall screens.
+ */
+export function characterUiScale(viewportHeight: number): number {
+  return Math.min(2.2, Math.max(1, viewportHeight / 600));
+}
+
 export const WIN_WIDTH = 454;
 export const WIN_HEIGHT = 406;
 
