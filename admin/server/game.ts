@@ -22,6 +22,11 @@ export const STAT = {
 
 type StatKey = keyof typeof STAT;
 
+/** Stats.CurrentHealth / Stats.CurrentMana, and a value above any maximum (OpenMU clamps it). */
+const CURRENT_HEALTH = '20686ffd-7a96-4be2-9889-2a4dd9ff5a25';
+const CURRENT_MANA = 'b3299ee6-3815-4e48-b620-95db78f8a142';
+const FULL_POOL = 100_000_000;
+
 export const MAX_STAT = 32767;
 
 /** CharacterStatus: 0 Normal, 1 Banned, 32 Game Master. */
@@ -167,9 +172,11 @@ export async function updateCharacter(sql: Sql, id: string, patch: CharacterPatc
       leadership: [0, MAX_STAT],
     };
 
+    let statsChanged = false;
     for (const key of Object.keys(STAT) as StatKey[]) {
       const value = clampInt(patch[key], ...statLimits[key]);
       if (value === undefined) continue;
+      if (key !== 'resets') statsChanged = true;
       const def = STAT[key];
       const updated = await tx`
         UPDATE data."StatAttribute" SET "Value" = ${value}
@@ -184,6 +191,16 @@ export async function updateCharacter(sql: Sql, id: string, patch: CharacterPatc
       if (key === 'level') {
         await tx`UPDATE data."Character" SET "Experience" = ${experienceForLevel(value)} WHERE "Id" = ${id}::uuid`;
       }
+    }
+
+    // OpenMU keeps the current health from the last session and only limits it
+    // to the new maximum on entering (Player.SetReclaimableAttributesBeforeEnterGame):
+    // after more vitality it would stay at the old value. Above any maximum, it
+    // starts full.
+    if (statsChanged) {
+      await tx`
+        UPDATE data."StatAttribute" SET "Value" = ${FULL_POOL}
+         WHERE "CharacterId" = ${id}::uuid AND "DefinitionId" IN (${CURRENT_HEALTH}::uuid, ${CURRENT_MANA}::uuid)`;
     }
 
     const sets: Record<string, number | string> = {};
