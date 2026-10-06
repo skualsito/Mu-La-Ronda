@@ -1854,6 +1854,7 @@ EventBus.on('PartyRequest', packet => {
       requesterName: playerNameById(requesterId),
     };
   });
+  Social.autoAnswerParty();
 });
 
 EventBus.on('PartyList', packet => {

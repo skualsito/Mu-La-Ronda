@@ -47,7 +47,7 @@ export type ChatCommand = {
   /** Needs a game master character (OpenMU `CharacterStatus.GameMaster`). */
   gm?: boolean;
   /** Mu La Ronda: opens one of our own windows instead of reaching the server. */
-  ui?: 'commands' | 'rankings';
+  ui?: 'commands' | 'rankings' | 'partyReply';
 };
 
 export const CHAT_COMMANDS: readonly ChatCommand[] = [
@@ -71,6 +71,7 @@ export const CHAT_COMMANDS: readonly ChatCommand[] = [
   // ---- server (OpenMU) ---------------------------------------------------
   { name: '/reset', helpKey: 'cmd.reset' },
   { name: '/resetinfo', helpKey: 'cmd.resetinfo' },
+  { name: '/re', usage: '<on|off|auto>', helpKey: 'cmd.re', ui: 'partyReply' },
   { name: '/post', usage: '<message>', helpKey: 'cmd.post' },
   { name: '/help', usage: '[command]', helpKey: 'cmd.help' },
   { name: '/list', helpKey: 'cmd.list' },

@@ -1,4 +1,5 @@
 import { t } from './i18n';
+import { LocalStorage } from './libs/localStorage';
 import { action, computed, makeObservable, observable, runInAction } from 'mobx';
 import { Store } from './store';
 import {
@@ -161,6 +162,15 @@ const SYSTEM_ROW = '';
  * `CNewUIChatLogWindow` / `CNewUIChatInputBox`, `CNewUIPartyInfoWindow` and
  * `CNewUIGuildInfoWindow`, with the packet plumbing of WSclient.cpp.
  */
+export type PartyReply = 'on' | 'off' | 'auto';
+
+const PARTY_REPLY_KEY = 'mlr_party_reply';
+
+function loadPartyReply(): PartyReply {
+  const saved = LocalStorage.load(PARTY_REPLY_KEY);
+  return saved === 'off' || saved === 'auto' ? saved : 'on';
+}
+
 export const Social = new (class _Social {
   // ---- chat ---------------------------------------------------------------
 
@@ -208,6 +218,12 @@ export const Social = new (class _Social {
 
   partyMembers: PartyMember[] = [];
   partyRequest: SocialRequest | null = null;
+  /**
+   * Mu La Ronda, `/re on|off|auto`: what an incoming party invitation does -
+   * ask (the original's prompt), refuse it or accept it on its own. Kept
+   * across sessions.
+   */
+  partyReply: PartyReply = loadPartyReply();
   partyWindowEnabled = false;
 
   // ---- guild --------------------------------------------------------------
@@ -284,6 +300,7 @@ export const Social = new (class _Social {
       whisperHistory: observable.shallow,
       partyMembers: observable,
       partyRequest: observable,
+      partyReply: observable,
       partyWindowEnabled: observable,
       myGuild: observable,
       guildMembers: observable,
@@ -677,6 +694,11 @@ export const Social = new (class _Social {
     }
 
     const local = localCommandOf(text);
+    if (local?.ui === 'partyReply') {
+      this.remember(this.chatHistory, text);
+      this.setPartyReply(text.trim().split(/\s+/)[1]);
+      return true;
+    }
     if (local?.ui) {
       // Mu La Ronda: /comandos and /ranking open our own windows.
       openRondaPanel(local.ui);
@@ -839,6 +861,32 @@ export const Social = new (class _Social {
     packet.TargetPlayerId = target.netId;
     Store.sendToGS(packet.buffer);
     this.systemMessage(t('party.invitationSent', { name: target.name }));
+  }
+
+  /** `/re`, `/re on`, `/re off`, `/re auto`. */
+  setPartyReply(arg: string | undefined): void {
+    const mode = arg?.toLowerCase();
+    if (mode !== 'on' && mode !== 'off' && mode !== 'auto') {
+      this.systemMessage(t('party.reply.status', { mode: this.partyReply }));
+      return;
+    }
+    runInAction(() => {
+      this.partyReply = mode;
+    });
+    LocalStorage.save(PARTY_REPLY_KEY, mode);
+    Store.addNotification(t(`party.reply.${mode}`), 'info');
+  }
+
+  /** An invitation just arrived: answer it here unless `/re` says to ask. */
+  autoAnswerParty(): void {
+    const request = this.partyRequest;
+    if (!request || this.partyReply === 'on') return;
+
+    const accept = this.partyReply === 'auto';
+    this.partyRespond(accept);
+    if (accept) {
+      Store.addNotification(t('party.reply.joined', { name: request.requesterName }), 'info');
+    }
   }
 
   /** The `CPartyMsgBoxLayout` answer. */
