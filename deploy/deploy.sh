@@ -69,5 +69,8 @@ echo "▶ Levantando servicios"
 # Proxy y registro corren el codigo montado: reiniciarlos para que tomen los cambios.
 "${COMPOSE[@]}" restart proxy register
 
+echo "▶ Configuracion del juego"
+bash deploy/apply-config.sh
+
 docker image prune -f >/dev/null
 echo "✔ Listo: https://play.$DOMAIN/online"

@@ -13,3 +13,6 @@ dist-register
 public/**/*.gz
 Data/**/*.gz
 Data-v097d/**/*.gz
+
+# Estado local de deploy/apply-config.sh en el VPS.
+.deploy-state/
