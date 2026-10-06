@@ -1,6 +1,6 @@
 # Mu La Ronda - sitios para el nginx del host (convive con el de Pterodactyl).
 # Lo instala deploy/setup-nginx.sh reemplazando ${DOMAIN}, ${APP_DIR},
-# ${PROXY_PORT} y ${ADMIN_PORT}; despues certbot le agrega el HTTPS.
+# ${PROXY_PORT}, ${ADMIN_PORT}, ${REGISTER_PORT} y ${MARKETPLACE_PORT}; despues certbot le agrega el HTTPS.
 
 map $http_upgrade $mu_connection_upgrade {
     default upgrade;
@@ -39,6 +39,16 @@ server {
     location /Data/ {
         add_header Access-Control-Allow-Origin "*";
         try_files $uri =404;
+    }
+
+    # Mercado (servicio marketplace). El cliente lo llama relativo porque el
+    # juego se sirve desde este mismo dominio.
+    location /api/market/ {
+        proxy_pass http://127.0.0.1:${MARKETPLACE_PORT};
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        client_max_body_size 16k;
     }
 
     location / {

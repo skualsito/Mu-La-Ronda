@@ -34,8 +34,12 @@ services:
       interval: 5s
       retries: 20
 
+  # OpenMU con el plugin de escrow del mercado (marketplace/openmu): se compila
+  # en el VPS desde un commit fijo de OpenMU con esos archivos encima.
   openmu:
-    image: munique/openmu:${OPENMU_TAG:-latest}
+    image: mu-la-ronda/openmu-escrow:local
+    build:
+      context: ../marketplace/openmu
     restart: unless-stopped
     working_dir: /app/
     environment:
@@ -45,6 +49,8 @@ services:
       ASPNETCORE_URLS: http://+:8080
       OPENMU_ADMIN_USER: ${OPENMU_ADMIN_USER:?falta OPENMU_ADMIN_USER en deploy/.env}
       OPENMU_ADMIN_PASSWORD: ${OPENMU_ADMIN_PASSWORD:?falta OPENMU_ADMIN_PASSWORD en deploy/.env}
+      # El mismo que el servicio del mercado: firma los tokens que el plugin acepta.
+      MARKETPLACE_ESCROW_SECRET: ${MARKETPLACE_ESCROW_SECRET:?falta MARKETPLACE_ESCROW_SECRET en deploy/.env}
     ports:
       - "127.0.0.1:${ADMIN_PORT:-8090}:8080"
       - "127.0.0.1:44405:44405"
@@ -102,7 +108,33 @@ services:
       database:
         condition: service_healthy
 
+  # Mercado (<DOMAIN>/api/market). Sabe quien llama preguntandole al proxy
+  # (presence) quien se logueo en ese socket, y lee las cajas de escrow en la
+  # base de OpenMU; el item lo mueve el plugin del game server.
+  marketplace:
+    image: oven/bun:1.2-slim
+    restart: unless-stopped
+    network_mode: host
+    working_dir: /app
+    command: ["bun", "run", "marketplace/server/main.ts"]
+    environment:
+      MARKETPLACE_API_HOST: 127.0.0.1
+      MARKETPLACE_API_PORT: ${MARKETPLACE_PORT:-3300}
+      MARKETPLACE_ESCROW_SECRET: ${MARKETPLACE_ESCROW_SECRET}
+      MARKETPLACE_TICKET_SECRET: ${MARKETPLACE_TICKET_SECRET:?falta MARKETPLACE_TICKET_SECRET en deploy/.env}
+      MARKETPLACE_CORS_ORIGIN: https://${DOMAIN},https://play.${DOMAIN}
+      MARKETPLACE_DB: /data/market.sqlite
+      DATABASE_URL: postgres://postgres:${DB_PASSWORD}@127.0.0.1:${DB_PORT:-5432}/openmu
+      PRESENCE_URL: http://127.0.0.1:${PRESENCE_PORT:-3001}
+    volumes:
+      - ..:/app:ro
+      - marketdata:/data
+    depends_on:
+      database:
+        condition: service_healthy
+
 volumes:
+  marketdata:
   dbdata:
   adminpanel-keys:
   proxydata:

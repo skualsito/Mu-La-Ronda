@@ -15,6 +15,7 @@ set -a; source "$APP_DIR/deploy/.env"; set +a
 PROXY_PORT="${PROXY_PORT:-3000}"
 ADMIN_PORT="${ADMIN_PORT:-8090}"
 REGISTER_PORT="${REGISTER_PORT:-3100}"
+MARKETPLACE_PORT="${MARKETPLACE_PORT:-3300}"
 
 if [[ -d /etc/nginx/sites-available ]]; then
   TARGET=/etc/nginx/sites-available/mu-la-ronda.conf
@@ -30,6 +31,7 @@ sed -e "s|\${DOMAIN}|$DOMAIN|g" \
     -e "s|\${PROXY_PORT}|$PROXY_PORT|g" \
     -e "s|\${ADMIN_PORT}|$ADMIN_PORT|g" \
     -e "s|\${REGISTER_PORT}|$REGISTER_PORT|g" \
+    -e "s|\${MARKETPLACE_PORT}|$MARKETPLACE_PORT|g" \
     "$APP_DIR/deploy/nginx/mu-la-ronda.conf.template" > "$TARGET"
 [[ -n "$LINK" ]] && ln -sf "$TARGET" "$LINK"
 

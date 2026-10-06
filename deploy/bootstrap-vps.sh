@@ -21,7 +21,7 @@ docker compose version >/dev/null || { echo "Falta el plugin docker compose: apt
 command -v nginx >/dev/null || { echo "No encuentro nginx en el host" >&2; exit 1; }
 
 echo "▶ Chequeando puertos que usa MU (deben estar libres)"
-for port in 3000 3001 3100 5432 8090 44405 44406 55901 55902 55903 55904 55905 55906 55980; do
+for port in 3000 3001 3100 3300 5432 8090 44405 44406 55901 55902 55903 55904 55905 55906 55980; do
   if ss -ltnH "( sport = :$port )" | grep -q .; then
     echo "  ✖ $port ocupado:"; ss -ltnp "( sport = :$port )"
     BUSY=1

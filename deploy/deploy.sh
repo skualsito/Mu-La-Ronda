@@ -27,6 +27,15 @@ if [[ "${1:-}" != "--updated" ]]; then
 fi
 echo "  commit: $(git log --oneline -1)"
 
+# Secretos que se agregaron despues de crear el .env: se generan una vez.
+for key in MARKETPLACE_ESCROW_SECRET MARKETPLACE_TICKET_SECRET; do
+  if ! grep -q "^$key=." deploy/.env; then
+    sed -i "/^$key=/d" deploy/.env
+    echo "$key=$(openssl rand -hex 32)" >> deploy/.env
+    echo "  generado $key en deploy/.env"
+  fi
+done
+
 set -a; source deploy/.env; set +a
 
 echo "▶ Compilando cliente"
@@ -56,7 +65,7 @@ COMPOSE=(docker compose -f deploy/docker-compose.yml --env-file deploy/.env)
 echo "▶ Bajando imagenes"
 # De a una y con reintentos: `compose pull` en paralelo falla en Docker 29
 # con "unable to lease content: lease does not exist".
-for image in $("${COMPOSE[@]}" config --images | sort -u); do
+for image in $("${COMPOSE[@]}" config --images | grep -v '^mu-la-ronda/' | sort -u); do
   for attempt in 1 2 3; do
     docker pull -q "$image" && break
     [[ $attempt == 3 ]] && { echo "No se pudo bajar $image" >&2; exit 1; }
@@ -64,10 +73,15 @@ for image in $("${COMPOSE[@]}" config --images | sort -u); do
   done
 done
 
+echo "▶ Compilando OpenMU con el plugin del mercado"
+# La primera vez tarda (baja OpenMU y compila .NET); despues usa la cache de
+# docker y solo recompila si cambia marketplace/openmu.
+"${COMPOSE[@]}" build openmu
+
 echo "▶ Levantando servicios"
 "${COMPOSE[@]}" up -d --pull never --remove-orphans
 # Proxy y registro corren el codigo montado: reiniciarlos para que tomen los cambios.
-"${COMPOSE[@]}" restart proxy register
+"${COMPOSE[@]}" restart proxy register marketplace
 
 echo "▶ Configuracion del juego"
 bash deploy/apply-config.sh
