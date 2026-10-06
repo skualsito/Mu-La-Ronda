@@ -26,7 +26,7 @@ import {
   type KeyAction,
 } from '../../../common/keyBindings';
 import { SessionExit, type ExitKind } from '../../../common/sessionExit';
-import { t, type TextKey } from '../../../i18n';
+import { tOptions, t, type TextKey } from '../../../i18n';
 import { EN_TEXT } from '../../../i18n/recipes';
 import { applyTierPreset, type TierPreset } from './presets';
 import {
@@ -544,7 +544,7 @@ export const OptionsWindow = observer(() => {
           />
         ))}
         <OptionsButton
-          label={t('common.close')}
+          label={tOptions('common.close')}
           width={CLOSE_WIDTH}
           onClick={() => {
             Store.optionsEnabled = false;

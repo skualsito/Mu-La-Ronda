@@ -1,7 +1,7 @@
 import { observer } from 'mobx-react-lite';
 import { MuSpriteFrame } from '../muSprite';
 import { uiClick } from '../../../libs/sfx';
-import { t } from '../../../i18n';
+import { tOptions, t } from '../../../i18n';
 import { CATEGORIES, type Page } from './catalogue';
 import { FitText } from './controls';
 
@@ -33,7 +33,7 @@ export const SearchField = ({
       className="options-search-input"
       type="text"
       value={value}
-      placeholder={t('search.placeholder')}
+      placeholder={tOptions('search.placeholder')}
       spellCheck={false}
       onChange={e => onChange(e.target.value)}
       onKeyDown={e => {
@@ -47,7 +47,7 @@ export const SearchField = ({
     {value && (
       <span
         className="options-search-clear"
-        title={t('common.close')}
+        title={tOptions('common.close')}
         onClick={uiClick(() => onChange(''))}
       >
         ×

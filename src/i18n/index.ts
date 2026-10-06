@@ -24,6 +24,21 @@ const LANGUAGE_KEY = 'mu_language';
 /** The one language that is always complete - the fallback for every other. */
 const FALLBACK_CODE = 'en';
 
+/**
+ * Mu La Ronda: the game reads in English, but the Options window (and the key
+ * binding names and exit prompts it shows) always reads in Spanish, whatever
+ * language is picked. Keys under these prefixes resolve from that layer first.
+ */
+const OPTIONS_UI_CODE = 'es';
+const OPTIONS_UI_PREFIXES = ['options.', 'keys.', 'exit.'] as const;
+
+/**
+ * Mu La Ronda: English is the default for everyone, regardless of the
+ * browser's language. Bumping this re-applies it once to players who had
+ * another language saved.
+ */
+const DEFAULT_LANGUAGE_KEY = 'mlr_default_language_v1';
+
 type Params = Record<string, string | number>;
 
 type Listener = (code: string) => void;
@@ -68,6 +83,13 @@ function match(
 }
 
 function load(layers: readonly LanguageLayer[]): string {
+  // Mu La Ronda: once per player, start them on English.
+  if (!LocalStorage.load(DEFAULT_LANGUAGE_KEY)) {
+    LocalStorage.save(DEFAULT_LANGUAGE_KEY, '1');
+    LocalStorage.save(LANGUAGE_KEY, FALLBACK_CODE);
+    return FALLBACK_CODE;
+  }
+
   const stored = LocalStorage.load(LANGUAGE_KEY);
   if (stored && layers.some(l => l.code === stored)) return stored;
 
@@ -100,6 +122,7 @@ class I18n {
     makeAutoObservable<this, 'layers'>(this, {
       layers: false,
       t: false,
+      tOptions: false,
       translated: false,
     });
 
@@ -164,8 +187,22 @@ class I18n {
    * kept from the original client are spliced by their own call sites.
    */
   t(key: TextKey, params?: Params): string {
-    const line = this.current.strings[key] ?? EN_TEXT[key];
+    const layer = OPTIONS_UI_PREFIXES.some(prefix => key.startsWith(prefix))
+      ? this.optionsLayer
+      : this.current;
+    const line = layer.strings[key] ?? EN_TEXT[key];
     return fill(line, params);
+  }
+
+  /** Any key in the Options window's language (shared keys like `common.close`). */
+  tOptions(key: TextKey, params?: Params): string {
+    const line = this.optionsLayer.strings[key] ?? EN_TEXT[key];
+    return fill(line, params);
+  }
+
+  /** The layer the Options window reads from (Mu La Ronda: always Spanish). */
+  get optionsLayer(): LanguageLayer {
+    return this.layers.find(l => l.code === OPTIONS_UI_CODE) ?? this.current;
   }
 
   /** Has this language actually translated the key, or is English showing? */
@@ -245,6 +282,11 @@ if (import.meta.env?.DEV) {
  */
 export function t(key: TextKey, params?: Params): string {
   return i18n.t(key, params);
+}
+
+/** Mu La Ronda: a shared key, but in the Options window's language. */
+export function tOptions(key: TextKey, params?: Params): string {
+  return i18n.tOptions(key, params);
 }
 
 /**

@@ -69,7 +69,7 @@ import {
   RENDER_DISTANCE_MAX,
   renderDistanceRanges,
 } from '../../../common/renderDistance';
-import { t, type TextKey } from '../../../i18n';
+import { tOptions, t, type TextKey } from '../../../i18n';
 import {
   NEED_POST,
   NEED_TIER,
@@ -163,16 +163,16 @@ export function helpKeyOf(row: Row): TextKey {
   return row.kind === 'key' ? 'options.keyHint' : row.helpKey;
 }
 
-const off = (value: number) => (value === 0 ? t('common.off') : `${value}`);
+const off = (value: number) => (value === 0 ? tOptions('common.off') : `${value}`);
 const plain = (value: number) => `${value}`;
 const percent = (value: number) => `${value}%`;
 const named =
   (keys: readonly TextKey[] | Record<number, TextKey>) => (value: number) => {
     const key = (keys as Record<number, TextKey>)[value];
-    return key ? t(key) : `${value}`;
+    return key ? tOptions(key) : `${value}`;
   };
 const times = (steps: readonly number[]) => (value: number) =>
-  steps[value] > 1 ? `${steps[value]}x` : t('common.off');
+  steps[value] > 1 ? `${steps[value]}x` : tOptions('common.off');
 
 const toggle = (
   key: BoolKey,
@@ -330,7 +330,7 @@ export const CATEGORIES: Category[] = [
               slider(
                 'lootZen',
                 LOOT_ZEN_MAX,
-                v => (v === 0 ? t('common.off') : lootZenThreshold(v).toLocaleString()),
+                v => (v === 0 ? tOptions('common.off') : lootZenThreshold(v).toLocaleString()),
                 { indent: true, needs: [needOn('lootFilter')] }
               ),
             ],
@@ -474,7 +474,7 @@ export const CATEGORIES: Category[] = [
               slider('renderScale', RENDER_SCALE_STEP_MAX, v =>
                 `${Math.round(renderScaleForStep(v) * 100)}%`
               ),
-              choice('upscale', 1, v => (v > 0 ? 'FSR' : t('common.off')), {
+              choice('upscale', 1, v => (v > 0 ? 'FSR' : tOptions('common.off')), {
                 indent: true,
                 needs: [{ kind: 'renderScaled' }],
               }),
