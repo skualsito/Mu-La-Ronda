@@ -28,6 +28,7 @@ import {
   SelectCharacterPacket,
   WarpCommandRequestPacket,
   WalkRequestPacket,
+  InstantMoveRequestPacket,
   TalkToNpcRequestPacket,
   CloseNpcRequestPacket,
   MuHelperStatusChangeRequestPacket,
@@ -1963,6 +1964,14 @@ export const Store = new (class _Store {
       at: performance.now(),
     };
     this.sendToGS(packet.buffer);
+
+    // Mu La Ronda: OpenMU only turns the hero on a step-less walk
+    // (CharacterWalkBaseHandlerPlugIn) - its walker keeps going. An instant
+    // move to the same tile is what stops it there (PlayerMovement.MoveAsync).
+    const stop = InstantMoveRequestPacket.createPacket();
+    stop.TargetX = packet.SourceX;
+    stop.TargetY = packet.SourceY;
+    this.sendToGS(stop.buffer);
   }
 
   // --- NPC shop & repair (CNewUINPCShop, NewUIMyInventory repair mode) -------

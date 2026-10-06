@@ -169,15 +169,15 @@ const SPIRIT_SWAY = { amplitude: 0.35, cycles: 1.5, speed: 8 };
 /** The darker spine down the middle of each body: the original's width-20 ribbon beside the width-80 one. */
 const SPIRIT_CORE_WIDTH = 0.4;
 /** The body's own coverage, lighter than the core so the spine reads through it. */
-const SPIRIT_FLESH: RGB = [0.8, 0.8, 0.8];
+const SPIRIT_FLESH: RGB = [0.45, 0.45, 0.45];
 /** The spine's coverage over JointLaser01's soft centre line (it peaks at 0.36). */
-const SPIRIT_SPINE: RGB = [2.2, 2.2, 2.2];
+const SPIRIT_SPINE: RGB = [1.4, 1.4, 1.4];
 /**
  * Caps on the body's and spine's coverage gain. Night maps lift the dark gain a long way, which
  * saturated whole bodies to black and let a few casts black out the screen.
  */
-const SPIRIT_FLESH_MAX = 1;
-const SPIRIT_SPINE_MAX = 2.2;
+const SPIRIT_FLESH_MAX = 0.55;
+const SPIRIT_SPINE_MAX = 1.4;
 /** Two thin wisps braiding round each body, half a wave apart, swinging wider than the body sways. */
 const SPIRIT_WISP_WIDTH = 0.14;
 const SPIRIT_WISPS = [0, Math.PI].map(phase => ({ amplitude: 0.6, cycles: 2.2, speed: 11, phase }));
@@ -11182,7 +11182,8 @@ export const SKILL_VISUALS: Partial<Record<number, SkillVisual>> = {
         const head = at.clone();
         const follow: PointSource = out => out.copyFrom(head);
         const velocity = SPIRIT_SPEED * (0.85 + Math.random() * 0.3);
-        effects.spawn('particles', c.scene, at, { recipe: SPIRIT_SMOKE, rate: 12, seconds, follow });
+        // Mu La Ronda: no dark smoke along the path - with a fast wizard it filled the screen.
+        void follow;
         return { velocity, heading, seek, track: h => head.copyFrom(h) };
       };
       // One swarm per wave: its spirits' bodies, spines and skulls share a handful of meshes.
@@ -11197,13 +11198,9 @@ export const SKILL_VISUALS: Partial<Record<number, SkillVisual>> = {
       }
       // The shadow they bring: smoke closing in from the edge of the view, lighter on the caster's
       // own screen than on anyone else's near the cast.
-      const mine = c.caster === storeRef().world?.playerEntity;
-      if (!overlapping) effects.spawn('shroud', c.scene, at, {
-        seconds,
-        fadeTail,
-        follow: followEntity(c.caster, 0.9),
-        ...(mine ? SHROUD_OWN : SHROUD_OTHERS),
-      });
+      // Mu La Ronda: no shroud closing in from the edge of the view either: it
+      // is what turned the screen black. Only the spirits stay.
+      void overlapping;
     }, 1),
   },
   /**
@@ -12134,7 +12131,8 @@ function keepLook(scene: Scene, entity: Entity, key: number, look: BuffLook | nu
     follow: out => entityPos(entity, 0, out),
     bone: (mu, out) => bonePos(entity, mu, out),
     boneCount: () => Math.max(0, (entity.modelObject?.gltf?.skeleton?.bones.length ?? 0) - 1),
-    until: () => entityGone(entity),
+    // Mu La Ronda: a body taken out of the world is gone too, whatever its model says.
+    until: () => entityGone(entity) || storeRef().world?.has(entity) === false,
   });
   byKey.set(key, handle);
 }

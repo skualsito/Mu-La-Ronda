@@ -289,6 +289,7 @@ import {
   playSummonArrival,
   playTargetedSkillVisual,
   setBuffVisual,
+  clearBuffVisuals,
 } from './common/skillVisuals';
 import { monsterModelTypeOf, playerPlaySpeed } from './common/playSpeed';
 import { TRAP_MODEL_TABLE } from './common/npcs/trapNpc';
@@ -1246,6 +1247,10 @@ function removeNetObject(world: World, netId: number) {
   // The index holds the newest entity for an id; a stale one that shared it
   // surfaces again once the newer entry is gone, so loop until none is left.
   for (let entity = world.getByNetId(netId); entity; entity = world.getByNetId(netId)) {
+    // Mu La Ronda: its buff looks go with it. They follow the entity until it
+    // reads as gone, and a body removed here never did - the Elf Soldier glow
+    // and every other aura stayed behind where the body had stood.
+    clearBuffVisuals(entity);
     world.remove(entity);
     entity.onDispose?.();
     entity.modelObject?.dispose();
@@ -1587,6 +1592,16 @@ EventBus.on('ObjectMoved', packet => {
   const obj = world.getByNetId(maskedId);
   if (!obj) return;
   if (isDeadMonster(obj)) return;
+
+  // Mu La Ronda: the echo of our own stop (Store.sendWalkStop) lands on the
+  // tile the hero already stands on; snapping him onto its corner would only
+  // make him twitch.
+  if (
+    obj.localPlayer &&
+    Math.hypot(obj.transform.pos.x - p.PositionX, obj.transform.pos.z - p.PositionY) < 1
+  ) {
+    return;
+  }
 
   if (obj.localPlayer) {
     traceHeroInstantMove(

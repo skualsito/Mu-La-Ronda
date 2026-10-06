@@ -269,6 +269,10 @@ export const AttackSystem: ISystemFactory = world => {
         pathfinding.path = null;
         pathfinding.from = { x: ~~playerPos.x, y: ~~playerPos.z };
         pathfinding.to = { x: ~~playerPos.x, y: ~~playerPos.z };
+        // Mu La Ronda: park the server's walker here too (`LetHeroStop`, as a
+        // cast does). Left walking the rest of its path it drifted past the
+        // 5-tile tolerance while we stood hitting, and rubber-banded the hero.
+        Store.sendWalkStop(playerPos.x, playerPos.z, playerEntity.transform.rot.y);
       }
 
       if (attackCooldown > 0 || !combat.inputGateOpen) return;
