@@ -6,6 +6,7 @@ namespace MUnique.OpenMU.GameLogic.Resets;
 
 using System.Collections.Concurrent;
 using System.Runtime.InteropServices;
+using System.Threading;
 using MUnique.OpenMU.GameLogic.PlugIns.ChatCommands;
 using MUnique.OpenMU.PlugIns;
 
