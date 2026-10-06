@@ -11,9 +11,11 @@ import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 export const USER = process.env.MLR_ADMIN_USER || 'admin';
 const PASSWORD = process.env.MLR_ADMIN_PASSWORD || '';
 
-const SECRET: Buffer = process.env.MLR_ADMIN_SECRET
-  ? Buffer.from(process.env.MLR_ADMIN_SECRET)
-  : randomBytes(32);
+// Strings and TextEncoder bytes only: the Buffer type of bun-types doesn't
+// type-check against TypeScript's Uint8Array, which crypto's typings want.
+const bytes = (text: string): Uint8Array => new TextEncoder().encode(text);
+
+const SECRET = process.env.MLR_ADMIN_SECRET || randomBytes(32).toString('hex');
 
 if (!process.env.MLR_ADMIN_SECRET) {
   console.warn('admin: MLR_ADMIN_SECRET no esta definido; las sesiones se pierden al reiniciar.');
@@ -27,8 +29,8 @@ export function passwordConfigured(): boolean {
 }
 
 function safeEqual(a: string, b: string): boolean {
-  const left = createHmac('sha256', SECRET).update(a).digest();
-  const right = createHmac('sha256', SECRET).update(b).digest();
+  const left = bytes(createHmac('sha256', SECRET).update(a).digest('hex'));
+  const right = bytes(createHmac('sha256', SECRET).update(b).digest('hex'));
   return timingSafeEqual(left, right);
 }
 
@@ -65,7 +67,7 @@ export function sessionUser(req: Request): string | null {
 
   const payload = Buffer.from(encoded, 'base64url').toString();
   const expected = sign(payload);
-  if (expected.length !== mac.length || !timingSafeEqual(Buffer.from(expected), Buffer.from(mac))) {
+  if (expected.length !== mac.length || !timingSafeEqual(bytes(expected), bytes(mac))) {
     return null;
   }
 
