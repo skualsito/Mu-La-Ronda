@@ -2,7 +2,7 @@
 # Agrega los sitios de Mu La Ronda al nginx del host y saca los certificados.
 # Correr como root una vez, y de nuevo si cambia el dominio:
 #
-#   bash /opt/mu-la-ronda/deploy/setup-nginx.sh
+#   sudo bash /opt/mu-la-ronda/deploy/setup-nginx.sh
 #
 # No toca la config de Pterodactyl: escribe un archivo aparte y valida con
 # `nginx -t` antes de recargar.
@@ -36,6 +36,12 @@ systemctl reload nginx
 
 if ! command -v certbot >/dev/null; then
   apt-get install -y certbot python3-certbot-nginx
+fi
+
+if command -v ufw >/dev/null && ufw status | grep -q "Status: active"; then
+  echo "▶ ufw activo: abriendo 80 y 443"
+  ufw allow 80/tcp
+  ufw allow 443/tcp
 fi
 
 echo "▶ Certificados HTTPS"

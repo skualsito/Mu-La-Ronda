@@ -2,7 +2,7 @@
 # Preparacion inicial del VPS (Ubuntu, con Pterodactyl ya instalado). Correr
 # UNA vez como root:
 #
-#   curl -fsSL https://raw.githubusercontent.com/skualsito/Mu-La-Ronda/main/deploy/bootstrap-vps.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/skualsito/Mu-La-Ronda/main/deploy/bootstrap-vps.sh | sudo bash
 #
 # Crea el usuario `deploy` (el que usa GitHub Actions), clona el repo en
 # /opt/mu-la-ronda y genera deploy/.env. No toca el firewall ni la config de
@@ -65,9 +65,9 @@ cat <<EOF
 Siguientes pasos:
   1. Pegar la clave publica de GitHub Actions en /home/$DEPLOY_USER/.ssh/authorized_keys
   2. Revisar $APP_DIR/deploy/.env (dominio y passwords ya generados):
-       cat $APP_DIR/deploy/.env
+       sudo cat $APP_DIR/deploy/.env
   3. Primer deploy a mano:
-       su - $DEPLOY_USER -c "bash $APP_DIR/deploy/deploy.sh"
+       sudo -u $DEPLOY_USER bash $APP_DIR/deploy/deploy.sh
   4. Sitios en nginx + HTTPS:
-       bash $APP_DIR/deploy/setup-nginx.sh
+       sudo bash $APP_DIR/deploy/setup-nginx.sh
 EOF
