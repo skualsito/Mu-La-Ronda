@@ -1,0 +1,31 @@
+{
+	email {$ACME_EMAIL}
+}
+
+# Cliente web. Es una SPA (/online, /offline), asi que toda ruta desconocida
+# cae en index.html. Los .gz los genera `bun run build` (compress-assets).
+play.{$DOMAIN} {
+	root * /srv/play
+	encode zstd gzip
+
+	@nocache path / /index.html /serverlist.md /sw.js /manifest.webmanifest
+	header @nocache Cache-Control "no-cache"
+
+	# El registro (register.<DOMAIN>, mas adelante) toma sprites de Data/.
+	header /Data/* Access-Control-Allow-Origin "*"
+
+	try_files {path} /index.html
+	file_server {
+		precompressed gzip
+	}
+}
+
+# Puente WebSocket -> TCP hacia OpenMU.
+ws.{$DOMAIN} {
+	reverse_proxy 127.0.0.1:3000
+}
+
+# Panel de administracion de OpenMU (tiene su propio login: OPENMU_ADMIN_*).
+admin.{$DOMAIN} {
+	reverse_proxy 127.0.0.1:8080
+}

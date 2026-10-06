@@ -1,0 +1,92 @@
+# Mu La Ronda - stack completo en un solo VPS.
+#
+#   Internet ──443──> caddy ──┬── play.<DOMAIN>   cliente estatico (dist/)
+#                             ├── ws.<DOMAIN>     proxy WS<->TCP (127.0.0.1:3000)
+#                             └── admin.<DOMAIN>  panel de OpenMU (127.0.0.1:8080)
+#
+#   proxy ──TCP──> openmu (connect 127.0.0.1:44405, game 127.0.0.1:55901-55906)
+#
+# Los puertos del juego solo escuchan en loopback: todo jugador entra por el
+# proxy, asi que no hace falta exponerlos. Caddy y el proxy usan la red del host
+# para llegar a esos puertos en 127.0.0.1, que es lo que el cliente espera
+# (CONVENTION_CS_HOST en src/common/serverServices.ts).
+
+name: mu-la-ronda
+
+services:
+  database:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?falta DB_PASSWORD en deploy/.env}
+      POSTGRES_DB: openmu
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      retries: 20
+
+  openmu:
+    image: munique/openmu:${OPENMU_TAG:-latest}
+    restart: unless-stopped
+    working_dir: /app/
+    environment:
+      DB_HOST: database
+      DB_ADMIN_USER: postgres
+      DB_ADMIN_PW: ${DB_PASSWORD}
+      ASPNETCORE_URLS: http://+:8080
+      OPENMU_ADMIN_USER: ${OPENMU_ADMIN_USER:?falta OPENMU_ADMIN_USER en deploy/.env}
+      OPENMU_ADMIN_PASSWORD: ${OPENMU_ADMIN_PASSWORD:?falta OPENMU_ADMIN_PASSWORD en deploy/.env}
+    ports:
+      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:44405:44405"
+      - "127.0.0.1:44406:44406"
+      - "127.0.0.1:55901-55906:55901-55906"
+      - "127.0.0.1:55980:55980"
+    volumes:
+      - adminpanel-keys:/app/data-protection-keys
+    depends_on:
+      database:
+        condition: service_healthy
+
+  proxy:
+    image: oven/bun:1.2-slim
+    restart: unless-stopped
+    network_mode: host
+    working_dir: /app
+    # node_modules lo deja el build del cliente (deploy.sh) en el mismo repo.
+    command: ["bun", "run", "proxy/main.ts"]
+    environment:
+      HOSTNAME: 127.0.0.1
+      PORT: "3000"
+      # Sin esto el proxy es un relay abierto a cualquier host.
+      ALLOW_TARGETS: "127.0.0.1:44405,127.0.0.1:55901,127.0.0.1:55902,127.0.0.1:55903,127.0.0.1:55904,127.0.0.1:55905,127.0.0.1:55906"
+      TRACK_DB_PATH: /data/track.db
+      LOG_PACKETS: ${LOG_PACKETS:-off}
+    volumes:
+      - ..:/app:ro
+      - proxydata:/data
+    depends_on:
+      - openmu
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      DOMAIN: ${DOMAIN:?falta DOMAIN en deploy/.env}
+      ACME_EMAIL: ${ACME_EMAIL:-}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ../dist:/srv/play:ro
+      - caddydata:/data
+      - caddyconfig:/config
+
+volumes:
+  dbdata:
+  adminpanel-keys:
+  proxydata:
+  caddydata:
+  caddyconfig:

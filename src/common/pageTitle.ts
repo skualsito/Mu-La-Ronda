@@ -12,7 +12,7 @@ import { ServerConfig } from './serverConfig';
  */
 
 /** Also the installed app's name, in `public/manifest.webmanifest`. */
-export const CLIENT_NAME = 'OpenMUCB';
+export const CLIENT_NAME = 'Mu La Ronda';
 
 /** A published name is capped at 60 chars; a typed one is not. */
 const MAX_SERVER_NAME = 60;

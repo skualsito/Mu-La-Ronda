@@ -1,0 +1,38 @@
+name: Deploy staging
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Un deploy a la vez; si llega otro push, el que esta en curso termina primero.
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: staging
+    timeout-minutes: 45
+    steps:
+      - name: Configurar SSH
+        env:
+          SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
+          SSH_HOST: ${{ secrets.STAGING_HOST }}
+          SSH_PORT: ${{ secrets.STAGING_PORT || '22' }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          ssh-keyscan -p "$SSH_PORT" -H "$SSH_HOST" >> ~/.ssh/known_hosts
+
+      - name: Desplegar
+        env:
+          SSH_HOST: ${{ secrets.STAGING_HOST }}
+          SSH_PORT: ${{ secrets.STAGING_PORT || '22' }}
+          SSH_USER: ${{ secrets.STAGING_USER }}
+          APP_DIR: ${{ vars.STAGING_APP_DIR || '/opt/mu-la-ronda' }}
+        run: |
+          ssh -i ~/.ssh/id_deploy -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" \
+            "DEPLOY_BRANCH=${GITHUB_REF_NAME} bash '$APP_DIR/deploy/deploy.sh'"
