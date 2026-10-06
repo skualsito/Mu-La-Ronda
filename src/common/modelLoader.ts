@@ -447,6 +447,12 @@ export type LoadedModel = {
  */
 const containersCache = new Map<string, Promise<AssetContainer>>();
 
+/** The settled entries of `containersCache`, for the unused-model sweep. */
+const resolvedContainers = new Map<string, AssetContainer>();
+
+/** `performance.now()` of each path's last `loadContainer` call. */
+const containerLastAsked = new Map<string, number>();
+
 /**
  * Set to false to bypass the cache entirely and give every request its own
  * freshly parsed, non-cloned copy - what the loader did before the container
@@ -608,11 +614,16 @@ function loadContainer(
   fileName: string,
   characterAsset: boolean
 ): Promise<AssetContainer> {
+  // Mu La Ronda: when it was last asked for, so `evictUnusedContainers` never
+  // drops a model a loading entity is about to clone.
+  containerLastAsked.set(filePath, performance.now());
+
   const cached = containersCache.get(filePath);
   if (cached) return cached;
 
   const pending = loadContainerBytes(filePath, fileName, scene)
     .then(container => {
+      resolvedContainers.set(filePath, container);
       prepareMeshes(
         container.meshes,
         container.skeletons,
@@ -816,6 +827,8 @@ export function evictContainers(pathPrefix: string): void {
   for (const [key, pending] of containersCache) {
     if (!key.includes(pathPrefix)) continue;
     containersCache.delete(key);
+    resolvedContainers.delete(key);
+    containerLastAsked.delete(key);
     // `AssetContainer.dispose` disposes the container's textures, so the
     // diffuse textures parsed out of this file die with it. Dropping them
     // here is what makes the map's next visit re-parse the GLB and keep the
@@ -827,4 +840,63 @@ export function evictContainers(pathPrefix: string): void {
       () => {}
     );
   }
+}
+
+/** A model asked for this recently may be about to be cloned: keep it. */
+const RECENTLY_ASKED_MS = 10000;
+
+/**
+ * True while anything in the scene still draws from this container: a clone
+ * shares its geometry (`Geometry.meshes` lists it) and an instance hangs off
+ * the source mesh. A container with no geometry at all (`player.glb`, a bare
+ * rig) gives nothing to judge by and counts as used.
+ */
+function containerInUse(container: AssetContainer): boolean {
+  let judged = false;
+
+  for (const mesh of container.meshes) {
+    const source = mesh as AbstractMesh & {
+      geometry?: { meshes: AbstractMesh[] } | null;
+      instances?: unknown[];
+    };
+
+    if (source.instances?.length) return true;
+
+    const geometry = source.geometry;
+    if (!geometry) continue;
+
+    judged = true;
+    if (geometry.meshes.some(user => user !== mesh)) return true;
+  }
+
+  return !judged;
+}
+
+/**
+ * Mu La Ronda: drop every cached model nothing in the scene uses any more -
+ * the shared folders too (`Monster/`, `Npc/`, `Player/`, `Item/`), which
+ * `evictContainers` leaves alone. Run on every map / screen change, after the
+ * old map's entities are gone, so the monsters of the map just left do not
+ * stay in memory for the rest of the session. A model needed again is parsed
+ * again (the file itself comes back from the browser's HTTP cache).
+ *
+ * Returns how many containers were released.
+ */
+export function evictUnusedContainers(): number {
+  const now = performance.now();
+  let released = 0;
+
+  for (const [key, container] of resolvedContainers) {
+    if (now - (containerLastAsked.get(key) ?? 0) < RECENTLY_ASKED_MS) continue;
+    if (containerInUse(container)) continue;
+
+    containersCache.delete(key);
+    resolvedContainers.delete(key);
+    containerLastAsked.delete(key);
+    texturesCache.delete(key);
+    container.dispose();
+    released++;
+  }
+
+  return released;
 }

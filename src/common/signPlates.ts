@@ -160,6 +160,16 @@ onLanguageChanged(() => {
   textures.clear();
 });
 
+/**
+ * Mu La Ronda: free the drawn plates on a map change. They were kept for the
+ * session, so every town visited left its signs in memory; the map being
+ * entered draws its own again on demand.
+ */
+export function disposeSignPlates(): void {
+  for (const texture of textures.values()) texture.dispose();
+  textures.clear();
+}
+
 /** The untouched original, decoded once per plate and kept for the session. */
 function plateSource(key: string): Promise<ImageBitmap | null> {
   let pending = sources.get(key);

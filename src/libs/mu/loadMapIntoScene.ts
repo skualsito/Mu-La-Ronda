@@ -12,7 +12,8 @@ import {
   type PreparedTerrain,
 } from './getTerrainData';
 import { applyMapObjectFixups } from './mapObjectFixups';
-import { evictContainers } from '../../common/modelLoader';
+import { evictContainers, evictUnusedContainers } from '../../common/modelLoader';
+import { disposeSignPlates } from '../../common/signPlates';
 import { assetWorldNum } from '../../common/worldAssets';
 import { Vector3 } from '../babylon/exports';
 import { toRadians } from '../../common/utils';
@@ -218,6 +219,13 @@ function unloadMap(world: World, oldMap: ENUM_WORLD, newMap: ENUM_WORLD) {
     // `Object4/` from matching `Object14/`.
     evictContainers(`/Object${oldAssets}/`);
   }
+
+  // Mu La Ronda: every map / screen change starts clean - the models nothing
+  // uses any more (the old map's monsters, NPCs, dropped items, other
+  // players' gear) and the old town's sign plates are released.
+  disposeSignPlates();
+  const released = evictUnusedContainers();
+  if (released) console.info(`[memory] released ${released} unused models`);
 }
 
 /**
