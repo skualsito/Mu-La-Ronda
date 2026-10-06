@@ -68,6 +68,13 @@ const MESSAGES: Record<BalgassEntryKind, readonly Message[]> = {
     BLANK,
     { key: 'quest.gatekeeper.line3' },
   ],
+  reset: [
+    { key: 'quest.reset.name', color: GATEKEEPER_TITLE_COLOR, bold: true },
+    BLANK,
+    { key: 'quest.reset.line1', color: GATEKEEPER_FIRST_COLOR },
+    BLANK,
+    { key: 'quest.reset.line2' },
+  ],
 };
 
 /** Places a 640x480-stage point on the canvas, scaled like the sheets. */

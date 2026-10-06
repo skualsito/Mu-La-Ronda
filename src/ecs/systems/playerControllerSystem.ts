@@ -13,6 +13,7 @@ import { Commands } from '../../commands';
 import { teleportGate } from '../../common/teleportRules';
 import { teleportBusy } from './teleportSystem';
 import { pickGround } from '../../libs/mu/terrainPick';
+import { EventBus } from '../../libs/eventBus';
 
 const MOVE_DELAY = 0.25;
 
@@ -103,6 +104,8 @@ export const PlayerControllerSystem: ISystemFactory = world => {
     world.attackTarget = null;
     world.pickupTarget = null;
     world.talkTarget = null;
+    // The MU Helper yields to a walk of the player's own (muHelper/loop.ts).
+    EventBus.emit('heroManualMove', { x, y: z });
     // Touch only: a skill fired from the mobile pad leaves a cast standing
     // while the hero walks into range, the way a held right button does. With
     // no button to let go of, a tap on the ground is how it is called off. On
@@ -255,6 +258,7 @@ export const PlayerControllerSystem: ISystemFactory = world => {
     world.attackTarget = null;
     world.pickupTarget = null;
     world.talkTarget = null;
+    EventBus.emit('heroManualMove', { x: Math.trunc(moveTo.point.x), y: Math.trunc(moveTo.point.y) });
     // A walk of the hero's own ends the follow, the way a click does.
     Commands.stopFollowing();
 

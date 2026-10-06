@@ -177,7 +177,7 @@ async function placed(sql: Sql, storageId: string): Promise<Placed[]> {
 /** Adds an item to a storage: at `input.slot` when it is free there, else at the first free slot. */
 export async function addToStorage(sql: Sql, storageId: string, grid: Grid, input: ItemInput, fullMessage: string) {
   const [def] = await sql`
-    SELECT "Id" AS id, "Width" AS width, "Height" AS height, "Durability" AS durability,
+    SELECT "Id" AS id, "Group" AS "group", "Width" AS width, "Height" AS height, "Durability" AS durability,
            "MaximumItemLevel" AS "maxLevel", ("SkillId" IS NOT NULL) AS "canSkill"
       FROM config."ItemDefinition" WHERE "Id" = ${input.definitionId ?? ''}::uuid`;
   if (!def) throw new Error('Item inexistente');
@@ -193,7 +193,9 @@ export async function addToStorage(sql: Sql, storageId: string, grid: Grid, inpu
   if (slot === null) throw new Error(fullMessage);
 
   const level = Math.min(def.maxLevel || 15, Math.max(0, Math.trunc(Number(input.level ?? 0))));
-  const durability = input.durability !== undefined ? Math.max(0, Math.min(255, Number(input.durability))) : Math.max(1, def.durability);
+  // Potions' durability is the stack size (deploy/config/08-stacks.sql): one, unless asked.
+  const fallback = def.group === 14 && def.durability > 1 ? 1 : Math.max(1, def.durability);
+  const durability = input.durability !== undefined ? Math.max(0, Math.min(255, Number(input.durability))) : fallback;
 
   await sql.begin(async tx => {
     const [item] = await tx`
@@ -259,4 +261,53 @@ export async function updateItem(sql: Sql, characterId: string, itemId: string, 
 
 export async function deleteItem(sql: Sql, characterId: string, itemId: string) {
   return deleteFromStorage(sql, await inventoryId(sql, characterId), itemId);
+}
+
+// ---------------------------------------------------------------------------
+// Vault (the account's baúl): 8x15 from slot 0, like a shop.
+// ---------------------------------------------------------------------------
+
+export const VAULT_GRID: Grid = { first: 0, columns: 8, rows: 15 };
+
+/** The account's vault storage; one is made when the account never opened it. */
+async function vaultOf(sql: Sql, accountId: string, create: boolean): Promise<string | null> {
+  const [account] = await sql<{ vault: string | null }[]>`
+    SELECT "VaultId" AS vault FROM data."Account" WHERE "Id" = ${accountId}::uuid`;
+  if (!account) throw new Error('Cuenta inexistente');
+  if (account.vault || !create) return account.vault;
+  return sql.begin(async tx => {
+    const [store] = await tx<{ id: string }[]>`
+      INSERT INTO data."ItemStorage" ("Id", "Money") VALUES (gen_random_uuid(), 0) RETURNING "Id" AS id`;
+    await tx`UPDATE data."Account" SET "VaultId" = ${store.id}::uuid WHERE "Id" = ${accountId}::uuid`;
+    return store.id;
+  });
+}
+
+export async function getVault(sql: Sql, accountId: string) {
+  const vault = await vaultOf(sql, accountId, false);
+  if (!vault) return { money: 0, items: [] };
+  const [row] = await sql<{ money: number }[]>`SELECT "Money" AS money FROM data."ItemStorage" WHERE "Id" = ${vault}::uuid`;
+  return { money: row?.money ?? 0, items: await storageItems(sql, vault) };
+}
+
+export async function addVaultItem(sql: Sql, accountId: string, input: ItemInput) {
+  return addToStorage(sql, (await vaultOf(sql, accountId, true))!, VAULT_GRID, input, 'El baúl está lleno (8x15)');
+}
+
+export async function updateVaultItem(sql: Sql, accountId: string, itemId: string, input: ItemInput) {
+  const vault = await vaultOf(sql, accountId, false);
+  if (!vault) throw new Error('El baúl está vacío');
+  return updateInStorage(sql, vault, VAULT_GRID, itemId, input);
+}
+
+export async function deleteVaultItem(sql: Sql, accountId: string, itemId: string) {
+  const vault = await vaultOf(sql, accountId, false);
+  if (!vault) throw new Error('El baúl está vacío');
+  return deleteFromStorage(sql, vault, itemId);
+}
+
+export async function setVaultMoney(sql: Sql, accountId: string, money: number) {
+  const vault = (await vaultOf(sql, accountId, true))!;
+  const value = Math.max(0, Math.min(2_000_000_000, Math.trunc(Number(money) || 0)));
+  await sql`UPDATE data."ItemStorage" SET "Money" = ${value} WHERE "Id" = ${vault}::uuid`;
 }

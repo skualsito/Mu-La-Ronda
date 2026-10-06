@@ -28,6 +28,8 @@ import { LegacyQuestState, legacyQuestState } from './legacyQuests';
 /** `MODEL_NPC_QUARREL` on Crywolf, the Gatekeeper in the Barracks (OpenMU's numbers). */
 const WEREWOLF_NPC = 407;
 const GATEKEEPER_NPC = 408;
+/** Mu La Ronda: Leo the Helper resets on the talk itself (ResetCharacterNpcPlugin), so it asks first. */
+const RESET_NPC = 371;
 const WEREWOLF_MAP = ENUM_WORLD.WD_34CRYWOLF_1ST;
 const GATEKEEPER_MAP = ENUM_WORLD.WD_41CHANGEUP3RD_1ST;
 
@@ -40,13 +42,15 @@ const BARRACKS_PRICE = 3_000_000;
 
 // ---- 2. state + readers ----------------------------------------------------
 
-export type BalgassEntryKind = 'werewolf' | 'gatekeeper';
+export type BalgassEntryKind = 'werewolf' | 'gatekeeper' | 'reset';
 
 export type BalgassEntryBox = { kind: BalgassEntryKind; canEnter: boolean };
 
 type NpcTarget = { netId: number; name: string; npcType: number };
 
 const state = observable({ kind: null as BalgassEntryKind | null }, {}, { deep: false });
+/** The Leo the Helper click waiting for OK: the talk goes out only then. */
+let pendingReset: NpcTarget | null = null;
 
 /** `?balgass=` staged a box offline; `,1` unlocks its OK. Cleared once answered. */
 let devKind: BalgassEntryKind | null = null;
@@ -60,7 +64,7 @@ let devRead = false;
  * 5 or 6 for the Barracks, and 6 for the Refuge.
  */
 function canEnter(kind: BalgassEntryKind): boolean {
-  if (devUnlocked) return true;
+  if (devUnlocked || kind === 'reset') return true;
   const barracks = legacyQuestState(QUEST_BARRACKS);
   const refuge = legacyQuestState(QUEST_REFUGE);
   if (kind === 'gatekeeper') return refuge === LegacyQuestState.InProgress;
@@ -88,6 +92,7 @@ function show(kind: BalgassEntryKind): void {
 
 function hide(): void {
   devKind = null;
+  pendingReset = null;
   devUnlocked = false;
   runInAction(() => {
     state.kind = null;
@@ -98,6 +103,7 @@ function entryFor(npcType: number): BalgassEntryKind | null {
   const map = Store.world?.mapIndex;
   if (npcType === WEREWOLF_NPC && map === WEREWOLF_MAP) return 'werewolf';
   if (npcType === GATEKEEPER_NPC && map === GATEKEEPER_MAP) return 'gatekeeper';
+  if (npcType === RESET_NPC) return 'reset';
   return null;
 }
 
@@ -113,6 +119,12 @@ export function talkToBalgassNpc(npc: NpcTarget): boolean {
   // `talkToNpc` ignores a click behind a shop or a held item; so does the box.
   if (!kind || Store.pendingItemMove || Store.npcShop) return false;
 
+  if (kind === 'reset') {
+    show(kind);
+    pendingReset = npc;
+    return true;
+  }
+
   // Offline, a talk opens the test merchant; only the `HideAll` half applies.
   if (Store.isOffline) EventBus.emit('npcTalkStarted', { npcType: npc.npcType });
   else Store.talkToNpc(npc);
@@ -124,7 +136,13 @@ export function talkToBalgassNpc(npc: NpcTarget): boolean {
 export function enterBalgass(): void {
   const kind = state.kind;
   if (!kind || !canEnter(kind)) return;
+  const resetNpc = pendingReset;
   hide();
+
+  if (kind === 'reset') {
+    if (resetNpc && !Store.isOffline) Store.talkToNpc(resetNpc);
+    return;
+  }
 
   if (kind === 'werewolf' && Store.playerData.money < BARRACKS_PRICE) {
     Store.addNotification(t('event.shortOfZen'), 'error');
@@ -145,7 +163,10 @@ export function enterBalgass(): void {
  */
 export function cancelBalgassEntry(): void {
   if (!state.kind) return;
+  const wasReset = state.kind === 'reset';
   hide();
+  // Nothing went out for Leo yet.
+  if (wasReset) return;
   if (!Store.isOffline) Store.sendToGS(CloseNpcRequestPacket.createPacket().buffer);
   Store.dropNpcTalk();
 }

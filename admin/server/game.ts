@@ -270,6 +270,37 @@ export async function getAccount(sql: Sql, id: string, onlineAccounts: Set<strin
   return { ...row, characters, online: online(onlineAccounts, row.login) };
 }
 
+/**
+ * Deletes accounts with everything on them. OpenMU's foreign keys cascade from
+ * the account to its characters and from those to skills, stats, quests,
+ * letters and guild membership; the vault and the inventories point the other
+ * way (Account.VaultId, Character.InventoryId), so they go afterwards, their
+ * items cascading with them. Online accounts are refused: OpenMU would write
+ * them back when they leave.
+ */
+export async function deleteAccounts(sql: Sql, ids: string[], onlineAccounts: Set<string>) {
+  if (!ids.length) return { deleted: [] as string[] };
+  return sql.begin(async tx => {
+    const accounts = await tx`
+      SELECT "Id" AS id, "LoginName" AS login, "VaultId" AS vault, "IsTemplate" AS template
+        FROM data."Account" WHERE "Id" = ANY(${ids}::uuid[]) FOR UPDATE`;
+    const busy = accounts.filter(a => online(onlineAccounts, a.login));
+    if (busy.length) throw new Error(`Conectadas ahora: ${busy.map(a => a.login).join(', ')}. Que salgan primero.`);
+    if (accounts.some(a => a.template)) throw new Error('Las cuentas plantilla de OpenMU no se borran');
+    if (!accounts.length) return { deleted: [] as string[] };
+
+    const accountIds = accounts.map(a => a.id);
+    const inventories = await tx`
+      SELECT "InventoryId" AS id FROM data."Character"
+       WHERE "AccountId" = ANY(${accountIds}::uuid[]) AND "InventoryId" IS NOT NULL`;
+    const storages = [...accounts.map(a => a.vault), ...inventories.map(i => i.id)].filter(Boolean);
+
+    await tx`DELETE FROM data."Account" WHERE "Id" = ANY(${accountIds}::uuid[])`;
+    if (storages.length) await tx`DELETE FROM data."ItemStorage" WHERE "Id" = ANY(${storages}::uuid[])`;
+    return { deleted: accounts.map(a => a.login as string) };
+  });
+}
+
 export async function updateAccount(
   sql: Sql,
   id: string,

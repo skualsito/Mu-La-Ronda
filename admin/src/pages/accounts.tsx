@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import { api, type Account, type AccountRow } from '../api';
+import { api, type Account, type AccountRow, type InventoryItem } from '../api';
+import { MuGrid } from '../muGrid';
+import { ItemEditor } from './inventory';
 import {
   ACCOUNT_STATE,
   Badge,
@@ -25,6 +27,28 @@ export function AccountsPage() {
   }, [q]);
 
   const { data, error, reload } = useLoad(() => api<AccountRow[]>(`/accounts?q=${encodeURIComponent(query)}`), [query]);
+  const toast = useToast();
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const picked = (data ?? []).filter(row => selected.has(row.id));
+  const toggle = (id: string, on: boolean) =>
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (on) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+
+  const remove = async () => {
+    try {
+      const res = await api<{ deleted: string[] }>('/accounts/delete', { method: 'POST', body: { ids: picked.map(r => r.id) } });
+      toast(`Borradas: ${res.deleted.join(', ') || 'ninguna'}`);
+      setSelected(new Set());
+      reload();
+    } catch (err) {
+      toast(err instanceof Error ? err.message : String(err), 'error');
+    }
+  };
 
   return (
     <>
@@ -33,6 +57,11 @@ export function AccountsPage() {
         <div className="toolbar">
           <input className="search" placeholder="Buscar…" value={q} onChange={e => setQ(e.target.value)} autoFocus />
           <span className="muted small">{data ? `${data.length} resultados` : ''}</span>
+          {picked.length > 0 && (
+            <button className="btn btn-danger btn-small" onClick={() => setConfirmDelete(true)}>
+              Borrar {picked.length} {picked.length === 1 ? 'cuenta' : 'cuentas'}
+            </button>
+          )}
         </div>
         {error && <ErrorBox error={error} onRetry={reload} />}
         {!data && !error && <Loading />}
@@ -41,6 +70,14 @@ export function AccountsPage() {
             <table className="table table-hover">
               <thead>
                 <tr>
+                  <th className="check-col">
+                    <input
+                      type="checkbox"
+                      aria-label="Elegir todas"
+                      checked={data.some(r => !r.online) && data.every(r => r.online || selected.has(r.id))}
+                      onChange={e => setSelected(e.target.checked ? new Set(data.filter(r => !r.online).map(r => r.id)) : new Set())}
+                    />
+                  </th>
                   <th>Usuario</th>
                   <th>Email</th>
                   <th className="num">Personajes</th>
@@ -51,6 +88,9 @@ export function AccountsPage() {
               <tbody>
                 {data.map(row => (
                   <tr key={row.id} onClick={() => (location.hash = `#/cuentas/${row.id}`)}>
+                    <td className="check-col" onClick={e => e.stopPropagation()}>
+                      <input type="checkbox" checked={selected.has(row.id)} disabled={row.online} title={row.online ? 'Conectada' : undefined} onChange={e => toggle(row.id, e.target.checked)} />
+                    </td>
                     <td>
                       <strong>{row.login}</strong> {row.online && <Badge tone="ok">online</Badge>}
                     </td>
@@ -64,7 +104,7 @@ export function AccountsPage() {
                 ))}
                 {!data.length && (
                   <tr>
-                    <td colSpan={5} className="empty">
+                    <td colSpan={6} className="empty">
                       Sin resultados.
                     </td>
                   </tr>
@@ -74,6 +114,18 @@ export function AccountsPage() {
           </div>
         )}
       </Card>
+      {confirmDelete && (
+        <Confirm
+          title={`Borrar ${picked.length} ${picked.length === 1 ? 'cuenta' : 'cuentas'}`}
+          text={`Se borran para siempre, con sus personajes, items y baúl: ${picked.map(r => r.login).join(', ')}.`}
+          confirmLabel="Borrar"
+          danger
+          onAnswer={yes => {
+            setConfirmDelete(false);
+            if (yes) void remove();
+          }}
+        />
+      )}
     </>
   );
 }
@@ -199,6 +251,8 @@ export function AccountPage({ id }: { id: string }) {
         </Card>
       </div>
 
+      <VaultCard accountId={id} locked={data.online} />
+
       <Card title={`Personajes (${data.characters.length})`}>
         <table className="table table-hover">
           <thead>
@@ -246,5 +300,96 @@ export function AccountPage({ id }: { id: string }) {
         />
       )}
     </>
+  );
+}
+
+type Vault = { money: number; items: InventoryItem[] };
+
+/** The account's baúl: 8x15 like the game's, items and zen. Only while the account is offline. */
+function VaultCard({ accountId, locked }: { accountId: string; locked: boolean }) {
+  const toast = useToast();
+  const { data, error, reload, setData } = useLoad(() => api<Vault>(`/accounts/${accountId}/vault`), [accountId]);
+  const [editing, setEditing] = useState<InventoryItem | { slot: number } | 'new' | null>(null);
+  const [money, setMoney] = useState<string | null>(null);
+
+  if (error) return <ErrorBox error={error} onRetry={reload} />;
+  if (!data) return <Loading />;
+
+  const path = `/accounts/${accountId}/vault`;
+  const run = async (call: Promise<Vault>, done: string) => {
+    try {
+      setData(await call);
+      setEditing(null);
+      toast(done);
+    } catch (err) {
+      toast(err instanceof Error ? err.message : String(err), 'error');
+    }
+  };
+  const editingItem = editing && editing !== 'new' && 'id' in editing ? editing : null;
+  const atSlot = editing && editing !== 'new' && !('id' in editing) ? editing.slot : undefined;
+
+  return (
+    <Card
+      title={`Baúl (${data.items.length} items)`}
+      actions={
+        <button className="btn btn-small" disabled={locked} onClick={() => setEditing('new')}>
+          + Agregar item
+        </button>
+      }
+    >
+      {locked && <p className="muted small">La cuenta está conectada: el baúl se puede ver pero no tocar.</p>}
+      <div className="shop-body">
+        <MuGrid
+          items={data.items}
+          first={0}
+          columns={8}
+          rows={15}
+          disabled={locked}
+          selectedId={editingItem?.id}
+          onSelect={item => setEditing(item)}
+          onEmptyClick={slot => setEditing({ slot })}
+          onMove={(item, slot) => run(api(`${path}/items/${item.id}`, { method: 'PATCH', body: { slot } }), `${item.name} movido`)}
+        />
+        <div className="shop-side">
+          <label className="field">
+            <span className="field-label">Zen en el baúl</span>
+            <input
+              inputMode="numeric"
+              disabled={locked}
+              value={money ?? String(data.money)}
+              onChange={e => setMoney(e.target.value.replace(/[^0-9]/g, ''))}
+            />
+          </label>
+          {money !== null && Number(money) !== data.money && (
+            <button
+              className="btn btn-primary btn-small"
+              disabled={locked}
+              onClick={() => run(api(`${path}/money`, { method: 'PATCH', body: { money: Number(money) } }), 'Zen guardado').then(() => setMoney(null))}
+            >
+              Guardar zen
+            </button>
+          )}
+          <p className="muted small">Tocá un casillero vacío para poner un item ahí. Arrastrá un item para moverlo.</p>
+        </div>
+      </div>
+
+      {editing && (
+        <ItemEditor
+          item={editingItem}
+          locked={locked}
+          onClose={() => setEditing(null)}
+          onSave={(body, item) =>
+            run(
+              item
+                ? api(`${path}/items/${item.id}`, { method: 'PATCH', body })
+                : api(path, { method: 'POST', body: atSlot === undefined ? body : { ...(body as object), slot: atSlot } }),
+              item ? 'Item guardado' : 'Item agregado'
+            )
+          }
+          onDelete={item => run(api(`${path}/items/${item.id}`, { method: 'DELETE' }), 'Item borrado del baúl')}
+          saveLabel={editingItem ? 'Guardar' : 'Agregar al baúl'}
+        />
+      )}
+    </Card>
   );
 }

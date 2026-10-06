@@ -1,6 +1,6 @@
 import { useState, type DragEvent } from 'react';
 import type { InventoryItem } from './api';
-import { itemIconUrl } from './itemIcon';
+import { itemIconTransform, itemIconUrl } from './itemIcon';
 
 /**
  * An item grid drawn like the game's: dark stone squares in a gold frame,
@@ -18,7 +18,15 @@ function ItemPicture({ item }: { item: InventoryItem }) {
   const [broken, setBroken] = useState(false);
   const url = broken ? null : itemIconUrl({ group: item.group, number: item.number, level: item.level, excellent: isExcellent(item) });
   if (!url) return <span className="mu-item-name">{item.name}</span>;
-  return <img src={url} alt={item.name} draggable={false} onError={() => setBroken(true)} />;
+  return (
+    <img
+      src={url}
+      alt={item.name}
+      draggable={false}
+      style={{ transform: itemIconTransform(item.group, item.number, item.level) }}
+      onError={() => setBroken(true)}
+    />
+  );
 }
 
 export function MuGrid({

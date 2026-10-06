@@ -95,6 +95,8 @@ export const NetworkSystem: ISystemFactory = world => {
   // track the point object itself rather than an index.
   let sentUpTo: IVector2Like | undefined;
   let sentPath: IVector2Like[] | undefined;
+  // Mu La Ronda: the hero that walked and still owes the server its arrival tile.
+  let arrivalOwedBy: unknown = null;
 
   return {
     update: () => {
@@ -103,6 +105,18 @@ export const NetworkSystem: ISystemFactory = world => {
 
       const { playerMoveTo, pathfinding } = playerEntity;
       const path = pathfinding.path;
+
+      // The walk is over (arrived, or cut by a click on a target): tell the
+      // server where the hero ended up, so a walk it shortened cannot leave
+      // its copy behind (Store.syncServerPosition). A warp swaps the entity.
+      if (arrivalOwedBy && !(playerMoveTo.sendToServer && pathfinding.calculated && path)) {
+        if (arrivalOwedBy !== playerEntity) {
+          arrivalOwedBy = null;
+        } else if (!pathfinding.calculated || !path || path.length === 0) {
+          arrivalOwedBy = null;
+          Store.syncServerPosition(playerEntity.transform.pos.x, playerEntity.transform.pos.z);
+        }
+      }
 
       if (playerMoveTo.sendToServer && pathfinding.calculated && path) {
         // Approaching a target: stop the server-side walk where the client
@@ -114,6 +128,7 @@ export const NetworkSystem: ISystemFactory = world => {
           truncatePathWithinRange(path, x, y, range);
         }
         const last = sendWalkPathToServer(path, 0);
+        arrivalOwedBy = playerEntity;
         sentUpTo = last >= 0 && last < path.length - 1 ? path[last] : undefined;
         sentPath = sentUpTo ? path : undefined;
         pathfinding.sentThrough = sentUpTo;

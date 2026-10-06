@@ -1871,6 +1871,7 @@ export const Store = new (class _Store {
   }
 
   enterGateRequest(gateNumber: number): void {
+    this.lastGateRequestAt = performance.now();
     const packet = EnterGateRequestPacket.createPacket();
     packet.GateNumber = gateNumber;
     packet.TeleportTargetX = 0;
@@ -1974,6 +1975,28 @@ export const Store = new (class _Store {
     this.sendToGS(stop.buffer);
   }
 
+  /** When the last EnterGateRequest went out (syncServerPosition stays away from it). */
+  private lastGateRequestAt = -Infinity;
+
+  /**
+   * Mu La Ronda: pins the server's copy of the hero to the tile the client
+   * stopped on. A walk the server cut short (a blocked step, a stun, a
+   * dropped segment) left the two apart with nothing to bring them back:
+   * monsters struck an empty tile and skills were checked against the wrong
+   * position. OpenMU applies an InstantMoveRequest as is (PlayerMovement.MoveAsync).
+   */
+  syncServerPosition(x: number, y: number): void {
+    if (this.isOffline || this.sceneLoading) return;
+    // Never after a gate: the move would land on the destination map at the
+    // gate's coordinates of the old one.
+    if (performance.now() - this.lastGateRequestAt < 3000) return;
+    const stop = InstantMoveRequestPacket.createPacket();
+    // The hero stands on tile `trunc(pos)` (gateSystem.ts).
+    stop.TargetX = Math.trunc(x);
+    stop.TargetY = Math.trunc(y);
+    this.sendToGS(stop.buffer);
+  }
+
   // --- NPC shop & repair (CNewUINPCShop, NewUIMyInventory repair mode) -------
 
   /**
@@ -2041,6 +2064,29 @@ export const Store = new (class _Store {
       this.repairMode = false;
       this.inventoryEnabled = true;
     });
+    this.watchShopDistance();
+  }
+
+  /** Mu La Ronda: tiles from the merchant past which its window closes. */
+  private static readonly SHOP_REACH = 5;
+  private shopDistanceTimer: ReturnType<typeof setInterval> | null = null;
+
+  /** Walking away from the merchant closes its shop, as leaving the NPC does in the original. */
+  private watchShopDistance(): void {
+    if (this.shopDistanceTimer) clearInterval(this.shopDistanceTimer);
+    this.shopDistanceTimer = setInterval(() => {
+      const shop = this.npcShop;
+      if (!shop) {
+        if (this.shopDistanceTimer) clearInterval(this.shopDistanceTimer);
+        this.shopDistanceTimer = null;
+        return;
+      }
+      const hero = this.world?.playerEntity?.transform.pos;
+      const npc = this.world?.getByNetId(shop.npcId)?.transform.pos;
+      if (!hero || !npc) return;
+      const tiles = Math.max(Math.abs(hero.x - npc.x), Math.abs(hero.z - npc.z));
+      if (tiles > _Store.SHOP_REACH) this.closeNpcShop();
+    }, 300);
   }
 
   /** The server's answer came for something other than a merchant. */

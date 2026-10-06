@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api, type DefinitionOption, type InventoryItem, type ItemDefinition } from '../api';
 import { Card, Confirm, ErrorBox, Loading, NumberField, Toggle, useLoad, useToast } from '../ui';
 import { MuGrid } from '../muGrid';
+import { itemIconTransform, itemIconUrl } from '../itemIcon';
 
 /** A character's inventory: the equipped slots, the 8x8 bag and an item editor. */
 
@@ -209,7 +210,8 @@ export function ItemEditor({
             <div className="def-results">
               {(results.data ?? []).map(d => (
                 <button key={d.id} className={`def-row ${definition?.id === d.id ? 'active' : ''}`} onClick={() => { setDefinition(d); setChosen({}); setLevel(0); setDurability(null); }}>
-                  <span>{d.name}</span>
+                  <DefinitionIcon group={d.group} number={d.number} className="def-icon" />
+                  <span className="def-name">{d.name}</span>
                   <span className="muted small">
                     grupo {d.group} · #{d.number} · {d.width}×{d.height}
                   </span>
@@ -221,6 +223,25 @@ export function ItemEditor({
 
         {definition && (
           <>
+            <div className="item-preview">
+              <div className="item-preview-pic" style={{ aspectRatio: `${definition.width} / ${definition.height}` }}>
+                <DefinitionIcon
+                  group={definition.group}
+                  number={definition.number}
+                  level={level}
+                  excellent={(options.data ?? []).some(o => o.type === 'excellent' && o.optionId in chosen)}
+                />
+              </div>
+              <div>
+                <strong className={(options.data ?? []).some(o => o.type === 'excellent' && o.optionId in chosen) ? 'exc' : ''}>
+                  {definition.name}
+                  {level ? ` +${level}` : ''}
+                </strong>
+                <div className="muted small">
+                  {definition.width}×{definition.height} casilleros
+                </div>
+              </div>
+            </div>
             <div className="form-grid">
               <NumberField label="Nivel (+)" value={level} min={0} max={definition.maxLevel || 15} onChange={v => setLevel(v ?? 0)} />
               <NumberField label="Durabilidad" value={durability} min={0} max={255} onChange={setDurability} hint={`máx. ${definition.durability}`} />
@@ -285,5 +306,29 @@ export function ItemEditor({
         />
       )}
     </div>
+  );
+}
+
+/** The game's picture of an item definition, or nothing when the pack has none. */
+function DefinitionIcon({
+  group,
+  number,
+  level = 0,
+  excellent = false,
+  className,
+}: {
+  group: number;
+  number: number;
+  level?: number;
+  excellent?: boolean;
+  className?: string;
+}) {
+  const url = itemIconUrl({ group, number, level, excellent });
+  const [broken, setBroken] = useState<string | null>(null);
+  if (!url || broken === url) return <span className={`${className ?? ''} def-icon-none`} />;
+  return (
+    <span className={`${className ?? ''} def-icon-box`}>
+      <img src={url} alt="" loading="lazy" style={{ transform: itemIconTransform(group, number, level) }} onError={() => setBroken(url)} />
+    </span>
   );
 }

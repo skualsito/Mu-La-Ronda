@@ -25,6 +25,8 @@ export type Events = CSEvents &
     npcTalkStarted: { npcType: number };
     /** The hero sent a walk (`SendMove`): NPC windows close (`UpdateSendMoveInterface`). */
     heroWalked: Record<string, never>;
+    /** Mu La Ronda: the player clicked or keyed a walk of their own (the MU Helper yields to it). */
+    heroManualMove: { x: number; y: number };
     /** The terrain of `map` could not be loaded; the previous map is still up. */
     warpFailed: { map: ENUM_WORLD; error: unknown };
     /** The look director composed its first frame on a new map. */

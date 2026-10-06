@@ -221,6 +221,31 @@ async function route(req: Request, url: URL, ip: string): Promise<Response> {
     const q = (url.searchParams.get('q') ?? '').slice(0, 40);
     return json(await game.listAccounts(sql, q, await onlineAccounts()));
   }
+  const vault = path.match(/^\/api\/accounts\/([0-9a-f-]{36})\/vault(?:\/(money|items\/([0-9a-f-]{36})))?$/i);
+  if (vault) {
+    const [, accountId, sub, itemId] = vault;
+    if (method !== 'GET') {
+      const account = await game.getAccount(sql, accountId, await onlineAccounts());
+      if (!account) throw new HttpError(404, 'No existe');
+      if (account.online) {
+        throw new HttpError(409, 'La cuenta esta conectada: OpenMU pisaria el baul al salir. Que salga primero.');
+      }
+      const input = (method === 'DELETE' ? {} : await body(req)) as inventory.ItemInput & { money?: number };
+      if (sub === 'money' && method === 'PATCH') await inventory.setVaultMoney(sql, accountId, Number(input.money));
+      else if (!sub && method === 'POST') await inventory.addVaultItem(sql, accountId, input);
+      else if (itemId && method === 'PATCH') await inventory.updateVaultItem(sql, accountId, itemId, input);
+      else if (itemId && method === 'DELETE') await inventory.deleteVaultItem(sql, accountId, itemId);
+      else throw new HttpError(405, 'Metodo no permitido');
+    }
+    return json(await inventory.getVault(sql, accountId));
+  }
+  if (path === '/api/accounts/delete' && method === 'POST') {
+    const ids = (await body(req)).ids;
+    if (!Array.isArray(ids) || ids.some(id => typeof id !== 'string' || !/^[0-9a-f-]{36}$/i.test(id))) {
+      throw new HttpError(400, 'ids invalidos');
+    }
+    return json(await game.deleteAccounts(sql, ids as string[], await onlineAccounts()));
+  }
   if (path.startsWith('/api/accounts/')) {
     const id = idFrom(path, '/api/accounts/');
     const online = await onlineAccounts();

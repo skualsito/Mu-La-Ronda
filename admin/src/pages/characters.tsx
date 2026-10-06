@@ -21,6 +21,8 @@ import {
 } from '../ui';
 
 const MAX_STAT = 32767;
+/** OpenMU CharacterStatus.GameMaster. */
+const GM_STATUS = 32;
 
 export function CharactersPage() {
   const [q, setQ] = useState('');
@@ -179,7 +181,9 @@ export function CharacterPage({ id }: { id: string }) {
       save({ mapId: lorencia.id, x: LORENCIA.x, y: LORENCIA.y });
     },
     money: () => save({ money: 2_000_000_000 }),
+    toggleGm: () => save({ status: data.status === GM_STATUS ? 0 : GM_STATUS }),
   };
+  const isGm = data.status === GM_STATUS;
 
   const ask = (title: string, text: string, run: () => void) => setConfirm({ title, text, run });
 
@@ -225,6 +229,21 @@ export function CharacterPage({ id }: { id: string }) {
           </button>
           <button className="btn" disabled={locked || saving} onClick={() => ask('Mover a Lorencia', `Manda a ${data.name} a la plaza de Lorencia (sirve si quedó trabado).`, quick.toLorencia)}>
             📍 Mover a Lorencia
+          </button>
+          <button
+            className={`btn ${isGm ? '' : 'btn-primary'}`}
+            disabled={locked || saving}
+            onClick={() =>
+              ask(
+                isGm ? 'Quitar Game Master' : 'Hacer Game Master',
+                isGm
+                  ? `${data.name} vuelve a ser un personaje normal.`
+                  : `${data.name} pasa a ser Game Master: logo GM sobre la cabeza y comandos /item, /move, /setlevel…`,
+                quick.toggleGm
+              )
+            }
+          >
+            👑 {isGm ? 'Quitar GM' : 'Hacer GM'}
           </button>
         </div>
       </Card>

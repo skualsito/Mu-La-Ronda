@@ -138,6 +138,9 @@ const LEVEL_ICON_SCALE: Record<string, number | { file: string; scale: number }>
   '13_19_1': { file: 'item_0_19_0.png', scale: 0.001 },
   '13_19_2': { file: 'item_4_18_0.png', scale: 0.0015 },
 };
+// The Box of Luck has a picture per level (itemLevelLook.ts), Box of Kundun
+// +1..+5 among them; without an entry each showed unzoomed, a few pixels across.
+for (let lvl = 1; lvl <= 15; lvl++) LEVEL_ICON_SCALE[`14_11_${lvl}`] = ITEM_ICON_SCALE['14_11'];
 for (const [key, entry] of Object.entries(LEVEL_ICON_SCALE)) {
   const [group, num] = key.split('_').map(Number);
   const { file, scale } =

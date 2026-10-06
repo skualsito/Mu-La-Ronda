@@ -9,6 +9,7 @@ import { isAttackableEntity } from '../ecs/systems/attackSystem';
 import type { Entity, World } from '../ecs/world';
 import { ensureMuHelperWatching, MuHelperState } from './state';
 import type { MuHelperConfig } from './config';
+import { EventBus } from '../libs/eventBus';
 
 /**
  * The MU Helper automation loop, ported from `CMuHelper` (MuHelper.cpp). It
@@ -79,6 +80,23 @@ let repairCooldown = 0;
 let stopRequestCooldown = 0;
 let moveReissueCooldown = 0;
 const lastBuffCastAt = new Map<number, number>();
+/**
+ * Mu La Ronda: where the player walked on their own while the helper ran.
+ * Until the hero gets there the helper keeps its hands off - before, its next
+ * tick sent the hero back to the nearest zen and the two walks fought each
+ * other - and once there, that spot is the new anchor Regroup returns to.
+ */
+let manualDestination: Point | null = null;
+let manualSince = 0;
+/** A walk that never got a path must not park the helper for good. */
+const MANUAL_WAIT_LIMIT_MS = 20_000;
+
+EventBus.on('heroManualMove', ({ x, y }) => {
+  if (!Store.muHelper.active) return;
+  manualDestination = { x, y };
+  manualSince = performance.now();
+  currentTarget = null;
+});
 
 function resetRuntime(): void {
   lastHeroTile = null;
@@ -97,6 +115,7 @@ function resetRuntime(): void {
   repairCooldown = 0;
   stopRequestCooldown = 0;
   moveReissueCooldown = 0;
+  manualDestination = null;
   lastBuffCastAt.clear();
 }
 
@@ -543,6 +562,17 @@ export function updateMuHelperLoop(world: World, dt: number): void {
       Store.toggleMuHelper();
     }
     return;
+  }
+
+  if (manualDestination) {
+    const path = hero.pathfinding?.path;
+    const walking = !!path && path.length > 0;
+    const waiting = walking || hero.playerMoveTo?.handled === false;
+    if (waiting && performance.now() - manualSince < MANUAL_WAIT_LIMIT_MS) return;
+    // Arrived (or the walk ended short of it): carry on from here.
+    originalPos = tile;
+    secondsAway = 0;
+    manualDestination = null;
   }
 
   tickAccum += dt;
