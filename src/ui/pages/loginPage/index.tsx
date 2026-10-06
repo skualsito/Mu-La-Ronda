@@ -52,9 +52,13 @@ const REGISTER = { x: 22, y: CHECK_Y + 3 };
 /** `CLoginWin::Render`: the server line in `g_hFixFont` at (111, 80). */
 const SERVER_LINE = { x: 111, y: 80 };
 
+// Mu La Ronda: Cancel goes back to the server list, as in the original
+// (CLoginWin's cancel drops the game server and shows the list again).
 const onCancelClicked = () => {
-  Store.username = '';
   Store.password = '';
+  Store.loginError = undefined;
+  Store.disconnectFromGameServer();
+  Store.playOnline();
 };
 
 export const LoginPage = observer(() => {
