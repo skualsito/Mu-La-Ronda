@@ -94,6 +94,19 @@ const SHADOW_FADE_START = 250 / TILE_CM;
 const SHADOW_FADE_END = 600 / TILE_CM;
 
 /**
+ * Mu La Ronda: the most the perspective fold may move a vertex along the lean
+ * axis, in world units. The fold divides by (vertex height - light height), so
+ * a vertex anywhere near SHADOW_SY above the caster's origin - a tall map
+ * object's top, a wing or a long weapon swung up, anything airborne - was
+ * thrown tens of tiles away, and the triangles joining it to the visible part
+ * of the shadow were drawn as long black streaks across the ground ("black
+ * things while walking"). Everything at or below SHADOW_FADE_END (the part of
+ * a shadow that is still drawn at all) folds by under four tiles, so the cap
+ * changes nothing that was right.
+ */
+const SHADOW_MAX_FOLD = 500 / TILE_CM;
+
+/**
  * How far the silhouette is pushed out along its own surface normal, in MU
  * units, before it is projected.
  *
@@ -249,7 +262,8 @@ function createShadowMaterial(scene: Scene, slot: number): CustomMaterial {
 
     vec3 shadowRel = worldPos.xyz - shadowOriginI;
 
-    float shadowDenom = min(shadowRel.y - shadowParams.y, -0.001);
+    // Never closer than a quarter of the light's height: see SHADOW_MAX_FOLD.
+    float shadowDenom = min(shadowRel.y - shadowParams.y, -0.25 * shadowParams.y);
 
     float shadowCasterY = worldPos.y;
 
@@ -263,7 +277,11 @@ function createShadowMaterial(scene: Scene, slot: number): CustomMaterial {
     float shadowA = dot(shadowRel.xz, shadowSunDir);
     float shadowB = dot(shadowRel.xz, shadowAcross);
 
-    shadowA += (shadowRel.y * (shadowA + shadowParams.x)) / shadowDenom;
+    shadowA += clamp(
+      (shadowRel.y * (shadowA + shadowParams.x)) / shadowDenom,
+      -${SHADOW_MAX_FOLD.toFixed(4)},
+      ${SHADOW_MAX_FOLD.toFixed(4)}
+    );
 
     worldPos.x = shadowOriginI.x
       + shadowSunDir.x * shadowA + shadowAcross.x * shadowB;

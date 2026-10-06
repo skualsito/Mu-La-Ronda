@@ -652,6 +652,13 @@ export class ModelObject {
   CastsShadow = true;
 
   /**
+   * Mu La Ronda: whether this model throws the Classic-tier projected blob
+   * (objectShadow.ts) - on top of `CastsShadow`, which also covers the
+   * cascades. `WingObject` turns it off: see the note there.
+   */
+  CastsBlobShadow = true;
+
+  /**
    * Whether snow may settle on this object (weather/snowCaps.ts). Set by
    * MapTileObject on the maps snow settles on; every mesh carries it as
    * `metadata.snowCap` for the item material to bind against.
@@ -1598,7 +1605,7 @@ export class ModelObject {
 
   /** Whether this model is allowed a shadow clone at all (see attachShadow). */
   private get _castsBlobShadow(): boolean {
-    if (!this.CastsShadow || this.Lights?.emitsLight || !this.gltf) return false;
+    if (!this.CastsShadow || !this.CastsBlobShadow || this.Lights?.emitsLight || !this.gltf) return false;
 
     // Only map objects are size-gated. A small monster still needs its
     // shadow; a ground flower does not.

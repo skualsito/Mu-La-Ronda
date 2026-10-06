@@ -113,6 +113,17 @@ export class WingObject extends ModelObject {
    */
   ShadowBlendMeshCasts = true;
 
+  /**
+   * Mu La Ronda: but not in the Classic projected blob. The blob lands as one
+   * flat, near-black silhouette (objectShadow.ts SHADOW_ALPHA) stretched by
+   * the wing's height, so every winged character - everyone, on a fast server
+   * - dragged a giant black bat across the floor wherever they walked. That is
+   * what players reported as "black things while walking". Back to the
+   * original there (no wing in the shadow); the cascades, which draw a soft,
+   * correctly projected shadow, keep the wings.
+   */
+  CastsBlobShadow = false;
+
   #wake: BonedParticleEmitter | null = null;
   #passes: LivePass[] = [];
   #passesOf: ModelObject['gltf'] = null;
