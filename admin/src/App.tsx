@@ -72,7 +72,7 @@ function Login({ onDone }: { onDone: () => void }) {
         <button className="btn btn-primary btn-block" disabled={busy}>
           {busy ? 'Entrando…' : 'Entrar'}
         </button>
-        <p className="muted small">La contraseña está en <code>deploy/.env</code> del servidor (MLR_ADMIN_PASSWORD).</p>
+        <p className="muted small">El mismo usuario y contraseña que el panel de OpenMU (OPENMU_ADMIN_USER/PASSWORD en <code>deploy/.env</code>).</p>
       </form>
     </div>
   );

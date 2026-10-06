@@ -145,8 +145,9 @@ services:
     environment:
       HOSTNAME: 127.0.0.1
       ADMIN_PANEL_PORT: ${ADMIN_PANEL_PORT:-3200}
-      MLR_ADMIN_USER: ${MLR_ADMIN_USER:-admin}
-      MLR_ADMIN_PASSWORD: ${MLR_ADMIN_PASSWORD:?falta MLR_ADMIN_PASSWORD en deploy/.env}
+      # Mismo usuario y clave que el panel de OpenMU (openmu.<DOMAIN>).
+      MLR_ADMIN_USER: ${OPENMU_ADMIN_USER:-admin}
+      MLR_ADMIN_PASSWORD: ${OPENMU_ADMIN_PASSWORD}
       MLR_ADMIN_SECRET: ${MLR_ADMIN_SECRET:?falta MLR_ADMIN_SECRET en deploy/.env}
       DATABASE_URL: postgres://postgres:${DB_PASSWORD}@127.0.0.1:${DB_PORT:-5432}/openmu
       PRESENCE_URL: http://127.0.0.1:${PRESENCE_PORT:-3001}

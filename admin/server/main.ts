@@ -71,7 +71,7 @@ async function route(req: Request, url: URL, ip: string): Promise<Response> {
   if (path === '/api/login' && method === 'POST') {
     if (logins.hammering(bucketFor(ip))) return json({ error: 'Demasiados intentos. Espera un minuto.' }, 429);
     if (!passwordConfigured()) {
-      return json({ error: 'El panel no tiene contraseña configurada (MLR_ADMIN_PASSWORD en deploy/.env).' }, 503);
+      return json({ error: 'El panel no tiene contraseña configurada (OPENMU_ADMIN_PASSWORD en deploy/.env, 8 caracteres o mas).' }, 503);
     }
     const { user, password } = await body(req);
     if (!checkCredentials(String(user ?? ''), String(password ?? ''))) {

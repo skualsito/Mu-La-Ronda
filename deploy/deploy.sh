@@ -28,11 +28,10 @@ fi
 echo "  commit: $(git log --oneline -1)"
 
 # Secretos que se agregaron despues de crear el .env: se generan una vez.
-for key in MARKETPLACE_ESCROW_SECRET MARKETPLACE_TICKET_SECRET MLR_ADMIN_PASSWORD MLR_ADMIN_SECRET; do
+for key in MARKETPLACE_ESCROW_SECRET MARKETPLACE_TICKET_SECRET MLR_ADMIN_SECRET; do
   if ! grep -q "^$key=." deploy/.env; then
     sed -i "/^$key=/d" deploy/.env
-    # La clave del panel se tipea: 24 caracteres alcanzan.
-    if [[ "$key" == MLR_ADMIN_PASSWORD ]]; then value=$(openssl rand -hex 12); else value=$(openssl rand -hex 32); fi
+    value=$(openssl rand -hex 32)
     echo "$key=$value" >> deploy/.env
     echo "  generado $key en deploy/.env"
   fi
@@ -90,4 +89,4 @@ echo "▶ Configuracion del juego"
 bash deploy/apply-config.sh
 
 docker image prune -f >/dev/null
-echo "✔ Listo: https://$DOMAIN/online  ·  panel: https://admin.$DOMAIN (clave: MLR_ADMIN_PASSWORD en deploy/.env)"
+echo "✔ Listo: https://$DOMAIN/online  ·  panel: https://admin.$DOMAIN (usuario/clave: OPENMU_ADMIN_USER/PASSWORD de deploy/.env)"
