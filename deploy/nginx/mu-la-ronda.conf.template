@@ -1,0 +1,74 @@
+# Mu La Ronda - sitios para el nginx del host (convive con el de Pterodactyl).
+# Lo instala deploy/setup-nginx.sh reemplazando ${DOMAIN}, ${APP_DIR},
+# ${PROXY_PORT} y ${ADMIN_PORT}; despues certbot le agrega el HTTPS.
+
+map $http_upgrade $mu_connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+
+# Cliente web. SPA (/online, /offline): rutas desconocidas -> index.html.
+server {
+    listen 80;
+    listen [::]:80;
+    server_name play.${DOMAIN};
+
+    root ${APP_DIR}/dist;
+    index index.html;
+
+    # Los .gz los genera `bun run build` (compress-assets).
+    gzip_static on;
+    gzip on;
+    gzip_types text/css application/javascript application/json image/svg+xml;
+
+    location = /index.html     { add_header Cache-Control "no-cache"; }
+    location = /serverlist.md  { add_header Cache-Control "no-cache"; default_type text/plain; }
+    location = /sw.js          { add_header Cache-Control "no-cache"; }
+
+    # El registro (register.<DOMAIN>, mas adelante) toma sprites de Data/.
+    location /Data/ {
+        add_header Access-Control-Allow-Origin "*";
+        try_files $uri =404;
+    }
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
+
+# Puente WebSocket -> TCP hacia OpenMU.
+server {
+    listen 80;
+    listen [::]:80;
+    server_name ws.${DOMAIN};
+
+    location / {
+        proxy_pass http://127.0.0.1:${PROXY_PORT};
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $mu_connection_upgrade;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 1h;
+        proxy_send_timeout 1h;
+    }
+}
+
+# Panel de administracion de OpenMU (Blazor: necesita WebSocket tambien).
+server {
+    listen 80;
+    listen [::]:80;
+    server_name admin.${DOMAIN};
+
+    location / {
+        proxy_pass http://127.0.0.1:${ADMIN_PORT};
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $mu_connection_upgrade;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 1h;
+    }
+}

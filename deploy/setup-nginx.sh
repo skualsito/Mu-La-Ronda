@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# Agrega los sitios de Mu La Ronda al nginx del host y saca los certificados.
+# Correr como root una vez, y de nuevo si cambia el dominio:
+#
+#   bash /opt/mu-la-ronda/deploy/setup-nginx.sh
+#
+# No toca la config de Pterodactyl: escribe un archivo aparte y valida con
+# `nginx -t` antes de recargar.
+set -euo pipefail
+
+if [[ $EUID -ne 0 ]]; then echo "Correr como root" >&2; exit 1; fi
+
+APP_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+set -a; source "$APP_DIR/deploy/.env"; set +a
+PROXY_PORT="${PROXY_PORT:-3000}"
+ADMIN_PORT="${ADMIN_PORT:-8090}"
+
+if [[ -d /etc/nginx/sites-available ]]; then
+  TARGET=/etc/nginx/sites-available/mu-la-ronda.conf
+  LINK=/etc/nginx/sites-enabled/mu-la-ronda.conf
+else
+  TARGET=/etc/nginx/conf.d/mu-la-ronda.conf
+  LINK=""
+fi
+
+echo "▶ Escribiendo $TARGET para $DOMAIN"
+sed -e "s|\${DOMAIN}|$DOMAIN|g" \
+    -e "s|\${APP_DIR}|$APP_DIR|g" \
+    -e "s|\${PROXY_PORT}|$PROXY_PORT|g" \
+    -e "s|\${ADMIN_PORT}|$ADMIN_PORT|g" \
+    "$APP_DIR/deploy/nginx/mu-la-ronda.conf.template" > "$TARGET"
+[[ -n "$LINK" ]] && ln -sf "$TARGET" "$LINK"
+
+nginx -t
+systemctl reload nginx
+
+if ! command -v certbot >/dev/null; then
+  apt-get install -y certbot python3-certbot-nginx
+fi
+
+echo "▶ Certificados HTTPS"
+if [[ -n "${ACME_EMAIL:-}" ]]; then EMAIL_ARGS=(-m "$ACME_EMAIL"); else EMAIL_ARGS=(--register-unsafely-without-email); fi
+certbot --nginx --non-interactive --agree-tos --redirect "${EMAIL_ARGS[@]}" \
+  -d "play.$DOMAIN" -d "ws.$DOMAIN" -d "admin.$DOMAIN"
+
+echo "✔ nginx listo: https://play.$DOMAIN"

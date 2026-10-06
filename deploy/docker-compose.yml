@@ -1,15 +1,18 @@
-# Mu La Ronda - stack completo en un solo VPS.
+# Mu La Ronda - stack en el mismo VPS que Pterodactyl.
 #
-#   Internet ──443──> caddy ──┬── play.<DOMAIN>   cliente estatico (dist/)
-#                             ├── ws.<DOMAIN>     proxy WS<->TCP (127.0.0.1:3000)
-#                             └── admin.<DOMAIN>  panel de OpenMU (127.0.0.1:8080)
+#   Internet ──443──> nginx del host (el del panel) ──┬── play.<DOMAIN>   dist/ (estatico)
+#                                                     ├── ws.<DOMAIN>     127.0.0.1:PROXY_PORT
+#                                                     └── admin.<DOMAIN>  127.0.0.1:ADMIN_PORT
 #
 #   proxy ──TCP──> openmu (connect 127.0.0.1:44405, game 127.0.0.1:55901-55906)
 #
-# Los puertos del juego solo escuchan en loopback: todo jugador entra por el
-# proxy, asi que no hace falta exponerlos. Caddy y el proxy usan la red del host
-# para llegar a esos puertos en 127.0.0.1, que es lo que el cliente espera
+# Todo escucha solo en loopback: los jugadores entran por nginx -> proxy, asi
+# que no hay que abrir puertos nuevos ni tocar el firewall. El proxy usa la red
+# del host para llegar a 127.0.0.1, que es lo que el cliente espera
 # (CONVENTION_CS_HOST en src/common/serverServices.ts).
+#
+# Ojo con los puertos de Pterodactyl: Wings usa 8080 y 2022, por eso el panel
+# de OpenMU va en 8090.
 
 name: mu-la-ronda
 
@@ -40,7 +43,7 @@ services:
       OPENMU_ADMIN_USER: ${OPENMU_ADMIN_USER:?falta OPENMU_ADMIN_USER en deploy/.env}
       OPENMU_ADMIN_PASSWORD: ${OPENMU_ADMIN_PASSWORD:?falta OPENMU_ADMIN_PASSWORD en deploy/.env}
     ports:
-      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:${ADMIN_PORT:-8090}:8080"
       - "127.0.0.1:44405:44405"
       - "127.0.0.1:44406:44406"
       - "127.0.0.1:55901-55906:55901-55906"
@@ -60,7 +63,8 @@ services:
     command: ["bun", "run", "proxy/main.ts"]
     environment:
       HOSTNAME: 127.0.0.1
-      PORT: "3000"
+      PORT: ${PROXY_PORT:-3000}
+      PRESENCE_PORT: ${PRESENCE_PORT:-3001}
       # Sin esto el proxy es un relay abierto a cualquier host.
       ALLOW_TARGETS: "127.0.0.1:44405,127.0.0.1:55901,127.0.0.1:55902,127.0.0.1:55903,127.0.0.1:55904,127.0.0.1:55905,127.0.0.1:55906"
       TRACK_DB_PATH: /data/track.db
@@ -71,22 +75,7 @@ services:
     depends_on:
       - openmu
 
-  caddy:
-    image: caddy:2-alpine
-    restart: unless-stopped
-    network_mode: host
-    environment:
-      DOMAIN: ${DOMAIN:?falta DOMAIN en deploy/.env}
-      ACME_EMAIL: ${ACME_EMAIL:-}
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - ../dist:/srv/play:ro
-      - caddydata:/data
-      - caddyconfig:/config
-
 volumes:
   dbdata:
   adminpanel-keys:
   proxydata:
-  caddydata:
-  caddyconfig:
