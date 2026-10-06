@@ -1,5 +1,5 @@
 import './style.less';
-import { useEffect, type PointerEvent as ReactPointerEvent } from 'react';
+import { useEffect, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
 import { observer } from 'mobx-react-lite';
 import { useWindowChrome } from '../../../../components/muWindow/useWindowChrome';
 import { ItemIcon } from '../../../../components/itemIcon';
@@ -627,15 +627,19 @@ export const MarketplaceWindow = observer(() => {
           {formatZen(Marketplace.zen)} <span className="mp-zen">{t('common.zen')}</span>
         </div>
 
-        <button
-          data-no-drag
-          className="mp-close"
-          aria-label={t('common.close')}
-          onClick={() => Marketplace.close()}
-        >
-          x
-        </button>
       </header>
+
+      {/* Mu La Ronda: in the window's corner, sized so it is at least 40 px on
+          screen however small the window is scaled (a phone shrinks it whole). */}
+      <button
+        data-no-drag
+        className="mp-close"
+        aria-label={t('common.close')}
+        style={{ '--mp-close-size': `${Math.max(34, Math.round(40 / chrome.scale))}px` } as CSSProperties}
+        onClick={() => Marketplace.close()}
+      >
+        ✕
+      </button>
 
       <Rail />
 

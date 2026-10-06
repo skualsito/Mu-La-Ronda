@@ -27,8 +27,16 @@ export const ID_LIFE_REFRESH = 10;
 export function bubbleLifetime(text: string): number {
   return text.length * 2 + 160;
 }
-/** `AddChat` flag 1: player chat lasts 1000 ticks. */
+/** `AddChat` flag 1: player chat lasts 1000 ticks in the original (40 s). */
 export const CHAT_LIFETIME = 1000;
+
+/**
+ * Mu La Ronda: player chat over the head, by length instead - 40 s read as a
+ * line that never went away. 5 s for a word, up to 12 s for a long line.
+ */
+export function chatLifetime(text: string): number {
+  return Math.min(300, 125 + text.length * 3);
+}
 /** Lines of 20+ characters are split in two (`CutText`). */
 export const CUT_TEXT_LENGTH = 20;
 

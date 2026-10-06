@@ -114,17 +114,23 @@
 }
 
 .mp-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 5;
   display: flex;
-  flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
-  font-size: 12px;
-  color: @mp-dim;
-  background: rgba(8, 10, 15, 0.55);
-  border: 1px solid rgba(224, 188, 106, 0.35);
-  border-radius: 4px;
+  width: var(--mp-close-size, 34px);
+  height: var(--mp-close-size, 34px);
+  font-size: calc(var(--mp-close-size, 34px) * 0.5);
+  line-height: 1;
+  color: @mp-gold;
+  background: rgba(8, 10, 15, 0.8);
+  border: 2px solid rgba(224, 188, 106, 0.6);
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+  cursor: pointer;
 
   &:hover {
     color: #fff;

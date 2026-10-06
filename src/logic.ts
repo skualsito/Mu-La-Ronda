@@ -1428,7 +1428,7 @@ function addTransformedCharacterToScope(world: World, char: ScopeCharacter, skin
   });
 
   if (char.HeroState != null) entity.heroState = char.HeroState;
-  if (char.effects?.length) world.addComponent(entity, 'buffs', new Set(char.effects));
+  for (const id of char.effects ?? []) applyObjectEffect(entity, id, true);
 
   const npcClass = npcClassOf(modelFactory);
   entity.attributeSystem.setValue(
@@ -1518,12 +1518,17 @@ function addCharacterToScope(
       world.addComponent(playerEntity, 'interactable', true);
     }
 
-    if (char.effects?.length) {
-      world.addComponent(playerEntity, 'buffs', new Set(char.effects));
-      if (Store.playerId === maskedId) {
-        char.effects.forEach(id => Store.setBuff(id, true));
-      }
+    // Mu La Ronda: the body is new on every scope add (a warp, a teleport), so
+    // its buff looks are drawn again rather than only listed - before, the
+    // Elf Soldier glow and every other aura went away there. The hero also
+    // keeps what the buff bar already holds: the server does not list every
+    // effect again on a respawn.
+    const effects = new Set(char.effects ?? []);
+    if (Store.playerId === maskedId) {
+      char.effects?.forEach(id => Store.setBuff(id, true));
+      Store.buffs.forEach(id => effects.add(id));
     }
+    for (const id of effects) applyObjectEffect(playerEntity, id, true);
 
     const cApp = playerEntity.charAppearance;
 

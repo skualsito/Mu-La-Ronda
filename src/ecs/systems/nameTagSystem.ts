@@ -4,7 +4,7 @@ import { isNpcOrTrapType } from './attackSystem';
 import { Economy } from '../../economy';
 import {
   bubbleLifetime,
-  CHAT_LIFETIME,
+  chatLifetime,
   CUT_TEXT_LENGTH,
   cutText,
   ID_LIFE_CREATE,
@@ -86,7 +86,7 @@ export const NameTagSystem: ISystemFactory = world => {
         e => e.playerAnimation && e.objectNameInWorld === sender
       ) ?? named.entities.find(e => e.objectNameInWorld === sender);
     if (!entity) return;
-    addChat(entity, message, CHAT_LIFETIME);
+    addChat(entity, message, chatLifetime(message));
   });
 
   return {

@@ -136,7 +136,9 @@ function nameColor(item: Item, def: ItemDef, level: number): TooltipColor {
     if (level >= 7) return 'yellow';
     return optionLevel > 0 ? 'blue' : 'white';
   }
-  if (optionLevel > 0 && item.isExcellent) return 'green';
+  // Mu La Ronda: any excellent item is green, additional option or not (the
+  // original keys on the excellent bits alone, `Option1 & 63`).
+  if (item.isExcellent) return 'green';
   if (level >= 7) return 'yellow';
   return optionLevel > 0 ? 'blue' : 'white';
 }
