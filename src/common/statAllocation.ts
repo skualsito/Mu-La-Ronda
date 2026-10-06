@@ -2,7 +2,7 @@ import { makeAutoObservable, observable } from 'mobx';
 import { EventBus } from '../libs/eventBus';
 import { Store } from '../store';
 import { clampAmount, nextStep } from './statAmounts';
-import type { StatType } from './characterStats';
+import { StatType } from './characterStats';
 
 /**
  * "Add 200 points to Strength": the run behind the amount box in the
@@ -21,8 +21,31 @@ import type { StatType } from './characterStats';
 /** A step with no answer this long is a lost request; the run ends. */
 const STEP_TIMEOUT = 5000;
 
-/** Requests sent ahead of their answers. */
-const IN_FLIGHT = 25;
+/**
+ * Requests sent ahead of their answers: big enough that thousands of points
+ * land in a few round trips (the old `/add` was instant), small enough not to
+ * dump 30 000 packets on the socket at once.
+ */
+const IN_FLIGHT = 1000;
+
+/** Mu La Ronda: OpenMU's cap on every base stat (deploy/config/03-stats.sql). */
+export const MAX_STAT = 32767;
+
+function currentStat(stat: StatType): number {
+  const p = Store.playerData;
+  switch (stat) {
+    case StatType.Strength:
+      return p.str;
+    case StatType.Agility:
+      return p.agi;
+    case StatType.Vitality:
+      return p.sta;
+    case StatType.Energy:
+      return p.eng;
+    default:
+      return p.leadership;
+  }
+}
 
 export type StatRun = {
   stat: StatType;
@@ -68,7 +91,9 @@ export const StatAllocation = new (class _StatAllocation {
       return;
     }
 
-    const wanted = clampAmount(amount, Store.playerData.points);
+    // Past the cap the server answers nothing at all, so never ask for it.
+    const room = Math.max(0, MAX_STAT - currentStat(stat));
+    const wanted = Math.min(clampAmount(amount, Store.playerData.points), room);
     if (wanted <= 0) return;
 
     this.run = { stat, sent: 0, added: 0, wanted };
