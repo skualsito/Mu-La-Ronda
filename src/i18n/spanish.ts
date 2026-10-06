@@ -1645,6 +1645,7 @@ export const spanishLayer: LanguageLayer = {
     'options.lootZen': 'Montones de Zen desde',
     'options.firstPersonBob': 'Balanceo de la cabeza en primera persona',
     'options.chatTimestamps': 'Hora en el chat',
+    'options.chatSystemMessages': 'Mensajes de sistema',
     'options.chatEmojis': 'Emojis en el chat',
     'options.chatEmojiSize': 'Tamaño de los emojis en el chat',
     'options.chatEmojiSize.small': 'Pequeño',
@@ -2492,6 +2493,8 @@ export const spanishLayer: LanguageLayer = {
       'Los montones de Zen de esta cantidad o más muestran su nombre. Si lo desactivas, todos los montones lo muestran.',
     'options.help.chatTimestamps':
       'Muestra la hora (por ejemplo, 14:03) delante de cada línea del chat.',
+    'options.help.chatSystemMessages':
+      'Muestra los avisos del servidor y del sistema en el chat. Es lo mismo que el botón de sistema de la barra del chat.',
     'options.help.whisperBeep':
       'Reproduce un sonido cuando alguien te susurra.',
     'options.help.chatEmojiSize':

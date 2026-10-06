@@ -1632,6 +1632,9 @@ export const romanianLayer: LanguageLayer = {
     'options.lootZen': 'Grămezi de Zen de la',
     'options.firstPersonBob': 'Legănarea capului la persoana întâi',
     'options.chatTimestamps': 'Ora în chat',
+    'options.chatSystemMessages': 'Mesaje de sistem',
+    'options.help.chatSystemMessages':
+      'Afișează mesajele serverului și ale sistemului în chat. La fel ca butonul de sistem din bara de chat.',
     'options.chatEmojis': 'Emoji în chat',
     'options.chatEmojiSize': 'Mărime emoji în chat',
     'options.chatEmojiSize.small': 'Mică',

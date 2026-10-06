@@ -1,6 +1,6 @@
 import { t } from '../../../i18n';
 import './style.less';
-import { runInAction } from 'mobx';
+import { reaction, runInAction } from 'mobx';
 import { observer } from 'mobx-react-lite';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { Store } from '../../../store';
@@ -18,6 +18,7 @@ import { MuSpriteFrame } from '../../components/muSprite';
 import { MsgWindow } from '../../components/msgWindow';
 import { TEXT_COLOR } from '../serversPage/layout';
 import { CharMakeWin } from './CharMakeWin';
+import { characterSelectView } from '../../../common/characterSelect';
 import { CharacterSelectionPlate } from './CharacterSelectionPlate';
 
 const BTN_WIDTH = 54;
@@ -122,6 +123,20 @@ export const CharactersPage = observer(() => {
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, []);
+
+  // Mu La Ronda: double click on a character in the scene connects, through
+  // the same gate as Enter (CharacterSelectSystem bumps the counter).
+  useEffect(
+    () =>
+      reaction(
+        () => characterSelectView.connectRequests,
+        () => {
+          if (Store.msgWin) return;
+          enterAction.current();
+        }
+      ),
+    []
+  );
 
   const onDelete = () => {
     if (!selected) return;

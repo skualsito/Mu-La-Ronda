@@ -263,6 +263,9 @@ export const polishLayer: LanguageLayer = {
     'options.quickItemActions': 'Ctrl+klik przenosi przedmioty',
     'options.confirmValuableItems': 'Pytaj przed wyrzuceniem lub sprzedażą cennych rzeczy',
     'options.chatTimestamps': 'Godzina w czacie',
+    'options.chatSystemMessages': 'Wiadomości systemowe',
+    'options.help.chatSystemMessages':
+      'Pokazuje komunikaty serwera i systemu w czacie. To samo co przycisk systemowy na pasku czatu.',
     'options.chatEmojis': 'Emoji w czacie',
     'options.chatEmojiSize': 'Rozmiar emoji w czacie',
     'options.chatEmojiSize.small': 'Mały',

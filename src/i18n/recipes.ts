@@ -300,6 +300,7 @@ export const EN_TEXT = {
   'options.quickItemActions': 'Ctrl-click moves items',
   'options.confirmValuableItems': 'Ask before dropping or selling valuables',
   'options.chatTimestamps': 'Chat timestamps',
+  'options.chatSystemMessages': 'System messages',
   'options.chatEmojis': 'Chat emojis',
   'options.chatEmojiSize': 'Chat emoji size',
   'options.chatEmojiSize.small': 'Small',
@@ -479,6 +480,8 @@ export const EN_TEXT = {
     'Zen piles of at least this amount keep their name. Off keeps every pile named.',
   'options.help.chatTimestamps':
     'Shows the time, like 14:03, in front of every chat line.',
+  'options.help.chatSystemMessages':
+    'Shows server and system notices in the chat log. Same as the system button in the chat box.',
   'options.help.whisperBeep': 'Plays a sound when someone whispers to you.',
   'options.help.chatEmojiSize':
     'How big emojis are drawn in the chat log. A line with an emoji grows to fit it; Small keeps every line one row tall, like the classic log.',

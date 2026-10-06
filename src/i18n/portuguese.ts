@@ -1637,6 +1637,9 @@ export const portugueseLayer: LanguageLayer = {
     'options.lootZen': 'Montes de Zen a partir de',
     'options.firstPersonBob': 'Balanço da cabeça em primeira pessoa',
     'options.chatTimestamps': 'Horário no chat',
+    'options.chatSystemMessages': 'Mensagens do sistema',
+    'options.help.chatSystemMessages':
+      'Mostra os avisos do servidor e do sistema no chat. O mesmo que o botão de sistema da barra do chat.',
     'options.chatEmojis': 'Emojis no chat',
     'options.chatEmojiSize': 'Tamanho dos emojis no chat',
     'options.chatEmojiSize.small': 'Pequeno',

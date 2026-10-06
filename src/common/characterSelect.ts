@@ -71,4 +71,11 @@ export function characterCameraTarget(): Vector3 {
  * or null for the line-up shot. Set by CharacterSelectSystem, eased in and
  * out by LoginSceneSystem's camera. Independent of the focused character.
  */
-export const characterSelectView = observable({ zoomedOn: null as string | null });
+export const characterSelectView = observable({
+  zoomedOn: null as string | null,
+  /**
+   * Mu La Ronda: bumped by a double click on a character in the line-up;
+   * the characters page answers it like the Connect button.
+   */
+  connectRequests: 0,
+});

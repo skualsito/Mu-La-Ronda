@@ -1592,6 +1592,9 @@ export const koreanLayer: LanguageLayer = {
     'options.lootZen': '젠 더미 기준',
     'options.firstPersonBob': '1인칭 시점 흔들림',
     'options.chatTimestamps': '채팅 시각 표시',
+    'options.chatSystemMessages': '시스템 메시지',
+    'options.help.chatSystemMessages':
+      '서버 및 시스템 알림을 채팅창에 표시합니다. 채팅창의 시스템 버튼과 같습니다.',
     'options.chatEmojis': '채팅 이모지 표시',
     'options.chatEmojiSize': '채팅 이모지 크기',
     'options.chatEmojiSize.small': '작게',

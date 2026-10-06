@@ -1604,6 +1604,9 @@ export const thaiLayer: LanguageLayer = {
     'options.lootZen': 'กอง Zen ตั้งแต่',
     'options.firstPersonBob': 'การโยกศีรษะในมุมมองบุคคลที่หนึ่ง',
     'options.chatTimestamps': 'เวลาในแชท',
+    'options.chatSystemMessages': 'ข้อความระบบ',
+    'options.help.chatSystemMessages':
+      'แสดงข้อความจากเซิร์ฟเวอร์และระบบในแชท เหมือนกับปุ่มระบบในแถบแชท',
     'options.chatEmojis': 'อีโมจิในแชท',
     'options.chatEmojiSize': 'ขนาดอีโมจิในแชท',
     'options.chatEmojiSize.small': 'เล็ก',

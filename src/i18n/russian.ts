@@ -1618,6 +1618,9 @@ export const russianLayer: LanguageLayer = {
     'options.lootZen': 'Кучки Zen от',
     'options.firstPersonBob': 'Покачивание головы от первого лица',
     'options.chatTimestamps': 'Время в чате',
+    'options.chatSystemMessages': 'Системные сообщения',
+    'options.help.chatSystemMessages':
+      'Показывает сообщения сервера и системы в чате. То же, что кнопка системных сообщений в панели чата.',
     'options.chatEmojis': 'Эмодзи в чате',
     'options.chatEmojiSize': 'Размер эмодзи в чате',
     'options.chatEmojiSize.small': 'Маленький',

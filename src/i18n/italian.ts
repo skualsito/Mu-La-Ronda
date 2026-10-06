@@ -1639,6 +1639,9 @@ export const italianLayer: LanguageLayer = {
     'options.lootZen': 'Mucchi di Zen da',
     'options.firstPersonBob': 'Oscillazione della testa in prima persona',
     'options.chatTimestamps': 'Orario nella chat',
+    'options.chatSystemMessages': 'Messaggi di sistema',
+    'options.help.chatSystemMessages':
+      'Mostra gli avvisi del server e di sistema nella chat. Come il pulsante di sistema nella barra della chat.',
     'options.chatEmojis': 'Emoji nella chat',
     'options.chatEmojiSize': 'Dimensione emoji nella chat',
     'options.chatEmojiSize.small': 'Piccola',

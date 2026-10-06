@@ -33,7 +33,7 @@ import {
   resolveModelFactory,
 } from './common/modelFactoryPerId';
 import { monsterDisplayName, monsterMaxHealth } from './common/monstersDatabase';
-import { translateServerText } from './i18n/serverText';
+import { isHiddenServerLine, translateServerText } from './i18n/serverText';
 import { loadNpcNames, onNpcNamesChanged } from './libs/mu/npcNameFile';
 import {
   MonsterActionType,
@@ -3603,6 +3603,8 @@ EventBus.on('ServerMessage', packet => {
       // (SelfDefensePlugIn.cs); keep the state alongside showing it. It reads
       // the server's English, so it has to run before the line is translated.
       Social.trackSelfDefense(text);
+      // Mu La Ronda: no "Congratulations, you are Level N now." per level-up.
+      if (isHiddenServerLine(text)) break;
       Social.systemMessage(translateServerText(text));
       break;
     case 2:

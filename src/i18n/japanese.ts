@@ -1594,6 +1594,9 @@ export const japaneseLayer: LanguageLayer = {
     'options.lootZen': 'Zen の下限',
     'options.firstPersonBob': '一人称視点の頭の揺れ',
     'options.chatTimestamps': 'チャットの時刻',
+    'options.chatSystemMessages': 'システムメッセージ',
+    'options.help.chatSystemMessages':
+      'サーバーとシステムのメッセージをチャットに表示します。チャット欄のシステムボタンと同じです。',
     'options.chatEmojis': 'チャットの絵文字',
     'options.chatEmojiSize': 'チャットの絵文字サイズ',
     'options.chatEmojiSize.small': '小',

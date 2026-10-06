@@ -1586,6 +1586,9 @@ export const chineseLayer: LanguageLayer = {
     'options.lootZen': '金币堆下限',
     'options.firstPersonBob': '第一人称视角头部晃动',
     'options.chatTimestamps': '聊天时间',
+    'options.chatSystemMessages': '系统消息',
+    'options.help.chatSystemMessages':
+      '在聊天记录中显示服务器和系统消息。与聊天框中的系统按钮相同。',
     'options.chatEmojis': '聊天表情符号',
     'options.chatEmojiSize': '聊天表情符号大小',
     'options.chatEmojiSize.small': '小',

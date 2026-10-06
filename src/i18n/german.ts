@@ -1645,6 +1645,9 @@ export const germanLayer: LanguageLayer = {
     'options.lootZen': 'Zen-Haufen ab',
     'options.firstPersonBob': 'Kopfbewegung in der Egoperspektive',
     'options.chatTimestamps': 'Uhrzeit im Chat',
+    'options.chatSystemMessages': 'Systemnachrichten',
+    'options.help.chatSystemMessages':
+      'Zeigt Server- und Systemmeldungen im Chat an. Entspricht dem System-Knopf in der Chatleiste.',
     'options.chatEmojis': 'Emojis im Chat',
     'options.chatEmojiSize': 'Emoji-Größe im Chat',
     'options.chatEmojiSize.small': 'Klein',

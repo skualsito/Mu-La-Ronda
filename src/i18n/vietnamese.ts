@@ -263,6 +263,9 @@ export const vietnameseLayer: LanguageLayer = {
     'options.quickItemActions': 'Ctrl-click để chuyển vật phẩm',
     'options.confirmValuableItems': 'Hỏi trước khi vứt hoặc bán đồ quý',
     'options.chatTimestamps': 'Hiện giờ trong trò chuyện',
+    'options.chatSystemMessages': 'Tin nhắn hệ thống',
+    'options.help.chatSystemMessages':
+      'Hiện thông báo của máy chủ và hệ thống trong khung trò chuyện. Giống nút hệ thống trên thanh trò chuyện.',
     'options.chatEmojis': 'Hiện emoji trong trò chuyện',
     'options.chatEmojiSize': 'Cỡ emoji trong trò chuyện',
     'options.chatEmojiSize.small': 'Nhỏ',

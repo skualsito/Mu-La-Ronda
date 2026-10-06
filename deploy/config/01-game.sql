@@ -16,7 +16,10 @@ UPDATE config."GameConfiguration" SET
   "ExperienceRate"       = 9999,
   "MasterExperienceRate" = 9999,
   "MaximumLevel"         = 400,
-  "MaximumMasterLevel"   = 200;
+  "MaximumMasterLevel"   = 200,
+  -- Un solo nivel por bicho: la experiencia que sobra al subir se descarta
+  -- (PlayerExperience.cs). Solo aplica a la experiencia normal, no a la master.
+  "PreventExperienceOverflow" = true;
 
 -- ─── Un solo canal ──────────────────────────────────────────────────────────
 -- OpenMU crea 3 game servers al instalar; dejamos solo el 0 (puertos 55901/55902).

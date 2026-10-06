@@ -482,6 +482,11 @@ export const CharacterSelectSystem: ISystemFactory = world => {
   // Input
   // -------------------------------------------------------------------------
 
+  // Mu La Ronda: a second left click on the same character within this long
+  // connects with it.
+  const DOUBLE_CLICK_MS = 400;
+  let lastClick = { name: '', at: 0 };
+
   world.scene.onPointerObservable.add(event => {
     if (event.type !== PointerEventTypes.POINTERDOWN) return;
     if (Store.uiState !== UIState.Characters) return;
@@ -506,6 +511,17 @@ export const CharacterSelectSystem: ISystemFactory = world => {
 
     const name = target.objectNameInWorld;
     if (!name) return;
+
+    const now = performance.now();
+    const isDouble = lastClick.name === name && now - lastClick.at < DOUBLE_CLICK_MS;
+    lastClick = isDouble ? { name: '', at: 0 } : { name, at: now };
+
+    if (isDouble && name === Store.focusedChar) {
+      runInAction(() => {
+        characterSelectView.connectRequests += 1;
+      });
+      return;
+    }
 
     if (name === Store.focusedChar) {
       // Re-trigger greeting on click even if already focused

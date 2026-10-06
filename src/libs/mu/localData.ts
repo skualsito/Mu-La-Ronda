@@ -65,10 +65,15 @@ export function decodeLocalText(
  * @param base file name without the `_<lang>` tag or the extension
  *             (`Quest`, `MoveReq`, `MasterSkillTooltip`)
  * @param neutral optional language-less fallback (`Local/Quest.bmd`)
+ * @param englishOnly skip the active pack (Mu La Ronda: map names stay English)
  */
-export function localDataCandidates(base: string, neutral?: string): string[] {
+export function localDataCandidates(
+  base: string,
+  neutral?: string,
+  englishOnly = false
+): string[] {
   const paths: string[] = [];
-  const pack = i18n.dataPack;
+  const pack = englishOnly ? null : i18n.dataPack;
 
   const push = (folder: string, suffix: string) => {
     paths.push(`Local/${folder}/${base}_${suffix}.bmd`);
@@ -205,9 +210,10 @@ export async function downloadPackDataFile(base: string): Promise<Uint8Array> {
  */
 export async function downloadLocalDataFile(
   base: string,
-  neutral?: string
+  neutral?: string,
+  englishOnly = false
 ): Promise<Uint8Array> {
-  for (const path of localDataCandidates(base, neutral)) {
+  for (const path of localDataCandidates(base, neutral, englishOnly)) {
     const bytes = await optional(path);
     if (bytes.length) return bytes;
   }

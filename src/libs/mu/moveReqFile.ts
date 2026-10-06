@@ -79,10 +79,14 @@ function parse(bytes: Uint8Array): MoveReqEntry[] {
   return entries;
 }
 
-/** The move list, in file order (the order the window shows). Cached after the first call. */
+/**
+ * The move list, in file order (the order the window shows). Cached after the
+ * first call. Mu La Ronda: always the English pack - map names are not
+ * translated, whatever language the player picked.
+ */
 export function loadMoveReqList(): Promise<readonly MoveReqEntry[]> {
   if (!pending) {
-    pending = downloadLocalDataFile(FILE).then(parse, err => {
+    pending = downloadLocalDataFile(FILE, undefined, true).then(parse, err => {
       pending = null;
       throw err;
     });

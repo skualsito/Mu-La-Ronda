@@ -82,6 +82,21 @@ export function matchServerText(text: string): ServerTextMatch | null {
 }
 
 /**
+ * Server lines Mu La Ronda does not show at all: the level-up congratulations
+ * the server sends on every level, which at high rates floods the chat.
+ */
+const HIDDEN_KEYS: ReadonlySet<TextKey> = new Set<TextKey>([
+  'serverMessage.levelUpCongrats',
+  'serverMessage.masterLevelUpCongrats',
+]);
+
+/** True for a server line that is dropped instead of shown. */
+export function isHiddenServerLine(text: string): boolean {
+  const found = matchServerText(text);
+  return !!found && HIDDEN_KEYS.has(found.key);
+}
+
+/**
  * The line to show for one the server sent. Unknown text comes back as it went
  * in.
  */

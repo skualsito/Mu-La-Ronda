@@ -1624,6 +1624,9 @@ export const bulgarianLayer: LanguageLayer = {
     'options.lootZen': 'Купчини Zen от',
     'options.firstPersonBob': 'Поклащане на главата от първо лице',
     'options.chatTimestamps': 'Час в чата',
+    'options.chatSystemMessages': 'Системни съобщения',
+    'options.help.chatSystemMessages':
+      'Показва съобщенията от сървъра и системата в чата. Същото като бутона за системни съобщения в чата.',
     'options.chatEmojis': 'Емоджи в чата',
     'options.chatEmojiSize': 'Размер на емоджи в чата',
     'options.chatEmojiSize.small': 'Малък',

@@ -49,7 +49,7 @@ import { itemLinkLabel, scanItemLinks, stripItemLinks } from './common/chatItemL
 import { EMOJI_CATALOG } from './emojis';
 import { clipChatText, toChatWire } from './common/chatWire';
 import { chatTextWidth } from './common/chatTextWidth';
-import { GameOptions } from './common/gameOptions';
+import { GameOptions, setGameOption } from './common/gameOptions';
 import { Commands } from './commands';
 import {
   CancelGuildCreationPacket,
@@ -175,8 +175,13 @@ export const Social = new (class _Social {
   whisperEnabled = true;
   /** `m_bBlockWhisper`: incoming whispers are dropped. */
   blockWhisper = false;
-  /** `m_bShowSystemMessages`: system/error lines show in the log. */
-  showSystemMessages = true;
+  /**
+   * `m_bShowSystemMessages`: system/error lines show in the log. Lives in
+   * `GameOptions.chatSystemMessages` so it is saved and shared with Options.
+   */
+  get showSystemMessages(): boolean {
+    return GameOptions.chatSystemMessages;
+  }
   /** `m_bShowFrame`: the log gets a frame and scrollbar while on. */
   chatLogFramed = false;
   chatLogVisible = true;
@@ -255,7 +260,7 @@ export const Social = new (class _Social {
       lastWhisperFrom: observable,
       whisperEnabled: observable,
       blockWhisper: observable,
-      showSystemMessages: observable,
+      showSystemMessages: computed,
       chatLogFramed: observable,
       chatLogVisible: observable,
       chatLogLines: observable,
@@ -512,8 +517,12 @@ export const Social = new (class _Social {
       | 'chatLogFramed'
       | 'chatLogVisible'
   ): void {
+    if (key === 'showSystemMessages') {
+      setGameOption('chatSystemMessages', !GameOptions.chatSystemMessages);
+      this.chatLogEndId = null;
+      return;
+    }
     this[key] = !this[key];
-    if (key === 'showSystemMessages') this.chatLogEndId = null;
   }
 
   /** How tall the log draws this row (an emoji row grows with the option). */
