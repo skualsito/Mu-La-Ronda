@@ -606,8 +606,31 @@ function calculateWizardry(input: CharacterStatsInput): {
   return { min, max, rate };
 }
 
+/**
+ * Mu La Ronda: the damage the worn pet multiplies, as OpenMU applies it
+ * (`VersionSeasonSix/Items/Pets.cs`): Imp +30%, Dinorant +15%, Demon +40%,
+ * Pet Skeleton +20%. The original's window leaves the pet out, which read as
+ * the pet doing nothing. A pet worn down to 0 durability gives nothing.
+ */
+const PET_DAMAGE: Record<number, number> = {
+  1: 1.3,
+  3: 1.15,
+  64: 1.4,
+  123: 1.2,
+};
+
+function petDamageFactor(items: CharacterStatsInput['items']): number {
+  const pet = equipped(items, InventoryConstants.PetSlot);
+  if (!pet || pet.group !== GROUP_HELPER) return 1;
+  if (pet.durability !== undefined && pet.durability <= 0) return 1;
+  return PET_DAMAGE[pet.num] ?? 1;
+}
+
 export function deriveCharacterStats(input: CharacterStatsInput): DerivedStats {
   const base = getBaseClass(input.charClass);
+
+  const pet = petDamageFactor(input.items);
+  const scale = (value: number) => Math.trunc(value * pet);
 
   const damage = calculateDamage(input, base);
   const wizardry = calculateWizardry(input);
@@ -615,18 +638,18 @@ export function deriveCharacterStats(input: CharacterStatsInput): DerivedStats {
   return {
     attackSpeed: attackSpeedOf(input.charClass, input.agility),
     magicSpeed: magicSpeedOf(input.charClass, input.agility),
-    damageMin: damage.min,
-    damageMax: damage.max,
+    damageMin: scale(damage.min),
+    damageMax: scale(damage.max),
     dualWield: damage.dualWield,
     attackRate: calculateAttackRate(input, base),
     attackRatePvp: calculateAttackRatePvp(input, base),
     defense: calculateDefense(input, base),
     defenseRate: calculateDefenseRate(input, base),
     defenseRatePvp: calculateDefenseRatePvp(input, base),
-    wizardryMin: wizardry.min,
-    wizardryMax: wizardry.max,
+    wizardryMin: scale(wizardry.min),
+    wizardryMax: scale(wizardry.max),
     staffRate: wizardry.rate,
-    curseMin: Math.trunc(input.energy / 9),
-    curseMax: Math.trunc(input.energy / 4),
+    curseMin: scale(Math.trunc(input.energy / 9)),
+    curseMax: scale(Math.trunc(input.energy / 4)),
   };
 }
