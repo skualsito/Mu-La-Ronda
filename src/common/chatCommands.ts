@@ -14,6 +14,7 @@
  */
 
 import type { TextKey } from '../i18n';
+import { StatType } from './characterStats';
 
 /**
  * The command window's entries, in the window's order
@@ -156,4 +157,49 @@ export function matchChatCommands(text: string, gm: boolean): ChatCommand[] {
 export function localCommandOf(text: string): ChatCommand | undefined {
   const word = text.trim().split(' ')[0].toLowerCase();
   return CHAT_COMMANDS.find(c => (c.local || c.ui) && c.name === word);
+}
+
+const ADD_STATS: Record<string, StatType> = {
+  str: StatType.Strength,
+  agi: StatType.Agility,
+  vit: StatType.Vitality,
+  ene: StatType.Energy,
+  cmd: StatType.Leadership,
+};
+
+export type AddCommand =
+  | { kind: 'add'; stat: StatType; amount: number }
+  | { kind: 'usage'; usage: string };
+
+/**
+ * Mu La Ronda: `/add <str|agi|vit|ene|cmd> <n>` and `/addstr <n>` (and the
+ * other four) run on this client as a stat run (`statAllocation.ts`) instead
+ * of going to OpenMU - its single-stat commands ship disabled, and its
+ * multi-point answer for this client version re-enters the character.
+ * Undefined when the line is not one of them.
+ */
+export function parseAddCommand(text: string): AddCommand | undefined {
+  const [word, ...args] = text.trim().toLowerCase().split(/\s+/);
+  if (!word.startsWith('/add')) return undefined;
+
+  let statWord: string | undefined;
+  let amountWord: string | undefined;
+  let usage: string;
+
+  if (word === '/add') {
+    [statWord, amountWord] = args;
+    usage = '/add <str|agi|vit|ene|cmd> <amount>';
+  } else {
+    statWord = word.slice(4);
+    if (!(statWord in ADD_STATS)) return undefined; // /addfriend & co.
+    [amountWord] = args;
+    usage = `${word} <amount>`;
+  }
+
+  const stat = statWord !== undefined ? ADD_STATS[statWord] : undefined;
+  const amount = Number(amountWord);
+  if (stat === undefined || !Number.isInteger(amount) || amount <= 0) {
+    return { kind: 'usage', usage };
+  }
+  return { kind: 'add', stat, amount };
 }

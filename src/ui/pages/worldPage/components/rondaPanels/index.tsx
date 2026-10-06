@@ -1,7 +1,7 @@
 import './style.less';
 import { useEffect, useState } from 'react';
 import { observer } from 'mobx-react-lite';
-import { t } from '../../../../../i18n';
+import { tOptions } from '../../../../../i18n';
 import { Store } from '../../../../../store';
 import { CHAT_COMMANDS, type ChatCommand } from '../../../../../common/chatCommands';
 import {
@@ -82,7 +82,7 @@ const CommandRows = ({ commands }: { commands: readonly ChatCommand[] }) => (
             {command.name}
             {command.usage && <span className="ronda-usage"> {command.usage}</span>}
           </td>
-          <td>{t(command.helpKey)}</td>
+          <td>{tOptions(command.helpKey)}</td>
         </tr>
       ))}
     </tbody>

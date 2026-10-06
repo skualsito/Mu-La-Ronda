@@ -9,15 +9,20 @@ import type { StatType } from './characterStats';
  * character info window.
  *
  * `IncreaseCharacterStatPoint` carries no amount - the wire only ever adds
- * one point - so this is the same shape as the arrange and bulk-move runs
- * (`inventorySort.ts`, `bulkMove.ts`): one request in flight, the next one
- * sent when the server has answered the last. Nothing new goes out.
+ * one point - so a run is that request repeated. Mu La Ronda: up to
+ * `IN_FLIGHT` of them are out at once (the server answers them in order),
+ * so thousands of points take seconds instead of one round trip each. Also
+ * what `/add` and `/addstr` run (`chatCommands.ts`): OpenMU's own multi-point
+ * answer for this client version is to re-enter the character on the map.
  *
  * One writer: this module owns the run, the windows only read it.
  */
 
 /** A step with no answer this long is a lost request; the run ends. */
 const STEP_TIMEOUT = 5000;
+
+/** Requests sent ahead of their answers. */
+const IN_FLIGHT = 25;
 
 export type StatRun = {
   stat: StatType;
@@ -34,14 +39,17 @@ export const StatAllocation = new (class _StatAllocation {
 
   private timer: ReturnType<typeof setTimeout> | null = null;
   private detach: (() => void) | null = null;
+  /** Answers (confirmed or refused) received for the current run. */
+  private answers = 0;
 
   constructor() {
     // The run is swapped whole rather than mutated: a reader only ever sees a
     // consistent { sent, added } pair.
-    makeAutoObservable<this, 'timer' | 'detach'>(this, {
+    makeAutoObservable<this, 'timer' | 'detach' | 'answers'>(this, {
       run: observable.ref,
       timer: false,
       detach: false,
+      answers: false,
     });
   }
 
@@ -64,6 +72,7 @@ export const StatAllocation = new (class _StatAllocation {
     if (wanted <= 0) return;
 
     this.run = { stat, sent: 0, added: 0, wanted };
+    this.answers = 0;
     this.listen();
     this.step();
   }
@@ -91,17 +100,22 @@ export const StatAllocation = new (class _StatAllocation {
   }
 
   private step(): void {
-    const run = this.run;
-    if (!run) return;
+    for (let run = this.run; run; run = this.run) {
+      const inFlight = run.sent - this.answers;
+      if (inFlight >= IN_FLIGHT) return;
 
-    if (nextStep(run, Store.playerData.points) !== 'send') {
-      this.cancel();
-      return;
+      // What is not yet asked for: `points` only drops as answers land.
+      const unasked = { added: run.sent, wanted: run.wanted };
+      if (nextStep(unasked, Store.playerData.points - inFlight) !== 'send') {
+        if (inFlight === 0) this.cancel();
+        else this.armTimer();
+        return;
+      }
+
+      this.run = { ...run, sent: run.sent + 1 };
+      this.armTimer();
+      Store.increaseStatRequest(run.stat);
     }
-
-    this.run = { ...run, sent: run.sent + 1 };
-    this.armTimer();
-    Store.increaseStatRequest(run.stat);
   }
 
   private onAnswer(answer: { stat: number; added: number }): void {
@@ -109,6 +123,7 @@ export const StatAllocation = new (class _StatAllocation {
     if (!run || answer.stat !== run.stat) return;
 
     this.clearTimer();
+    this.answers++;
 
     // A refused point means the server will refuse the rest too.
     if (answer.added <= 0) {

@@ -35,7 +35,8 @@ import {
   matchEmojiBubbleWord,
   type EmojiBubbleId,
 } from './common/emojiBubbles';
-import { localCommandOf } from './common/chatCommands';
+import { localCommandOf, parseAddCommand } from './common/chatCommands';
+import { StatAllocation } from './common/statAllocation';
 import { openRondaPanel } from './common/rondaPanels';
 import {
   chatEmojiAdvance,
@@ -666,6 +667,15 @@ export const Social = new (class _Social {
 
     // `CheckCommand` (ZzzInterface.cpp:3990): `/trade`, `/party`, `/guild`,
     // `/union`… act on the player under the cursor and are never sent.
+    const add = parseAddCommand(text);
+    if (add) {
+      this.remember(this.chatHistory, text);
+      if (add.kind === 'usage') this.errorMessage(add.usage);
+      else if (Store.playerData.points <= 0) this.errorMessage(t('notify.pointNotAdded'));
+      else StatAllocation.start(add.stat, add.amount);
+      return true;
+    }
+
     const local = localCommandOf(text);
     if (local?.ui) {
       // Mu La Ronda: /comandos and /ranking open our own windows.
