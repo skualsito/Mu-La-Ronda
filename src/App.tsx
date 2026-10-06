@@ -6,7 +6,9 @@ import { Store, UIState } from './store';
 import { loadVersionUi } from './version';
 import { WorldPage } from './ui/pages/worldPage';
 import { useEventBus } from './hooks/useEventBus';
-import { PreloaderPage } from './ui/pages/preloaderPage';
+// Mu La Ronda: cargador propio que entra directo al selector de servidores
+// (el selector de mundos de upstream queda en ./ui/pages/preloaderPage).
+import { RondaLoader } from './ui/pages/rondaLoader';
 import { LoadingScreen } from './ui/components/loadingScreen';
 import { OptionsWindow } from './ui/components/optionsWindow';
 import { GameCursor } from './ui/components/gameCursor';
@@ -29,7 +31,7 @@ const CurrentPage = observer(() => {
 
   switch (state) {
     case UIState.Preloader:
-      return <PreloaderPage />;
+      return <RondaLoader />;
     case UIState.Servers:
       return <ServersPage />;
     case UIState.Login:

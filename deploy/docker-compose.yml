@@ -1,6 +1,6 @@
 # Mu La Ronda - stack en el mismo VPS que Pterodactyl.
 #
-#   Internet ──443──> nginx del host (el del panel) ──┬── play.<DOMAIN>   dist/ (estatico)
+#   Internet ──443──> nginx del host (el del panel) ──┬── <DOMAIN>        dist/ (estatico; play.<DOMAIN> redirige)
 #                                                     ├── ws.<DOMAIN>     127.0.0.1:PROXY_PORT
 #                                                     └── admin.<DOMAIN>  127.0.0.1:ADMIN_PORT
 #
@@ -94,7 +94,7 @@ services:
       DATABASE_URL: postgres://postgres:${DB_PASSWORD}@127.0.0.1:${DB_PORT:-5432}/openmu
       RATE_DB_PATH: /data/signups.sqlite
       RATE_LIMIT: ${REGISTER_RATE_LIMIT:-3}
-      CORS_ORIGIN: https://play.${DOMAIN:?falta DOMAIN en deploy/.env}
+      CORS_ORIGIN: https://${DOMAIN:?falta DOMAIN en deploy/.env},https://play.${DOMAIN}
     volumes:
       - ..:/app:ro
       - registerdata:/data

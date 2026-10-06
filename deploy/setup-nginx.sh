@@ -50,7 +50,7 @@ echo "▶ Certificados HTTPS"
 if [[ -n "${ACME_EMAIL:-}" ]]; then EMAIL_ARGS=(-m "$ACME_EMAIL"); else EMAIL_ARGS=(--register-unsafely-without-email); fi
 # --expand: al sumar un subdominio nuevo, amplia el certificado existente.
 certbot --nginx --non-interactive --agree-tos --redirect --expand "${EMAIL_ARGS[@]}" \
-  --cert-name "play.$DOMAIN" \
-  -d "play.$DOMAIN" -d "ws.$DOMAIN" -d "admin.$DOMAIN" -d "register.$DOMAIN"
+  --cert-name "$DOMAIN" \
+  -d "$DOMAIN" -d "play.$DOMAIN" -d "ws.$DOMAIN" -d "admin.$DOMAIN" -d "register.$DOMAIN"
 
-echo "✔ nginx listo: https://play.$DOMAIN"
+echo "✔ nginx listo: https://$DOMAIN"

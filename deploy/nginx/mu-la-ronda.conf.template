@@ -7,11 +7,21 @@ map $http_upgrade $mu_connection_upgrade {
     ''      close;
 }
 
-# Cliente web. SPA (/online, /offline): rutas desconocidas -> index.html.
+# play.<DOMAIN> es el nombre que usa la convencion del cliente; el juego vive
+# en el dominio principal, asi que redirige ahi.
 server {
     listen 80;
     listen [::]:80;
     server_name play.${DOMAIN};
+    return 301 https://${DOMAIN}$request_uri;
+}
+
+# Cliente web, en el dominio principal. SPA (/online, /offline): rutas
+# desconocidas -> index.html.
+server {
+    listen 80;
+    listen [::]:80;
+    server_name ${DOMAIN};
 
     root ${APP_DIR}/dist;
     index index.html;

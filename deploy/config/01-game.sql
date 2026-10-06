@@ -14,7 +14,7 @@ BEGIN;
 -- (y lo mismo para Master con MasterExperienceRate).
 UPDATE config."GameConfiguration" SET
   "ExperienceRate"       = 9999,
-  "MasterExperienceRate" = 500,
+  "MasterExperienceRate" = 9999,
   "MaximumLevel"         = 400,
   "MaximumMasterLevel"   = 200;
 

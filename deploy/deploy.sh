@@ -46,7 +46,7 @@ docker run --rm \
   -w /app \
   oven/bun:1.2 \
   sh -c "bun install --frozen-lockfile && bun run build \
-    && VITE_DATA_URL=https://play.$DOMAIN/Data/ VITE_REGISTER_API=/api/register bun run build:register"
+    && VITE_DATA_URL=https://$DOMAIN/Data/ VITE_REGISTER_API=/api/register bun run build:register"
 
 echo "▶ Generando serverlist.md para $DOMAIN"
 sed "s/\${DOMAIN}/$DOMAIN/g" deploy/serverlist.template.md > dist/serverlist.md
@@ -73,4 +73,4 @@ echo "▶ Configuracion del juego"
 bash deploy/apply-config.sh
 
 docker image prune -f >/dev/null
-echo "✔ Listo: https://play.$DOMAIN/online"
+echo "✔ Listo: https://$DOMAIN/online"
