@@ -2,6 +2,9 @@ import postgres from 'postgres';
 import { BurstLimit, bucketFor, clientIp } from '../../src/common/rateLimit';
 import { checkCredentials, issueSession, passwordConfigured, sessionCookie, sessionUser } from './auth';
 import * as game from './game';
+import * as spots from './spots';
+import * as inventory from './inventory';
+import { hasTerrain, terrainOf } from './terrain';
 import { openmuLogs, openmuStatus, restartOpenmu } from './docker';
 
 /**
@@ -98,7 +101,58 @@ async function route(req: Request, url: URL, ip: string): Promise<Response> {
     return json({ ...data, server });
   }
 
-  if (path === '/api/maps') return json(await game.listMaps(sql));
+  if (path === '/api/maps') {
+    const maps = await game.listMaps(sql);
+    return json(maps.map(m => ({ ...m, hasTerrain: hasTerrain(m.number) })));
+  }
+
+  // ---- spots (monster spawns) ---------------------------------------------
+  if (path === '/api/monsters') return json(await spots.listMonsters(sql));
+
+  const terrain = path.match(/^\/api\/maps\/(\d+)\/terrain$/);
+  if (terrain && method === 'GET') {
+    const data = await terrainOf(Number(terrain[1]));
+    return data ? json({ size: 256, cells: data }) : json({ error: 'Sin terreno para ese mapa' }, 404);
+  }
+
+  const mapSpawns = path.match(/^\/api\/maps\/([0-9a-f-]{36})\/spawns$/i);
+  if (mapSpawns) {
+    if (method === 'POST') await spots.createSpawn(sql, mapSpawns[1], (await body(req)) as spots.SpawnInput);
+    else if (method !== 'GET') throw new HttpError(405, 'Metodo no permitido');
+    return json(await spots.listSpawns(sql, mapSpawns[1]));
+  }
+
+  if (path.startsWith('/api/spawns/')) {
+    const id = idFrom(path, '/api/spawns/');
+    if (method === 'PATCH') await spots.updateSpawn(sql, id, (await body(req)) as spots.SpawnInput);
+    else if (method === 'DELETE') await spots.deleteSpawn(sql, id);
+    else throw new HttpError(405, 'Metodo no permitido');
+    return json({ ok: true });
+  }
+
+  // ---- inventory -------------------------------------------------------------
+  if (path === '/api/item-definitions') {
+    return json(await inventory.searchDefinitions(sql, (url.searchParams.get('q') ?? '').slice(0, 40)));
+  }
+  const defOptions = path.match(/^\/api\/item-definitions\/([0-9a-f-]{36})\/options$/i);
+  if (defOptions) return json(await inventory.definitionOptions(sql, defOptions[1]));
+
+  const inv = path.match(/^\/api\/characters\/([0-9a-f-]{36})\/(inventory|items\/([0-9a-f-]{36}))$/i);
+  if (inv) {
+    const [, characterId, , itemId] = inv;
+    if (method !== 'GET') {
+      const character = await game.getCharacter(sql, characterId, await onlineAccounts());
+      if (!character) throw new HttpError(404, 'No existe');
+      if (character.online) {
+        throw new HttpError(409, 'El personaje esta conectado: OpenMU pisaria los cambios al salir. Desconectalo primero.');
+      }
+      if (!itemId && method === 'POST') await inventory.addItem(sql, characterId, (await body(req)) as inventory.ItemInput);
+      else if (itemId && method === 'PATCH') await inventory.updateItem(sql, characterId, itemId, (await body(req)) as inventory.ItemInput);
+      else if (itemId && method === 'DELETE') await inventory.deleteItem(sql, characterId, itemId);
+      else throw new HttpError(405, 'Metodo no permitido');
+    }
+    return json(await inventory.getInventory(sql, characterId));
+  }
 
   // ---- characters --------------------------------------------------------
   if (path === '/api/characters' && method === 'GET') {

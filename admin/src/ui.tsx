@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import { Component, createContext, useCallback, useContext, useEffect, useState, type ErrorInfo, type ReactNode } from 'react';
 
 /** Small building blocks shared by every page. */
 
@@ -314,3 +314,30 @@ export const ACCOUNT_STATE: Record<number, { label: string; tone: 'neutral' | 'a
   4: { label: 'Baneada', tone: 'bad' },
   5: { label: 'Baneo temporal', tone: 'warn' },
 };
+
+// ---- error boundary -----------------------------------------------------------------
+
+
+/** A page or card that throws while rendering shows this instead of blanking the panel. */
+export class Boundary extends Component<{ children: ReactNode; resetKey?: string }, { error: Error | null }> {
+  state = { error: null as Error | null };
+
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error('panel:', error, info.componentStack);
+  }
+
+  componentDidUpdate(prev: { resetKey?: string }) {
+    if (prev.resetKey !== this.props.resetKey && this.state.error) this.setState({ error: null });
+  }
+
+  render() {
+    if (this.state.error) {
+      return <ErrorBox error={`Algo falló al mostrar esta sección: ${this.state.error.message}`} onRetry={() => this.setState({ error: null })} />;
+    }
+    return this.props.children;
+  }
+}

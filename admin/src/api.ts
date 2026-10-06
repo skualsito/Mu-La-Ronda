@@ -130,3 +130,65 @@ export type Dashboard = {
   recent: { login: string; registeredAt: string }[];
   server: ServerStatus;
 };
+
+export type MapInfo = MapRow & { hasTerrain: boolean };
+
+export type Monster = { id: string; number: number; name: string; kind: number };
+
+export type Spawn = {
+  id: string;
+  monsterId: string;
+  monsterNumber: number;
+  monsterName: string;
+  kind: number;
+  quantity: number;
+  baseQuantity: number;
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  trigger: number;
+  direction: number;
+  leveling: boolean;
+};
+
+export type ItemOption = { optionId: string; level: number; type: string; name: string };
+
+export type InventoryItem = {
+  id: string;
+  slot: number;
+  level: number;
+  durability: number;
+  hasSkill: boolean;
+  definitionId: string;
+  name: string;
+  group: number;
+  number: number;
+  width: number;
+  height: number;
+  maxDurability: number;
+  maxLevel: number;
+  canSkill: boolean;
+  options: ItemOption[];
+};
+
+export type ItemDefinition = {
+  id: string;
+  name: string;
+  group: number;
+  number: number;
+  width: number;
+  height: number;
+  durability: number;
+  maxLevel: number;
+  canSkill: boolean;
+};
+
+export type DefinitionOption = {
+  optionId: string;
+  number: number;
+  definitionName: string;
+  maxPerItem: number;
+  type: string;
+  name: string;
+};
