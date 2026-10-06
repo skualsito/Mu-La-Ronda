@@ -21,9 +21,15 @@ const STAT = {
   resets: '89a891a7-f9f9-4ab5-af36-12056e53a5f7',
 } as const;
 
-/** `CharacterStatus`: banned and game masters stay out of the rankings. */
+/**
+ * Banned characters and game masters stay out of the rankings. A GM is
+ * usually made by the account's `State` (2 GameMaster, 3 GameMasterInvisible;
+ * 4 and 5 are bans), not the character's `CharacterStatus` (1 banned, 32 GM),
+ * so both are checked.
+ */
 const STATUS_BANNED = 1;
 const STATUS_GAME_MASTER = 32;
+const ACCOUNT_HIDDEN = [2, 3, 4, 5];
 
 /** `GuildPosition.GuildMaster`. */
 const GUILD_MASTER = 128;
@@ -62,7 +68,9 @@ async function query(sql: Sql, type: RankingType): Promise<readonly unknown[]> {
           LEFT JOIN data."StatAttribute" r ON r."CharacterId" = c."Id" AND r."DefinitionId" = ${STAT.resets}::uuid
           LEFT JOIN data."StatAttribute" l ON l."CharacterId" = c."Id" AND l."DefinitionId" = ${STAT.level}::uuid
           LEFT JOIN data."StatAttribute" m ON m."CharacterId" = c."Id" AND m."DefinitionId" = ${STAT.masterLevel}::uuid
+          JOIN data."Account" a ON a."Id" = c."AccountId"
          WHERE c."CharacterStatus" NOT IN (${STATUS_BANNED}, ${STATUS_GAME_MASTER})
+           AND a."State" NOT IN ${sql(ACCOUNT_HIDDEN)}
          ORDER BY resets DESC, level DESC, "masterLevel" DESC, c."Experience" DESC, c."Name"
          LIMIT ${RANKING_SIZE}`;
 
@@ -75,7 +83,9 @@ async function query(sql: Sql, type: RankingType): Promise<readonly unknown[]> {
           FROM data."Character" c
           JOIN config."CharacterClass" cc ON cc."Id" = c."CharacterClassId"
           LEFT JOIN data."StatAttribute" l ON l."CharacterId" = c."Id" AND l."DefinitionId" = ${STAT.level}::uuid
+          JOIN data."Account" a ON a."Id" = c."AccountId"
          WHERE c."CharacterStatus" NOT IN (${STATUS_BANNED}, ${STATUS_GAME_MASTER})
+           AND a."State" NOT IN ${sql(ACCOUNT_HIDDEN)}
            AND c."PlayerKillCount" > 0
          ORDER BY kills DESC, level DESC, c."Name"
          LIMIT ${RANKING_SIZE}`;

@@ -1,6 +1,6 @@
 # OpenMU with the marketplace escrow plugin. Same stages as upstream's
 # src/Startup/Dockerfile; the only difference is where the source comes from
-# (a pinned upstream commit) and the seven files copied over it.
+# (a pinned upstream commit) and the files copied over it (marketplace escrow, reset fix).
 #
 #   docker build -t openmu-escrow marketplace/openmu
 

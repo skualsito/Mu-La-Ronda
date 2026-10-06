@@ -7,7 +7,6 @@ import { CHAT_COMMANDS, type ChatCommand } from '../../../../../common/chatComma
 import {
   closeRondaPanel,
   rondaPanels,
-  toggleRondaPanel,
 } from '../../../../../common/rondaPanels';
 import {
   fetchRanking,
@@ -25,7 +24,7 @@ import { playUiSound } from '../../../../../libs/sfx';
 
 /**
  * Mu La Ronda's own in-game windows: the command list (`/comandos`) and the
- * rankings (`/ranking` or the trophy button). Plain HTML in the server's
+ * rankings (`/ranking` or the game menu). Plain HTML in the server's
  * colours rather than MU sprite chrome - the original has neither window, so
  * there is no art to match.
  */
@@ -327,32 +326,8 @@ const RankingsWindow = observer(() => {
   );
 });
 
-// ---------------------------------------------------------------------------
-
-/** The button that opens the rankings, at the right edge of the screen. */
-const RankingsButton = observer(() => (
-  <button
-    type="button"
-    className={`ronda-rank-button${rondaPanels.open === 'rankings' ? ' is-on' : ''}`}
-    title="Rankings (/ranking)"
-    onClick={() => {
-      toggleRondaPanel('rankings');
-      playUiSound('click');
-    }}
-  >
-    <svg viewBox="0 0 24 24" aria-hidden width="18" height="18">
-      <path
-        fill="currentColor"
-        d="M17 3V2H7v1H3v3a4 4 0 0 0 4 4h.3A5 5 0 0 0 11 13.9V17H8v2h8v-2h-3v-3.1A5 5 0 0 0 16.7 10H17a4 4 0 0 0 4-4V3h-4ZM5 6V5h2v3a2 2 0 0 1-2-2Zm14 0a2 2 0 0 1-2 2V5h2v1ZM6 20h12v2H6z"
-      />
-    </svg>
-    <span>Rankings</span>
-  </button>
-));
-
 export const RondaPanels = observer(() => (
   <>
-    <RankingsButton />
     {rondaPanels.open === 'commands' && <CommandsWindow />}
     {rondaPanels.open === 'rankings' && <RankingsWindow />}
   </>
