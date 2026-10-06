@@ -4223,7 +4223,8 @@ function applyLevelUpdate(p: LevelUpdateView) {
     }
   });
 
-  Store.addNotification(t('notify.levelUp', { level: p.Level }));
+  // Mu La Ronda: sin "Level xx" en el chat - con un nivel por bicho era un
+  // renglon por kill. La barra y la ventana de personaje ya muestran el nivel.
 }
 
 EventBus.on('CharacterLevelUpdate', packet =>
@@ -4238,7 +4239,7 @@ EventBus.on('MasterCharacterLevelUpdate', packet => {
   runInAction(() => {
     Store.playerData.masterLevel = p.MasterLevel;
   });
-  Store.addNotification(t('notify.masterLevelUp', { level: p.MasterLevel }));
+  // Mu La Ronda: sin aviso de master level en el chat (ver CharacterLevelUpdate).
 });
 
 // C3 16 - sent for every kill share. Without this handler the exp bar only
@@ -4425,7 +4426,7 @@ EventBus.on('MasterCharacterLevelUpdateExtended', packet => {
     Store.playerData.maxSD = p.MaximumShield;
     Store.playerData.maxAG = p.MaximumAbility;
   });
-  Store.addNotification(t('notify.masterLevelUp', { level: p.MasterLevel }));
+  // Mu La Ronda: sin aviso de master level en el chat (ver CharacterLevelUpdate).
 });
 
 /**
