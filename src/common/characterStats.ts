@@ -626,6 +626,19 @@ function petDamageFactor(items: CharacterStatsInput['items']): number {
   return PET_DAMAGE[pet.num] ?? 1;
 }
 
+/** Mu La Ronda: Pet Panda and Pet Unicorn add 50 to the final defense (OpenMU `DefenseFinal`). */
+const PET_DEFENSE: Record<number, number> = {
+  80: 50,
+  106: 50,
+};
+
+function petDefenseBonus(items: CharacterStatsInput['items']): number {
+  const pet = equipped(items, InventoryConstants.PetSlot);
+  if (!pet || pet.group !== GROUP_HELPER) return 0;
+  if (pet.durability !== undefined && pet.durability <= 0) return 0;
+  return PET_DEFENSE[pet.num] ?? 0;
+}
+
 export function deriveCharacterStats(input: CharacterStatsInput): DerivedStats {
   const base = getBaseClass(input.charClass);
 
@@ -643,7 +656,7 @@ export function deriveCharacterStats(input: CharacterStatsInput): DerivedStats {
     dualWield: damage.dualWield,
     attackRate: calculateAttackRate(input, base),
     attackRatePvp: calculateAttackRatePvp(input, base),
-    defense: calculateDefense(input, base),
+    defense: calculateDefense(input, base) + petDefenseBonus(input.items),
     defenseRate: calculateDefenseRate(input, base),
     defenseRatePvp: calculateDefenseRatePvp(input, base),
     wizardryMin: scale(wizardry.min),
