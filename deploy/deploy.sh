@@ -17,12 +17,17 @@ if [[ ! -f deploy/.env ]]; then
   exit 1
 fi
 
-set -a; source deploy/.env; set +a
-
-echo "▶ Actualizando codigo ($BRANCH)"
-git fetch --depth 1 origin "$BRANCH"
-git reset --hard "origin/$BRANCH"
+# El git reset reescribe este mismo archivo, y bash lo va leyendo mientras
+# corre: primero actualizar, despues relanzar la version nueva desde cero.
+if [[ "${1:-}" != "--updated" ]]; then
+  echo "▶ Actualizando codigo ($BRANCH)"
+  git fetch --depth 1 origin "$BRANCH"
+  git reset --hard "origin/$BRANCH"
+  exec bash deploy/deploy.sh --updated
+fi
 echo "  commit: $(git log --oneline -1)"
+
+set -a; source deploy/.env; set +a
 
 echo "▶ Compilando cliente"
 # Cache de bun en una carpeta del usuario que despliega: un volumen de docker
