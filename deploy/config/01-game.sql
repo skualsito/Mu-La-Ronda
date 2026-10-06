@@ -39,8 +39,10 @@ UPDATE config."GameServerDefinition" SET
 -- con /reset (o hablando con Leo the Helper) y ven su estado con /resetinfo.
 --
 -- RequiredMoney se multiplica por la cantidad de resets (reset 5 = 5.000.000).
--- Puntos: ReplacePointsPerReset + MultiplyPointsByResetCount => despues del
--- reset N el personaje tiene PointsPerReset × N puntos libres.
+-- Puntos: el reset NO saca los stats (ResetStats false): fuerza, agilidad,
+-- etc. quedan como estaban, y los puntos libres que tenias tambien. Cada reset
+-- suma PointsPerReset (500) puntos libres mas (ReplacePointsPerReset false,
+-- sin multiplicar por la cantidad de resets).
 DO $$
 DECLARE
   reset_type uuid := '6a9d585d-79d7-4674-b6ea-7e87392fa501';
@@ -52,10 +54,10 @@ DECLARE
     "MultiplyRequiredMoneyByResetCount": true,
     "RequiredResetItem": null,
     "ItemCostTiers": [],
-    "ResetStats": true,
+    "ResetStats": false,
     "PointsPerReset": 500,
-    "MultiplyPointsByResetCount": true,
-    "ReplacePointsPerReset": true,
+    "MultiplyPointsByResetCount": false,
+    "ReplacePointsPerReset": false,
     "PointsTiers": [],
     "MoveHome": true,
     "LogOut": true
