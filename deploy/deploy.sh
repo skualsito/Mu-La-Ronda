@@ -25,13 +25,19 @@ git reset --hard "origin/$BRANCH"
 echo "  commit: $(git log --oneline -1)"
 
 echo "▶ Compilando cliente"
+# Cache de bun en una carpeta del usuario que despliega: un volumen de docker
+# nace con dueño root y bun (que corre con nuestro uid) no podria escribirlo.
+BUN_CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/mu-la-ronda-bun"
+mkdir -p "$BUN_CACHE"
 docker run --rm \
   --user "$(id -u):$(id -g)" \
   -e HOME=/tmp \
+  -e TMPDIR=/tmp \
+  -e BUN_TMPDIR=/tmp \
   -e BUN_INSTALL_CACHE_DIR=/cache \
   -e VITE_SERVER_LIST_URL=/serverlist.md \
   -v "$REPO_DIR:/app" \
-  -v mu-la-ronda-bun-cache:/cache \
+  -v "$BUN_CACHE:/cache" \
   -w /app \
   oven/bun:1.2 \
   sh -c "bun install --frozen-lockfile && bun run build"
