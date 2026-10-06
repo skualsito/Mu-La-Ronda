@@ -2,14 +2,13 @@ import './style.less';
 import { t } from '../../../../../i18n';
 import { observer } from 'mobx-react-lite';
 import { Store } from '../../../../../store';
-import { Economy, MIX_MENU } from '../../../../../economy';
+import { Economy } from '../../../../../economy';
 import { StorageKind } from '../../../../../common/itemStorage';
 import { MuButton } from '../../../../components/muButton';
-import { MuItemWindow, MuTableFrame } from '../../../../components/muWindow';
+import { MuItemWindow } from '../../../../components/muWindow';
 import { ItemGrid } from '../../../../components/itemGrid';
 import { QuickItemActions } from '../../../../../common/quickItemActions';
 import { useEventBus } from '../../../../../hooks/useEventBus';
-import { uiClick } from '../../../../../libs/sfx';
 import {
   COLUMNS,
   GRID_X,
@@ -18,10 +17,6 @@ import {
   HEAD_CLOSE_WIDTH,
   HEAD_CLOSE_X,
   HEAD_CLOSE_Y,
-  MENU_HEIGHT,
-  MENU_WIDTH,
-  MENU_X,
-  MENU_Y,
   MIX_BUTTON_FRAMES,
   MIX_BUTTON_HEIGHT,
   MIX_BUTTON_WIDTH,
@@ -42,9 +37,10 @@ import {
 const WINDOW_ID = 'chaos-machine';
 
 /**
- * `CNewUIMixInventory`: the goblin's tray. Items go in from the inventory,
- * the menu picks which combination to attempt and the button sends
- * `ChaosMachineMixRequest`; the result comes back as `ItemCraftingResult`
+ * `CNewUIMixInventory`: the goblin's tray. Items go in from the inventory
+ * and the button sends `ChaosMachineMixRequest`; as in the original there is
+ * no recipe menu - the server works the combination out from the items
+ * (see `Economy.mix`); the result comes back as `ItemCraftingResult`
  * and lands in the tray, where it has to be dragged out before the window
  * will close (`ClosingProcess`).
  */
@@ -53,11 +49,8 @@ export const ChaosMachine = observer(() => {
 
   const picked = Store.pickedItem;
   // The Chaos Card Master shares this window (`MIXTYPE_CHAOS_CARD` in the
-  // original's CNewUIMixInventory): no recipe menu, its own title and hint.
+  // original's CNewUIMixInventory): its own title and hint.
   const cardMode = Economy.mixKind === 'chaosCard';
-  const selected = cardMode
-    ? undefined
-    : MIX_MENU.find(entry => entry.type === Economy.mixType);
   const title = cardMode ? t('chaosCard.title') : t(TITLE);
 
   const column = 1 + (Store.inventoryEnabled ? 1 : 0) + (Store.characterInfoEnabled ? 1 : 0);
@@ -74,7 +67,7 @@ export const ChaosMachine = observer(() => {
         {title}
       </div>
       <div className="chaos-subtitle" style={{ top: SUBTITLE_Y }}>
-        {Economy.mixPending ? t('chaos.combining') : selected ? t(selected.labelKey) : ''}
+        {Economy.mixPending ? t('chaos.combining') : ''}
       </div>
 
       <div
@@ -89,7 +82,6 @@ export const ChaosMachine = observer(() => {
         onClick={() => Economy.closeMix()}
       />
 
-      {}
       <div
         className={`chaos-recipe${Economy.mixResult ? ` ${Economy.mixResult}` : ''}`}
         style={{
@@ -105,9 +97,7 @@ export const ChaosMachine = observer(() => {
           <div className="hint">
             {cardMode
               ? `${t('chaosCard.hint1')} ${t('chaosCard.hint2')}`
-              : selected
-                ? t(selected.hintKey)
-                : ''}
+              : t('chaos.putItemsIn')}
           </div>
         )}
       </div>
@@ -134,32 +124,6 @@ export const ChaosMachine = observer(() => {
         }
       />
 
-      {!cardMode && (
-        <>
-          <MuTableFrame
-            left={MENU_X - 4}
-            top={MENU_Y - 3}
-            width={MENU_WIDTH + 9}
-            height={MENU_HEIGHT + 9}
-          />
-          <div
-            className="chaos-menu"
-            data-no-drag="true"
-            style={{ left: MENU_X, top: MENU_Y, width: MENU_WIDTH, height: MENU_HEIGHT }}
-          >
-            {MIX_MENU.map(entry => (
-              <div
-                key={entry.type}
-                className={`chaos-menu-row${entry.type === Economy.mixType ? ' active' : ''}`}
-                title={t(entry.hintKey)}
-                onClick={uiClick(() => Economy.setMixType(entry.type))}
-              >
-                {t(entry.labelKey)}
-              </div>
-            ))}
-          </div>
-        </>
-      )}
 
       <div
         className="window-button"

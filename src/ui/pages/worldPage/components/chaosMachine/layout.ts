@@ -5,8 +5,9 @@ import { MIX_COLUMNS, MIX_ROWS } from '../../../../../common/itemStorage';
  * `CNewUIMixInventory` (NewUIMixInventory.cpp): the 190×429 item frame, the
  * 8×4 tray at (15, 110) and the 44×35 mix button centred on the bottom edge
  * at y = 380. The block the original fills with the recipe it matched
- * (`GetCurRecipeName`, `GetSourceName`) is the mix menu here - see the note
- * on `MIX_MENU` in economy.ts.
+ * (`GetCurRecipeName`, `GetSourceName`) shows the hint and the result here;
+ * the server picks the recipe from the items (`Economy.mix`). MENU_* is the
+ * old recipe menu's box, no longer drawn.
  */
 
 export const COLUMNS = MIX_COLUMNS;

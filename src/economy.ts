@@ -751,16 +751,25 @@ export const Economy = new (class _Economy {
       return;
     }
 
-    const packet = ChaosMachineMixRequestPacket.createPacket();
-    // The card master has no crafting menu; OpenMU resolves the mix against
-    // the opened NPC's craftings, so 0 asks for whatever a server configured
-    // there (none by default - the mix then answers IncorrectMixItems).
-    packet.MixType =
-      this.mixKind === 'chaosCard'
-        ? (0 as ChaosMachineMixRequestChaosMachineMixTypeEnum)
-        : this.mixType;
-    packet.SocketSlot = 0;
-    Store.sendToGS(packet.buffer);
+    if (this.mixKind === 'chaosMachine') {
+      // Mu La Ronda: like the original, the goblin works out the recipe from
+      // what is in the tray - no menu. A 3-byte request (no MixType) makes
+      // OpenMU's ChaosMixHandlerPlugIn infer it with
+      // `FindAppropriateCraftingByItems`, the path it keeps for 0.75/0.95d.
+      const bare = new DataView(new ArrayBuffer(3));
+      bare.setUint8(0, ChaosMachineMixRequestPacket.HeaderCode);
+      bare.setUint8(1, 3);
+      bare.setUint8(2, ChaosMachineMixRequestPacket.Code);
+      Store.sendToGS(bare);
+    } else {
+      const packet = ChaosMachineMixRequestPacket.createPacket();
+      // The card master has no crafting menu; OpenMU resolves the mix against
+      // the opened NPC's craftings, so 0 asks for whatever a server configured
+      // there (none by default - the mix then answers IncorrectMixItems).
+      packet.MixType = 0 as ChaosMachineMixRequestChaosMachineMixTypeEnum;
+      packet.SocketSlot = 0;
+      Store.sendToGS(packet.buffer);
+    }
 
     runInAction(() => {
       this.mixPending = true;
