@@ -1220,3 +1220,126 @@ select {
     overflow-x: auto;
   }
 }
+
+/* ---- skills ("poderes") ----------------------------------------------------------- */
+.skill-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+
+.skill-row {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto 110px auto;
+  gap: 10px;
+  align-items: center;
+  padding: 6px 10px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.skill-number {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.skill-name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.skill-add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+
+  select:first-child {
+    flex: 1 1 260px;
+  }
+}
+
+@media (max-width: 640px) {
+  .skill-row {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+
+    .skill-number,
+    .badge {
+      display: none;
+    }
+  }
+}
+
+/* ---- automatic messages ------------------------------------------------------------- */
+.notice-preview {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 12px;
+  padding: 14px 12px;
+  background: radial-gradient(ellipse at center, #1f2a1e 0%, #070b0b 75%);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+
+  span {
+    max-width: 520px;
+    padding: 2px 10px;
+    color: rgb(255, 200, 80);
+    font-weight: 700;
+    font-size: 13px;
+    text-align: center;
+    text-shadow: 1px 1px 0 #000;
+    background: rgba(0, 0, 0, 0.5);
+  }
+}
+
+.message-new {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  input {
+    flex: 1 1 320px;
+  }
+}
+
+.message-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.message-row {
+  padding: 12px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+
+  &.is-off .notice-preview span {
+    opacity: 0.45;
+  }
+}
+
+.message-edit {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+
+  input {
+    flex: 1 1 auto;
+  }
+}
+
+.message-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+
+  .toggle {
+    margin: 0;
+  }
+}

@@ -6,6 +6,7 @@ import { CharactersPage, CharacterPage } from './pages/characters';
 import { AccountsPage, AccountPage } from './pages/accounts';
 import { ConfigPage } from './pages/config';
 import { SpotsPage } from './pages/spots';
+import { MessagesPage } from './pages/messages';
 import { ServerPage } from './pages/server';
 
 /** Hash routes: #/, #/personajes, #/personajes/<id>, #/cuentas, #/cuentas/<id>, #/config, #/servidor. */
@@ -25,6 +26,7 @@ const NAV = [
   { path: 'personajes', label: 'Personajes', icon: 'M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm-8 9a8 8 0 0 1 16 0z' },
   { path: 'cuentas', label: 'Cuentas', icon: 'M4 5h16v14H4zM8 9h8M8 13h5' },
   { path: 'spots', label: 'Spots', icon: 'M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12zm0-9a3 3 0 1 0 0-6 3 3 0 0 0 0 6z' },
+  { path: 'mensajes', label: 'Mensajes', icon: 'M4 5h16v11H8l-4 4zM8 9h8M8 12h5' },
   { path: 'config', label: 'Configuración', icon: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm8-3l2-1-2-4-2 .5-1.5-1.5L16 4h-4l-.5 2L10 7.5 8 7 6 11l2 1-2 1 2 4 2-.5 1.5 1.5.5 2h4l.5-2 1.5-1.5 2 .5 2-4z' },
   { path: 'servidor', label: 'Servidor', icon: 'M4 4h16v6H4zm0 10h16v6H4zM8 7h.01M8 17h.01' },
 ];
@@ -116,6 +118,9 @@ export function App() {
       break;
     case 'spots':
       page = <SpotsPage map={id} />;
+      break;
+    case 'mensajes':
+      page = <MessagesPage />;
       break;
     case 'servidor':
       page = <ServerPage />;

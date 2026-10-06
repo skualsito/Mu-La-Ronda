@@ -1,6 +1,7 @@
 import type { Server, ServerWebSocket, Socket } from "bun";
 import { CLEAR, currentWeather, weatherForced, weatherPacket, weatherSlotSeconds, type WeatherState } from "./weather";
 import { ConnectionPresence, PRESENCE_HOST, PRESENCE_PORT, startPresenceServer } from "./presence";
+import { Injector, startAnnouncements } from "./announce";
 import { parseAllowTargets, targetAllowed, type ReservedTarget } from "./allowTargets";
 import { SESSION_NONCE_RE } from "../src/common/sessionNonce";
 import { ADMIN_STREAM_PATH, type RefusalReason } from "../src/common/adminProtocol";
@@ -133,6 +134,8 @@ type RelayData = {
   band: BandPeer | null;
   /** This socket as the ping relay knows it; set in `open`, null without tracking. */
   ping: PingPeer | null;
+  /** Mu La Ronda: puts the proxy's own packets between the server's (announce.ts); set in `open`. */
+  injector: Injector | null;
 };
 
 type AdminData = {
@@ -145,13 +148,26 @@ type AdminData = {
 type WebSocketData = RelayData | AdminData;
 
 const clients = new Set<ServerWebSocket<RelayData>>();
+/** Every relay, weather or not: the announcements go to the logged-in ones. */
+const relays = new Set<ServerWebSocket<RelayData>>();
 
 let weather: WeatherState = CLEAR;
 let lastBroadcast = 0;
 
 function sendWeather(ws: ServerWebSocket<RelayData>, state: WeatherState) {
-  ws.send(weatherPacket(state));
+  if (ws.data.injector) ws.data.injector.inject(weatherPacket(state));
+  else ws.send(weatherPacket(state));
 }
+
+startAnnouncements(packet => {
+  let reached = 0;
+  for (const relay of relays) {
+    if (!relay.data.presence.loggedIn || !relay.data.injector) continue;
+    relay.data.injector.inject(packet);
+    reached += 1;
+  }
+  return reached;
+});
 
 function tickWeather() {
   const now = Date.now();
@@ -373,7 +389,7 @@ Bun.serve<WebSocketData>({
     const presence = new ConnectionPresence(session, targetPort);
     const track = tracker ? tracker.open(session, targetPort) : null;
 
-    const data: RelayData = { kind: "relay", targetHost, targetPort, presence, track, band: null, ping: null };
+    const data: RelayData = { kind: "relay", targetHost, targetPort, presence, track, band: null, ping: null, injector: null };
 
     // upgrade the request to a WebSocket
     if (server.upgrade(req, { data })) {
@@ -404,6 +420,9 @@ Bun.serve<WebSocketData>({
       console.log(
         `client connected, target ${relay.data.targetHost}:${relay.data.targetPort}`
       );
+
+      relay.data.injector = new Injector(packet => relay.send(packet));
+      relays.add(relay);
 
       if (WEATHER_ENABLED) {
         clients.add(relay);
@@ -441,6 +460,7 @@ Bun.serve<WebSocketData>({
             const forwarded = asBufferSource(data);
 
             relay.send(forwarded);
+            if (typeof forwarded !== "string") relay.data.injector?.afterServerChunk(forwarded);
 
             // The server's side of the login: the sniffer names a socket only
             // once the game server has said yes, never off the client's own
@@ -534,6 +554,7 @@ Bun.serve<WebSocketData>({
 
       const relay = ws as ServerWebSocket<RelayData>;
       clients.delete(relay);
+      relays.delete(relay);
       relay.data.presence.close();
       // Before the tracker closes the session: the gone / leave notices
       // still need its map and scope.

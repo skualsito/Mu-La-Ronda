@@ -192,3 +192,9 @@ export type DefinitionOption = {
   type: string;
   name: string;
 };
+
+export type SkillRow = { skillId: string; number: number; name: string; type: number; maxLevel: number | null; rank: number | null };
+export type LearnedSkill = SkillRow & { id: string; level: number };
+export type CharacterSkills = { learned: LearnedSkill[]; available: SkillRow[] };
+
+export type AutoMessage = { id: number; text: string; intervalMinutes: number; enabled: boolean; sendNowAt: string | null };

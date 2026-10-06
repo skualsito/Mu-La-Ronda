@@ -206,6 +206,11 @@ export class ConnectionPresence {
    * The marketplace's bots each live on one game server, and a player is
    * only reachable by the bot on theirs; this is how presence says which.
    */
+  /** Mu La Ronda: the game server accepted this socket's login (announcements go only there). */
+  get loggedIn(): boolean {
+    return this.account !== null;
+  }
+
   constructor(session: string | null = null, readonly targetPort: number | null = null) {
     open.add(this);
 

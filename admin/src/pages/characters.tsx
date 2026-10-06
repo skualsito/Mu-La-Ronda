@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api, type Character, type CharacterRow, type MapRow, type Stats } from '../api';
 import { InventoryCard } from './inventory';
+import { SkillsCard } from './skills';
 import {
   Badge,
   Boundary,
@@ -304,6 +305,10 @@ export function CharacterPage({ id }: { id: string }) {
 
       <Boundary resetKey={id}>
         <InventoryCard characterId={id} locked={locked} />
+      </Boundary>
+
+      <Boundary resetKey={id}>
+        <SkillsCard characterId={id} locked={locked} />
       </Boundary>
 
       <div className={`savebar ${dirty ? 'is-visible' : ''}`}>

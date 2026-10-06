@@ -4,6 +4,8 @@ import { checkCredentials, issueSession, passwordConfigured, sessionCookie, sess
 import * as game from './game';
 import * as spots from './spots';
 import * as inventory from './inventory';
+import * as skills from './skills';
+import * as messages from './messages';
 import { hasTerrain, terrainOf } from './terrain';
 import { openmuLogs, openmuStatus, restartOpenmu } from './docker';
 
@@ -154,6 +156,24 @@ async function route(req: Request, url: URL, ip: string): Promise<Response> {
     return json(await inventory.getInventory(sql, characterId));
   }
 
+  // ---- skills ----------------------------------------------------------------
+  const sk = path.match(/^\/api\/characters\/([0-9a-f-]{36})\/skills(?:\/([0-9a-f-]{36}))?$/i);
+  if (sk) {
+    const [, characterId, entryId] = sk;
+    if (method !== 'GET') {
+      const character = await game.getCharacter(sql, characterId, await onlineAccounts());
+      if (!character) throw new HttpError(404, 'No existe');
+      if (character.online) {
+        throw new HttpError(409, 'El personaje esta conectado: OpenMU pisaria los cambios al salir. Desconectalo primero.');
+      }
+      if (!entryId && method === 'POST') await skills.addSkill(sql, characterId, (await body(req)) as skills.SkillInput);
+      else if (entryId && method === 'PATCH') await skills.updateSkill(sql, characterId, entryId, (await body(req)) as skills.SkillInput);
+      else if (entryId && method === 'DELETE') await skills.deleteSkill(sql, characterId, entryId);
+      else throw new HttpError(405, 'Metodo no permitido');
+    }
+    return json(await skills.getSkills(sql, characterId));
+  }
+
   // ---- characters --------------------------------------------------------
   if (path === '/api/characters' && method === 'GET') {
     const q = (url.searchParams.get('q') ?? '').slice(0, 20);
@@ -210,6 +230,22 @@ async function route(req: Request, url: URL, ip: string): Promise<Response> {
     const { active } = await body(req);
     await game.setPlugin(sql, id, !!active);
     return json(await game.getConfig(sql));
+  }
+
+  // ---- automatic messages -------------------------------------------------------
+  if (path === '/api/messages') {
+    if (method === 'POST') await messages.createMessage(sql, (await body(req)) as messages.MessageInput);
+    else if (method !== 'GET') throw new HttpError(405, 'Metodo no permitido');
+    return json(await messages.listMessages(sql));
+  }
+  const msg = path.match(/^\/api\/messages\/(\d+)(\/send)?$/);
+  if (msg) {
+    const id = Number(msg[1]);
+    if (msg[2] && method === 'POST') await messages.sendNow(sql, id);
+    else if (!msg[2] && method === 'PATCH') await messages.updateMessage(sql, id, (await body(req)) as messages.MessageInput);
+    else if (!msg[2] && method === 'DELETE') await messages.deleteMessage(sql, id);
+    else throw new HttpError(405, 'Metodo no permitido');
+    return json(await messages.listMessages(sql));
   }
 
   // ---- server --------------------------------------------------------------
