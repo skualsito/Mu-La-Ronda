@@ -684,6 +684,9 @@ function applyOfflineHandOverrides(items: (Item | null)[]): void {
   read('pet', InventoryConstants.PetSlot, true);
 }
 
+/** How long a position sync waits for a warp it might cross (Store.syncServerPosition). */
+const POSITION_SYNC_DELAY_MS = 1500;
+
 export const Store = new (class _Store {
   csSocket?: WebSocket;
   gsSocket?: WebSocket;
@@ -1871,7 +1874,7 @@ export const Store = new (class _Store {
   }
 
   enterGateRequest(gateNumber: number): void {
-    this.lastGateRequestAt = performance.now();
+    this.noteWarp();
     const packet = EnterGateRequestPacket.createPacket();
     packet.GateNumber = gateNumber;
     packet.TeleportTargetX = 0;
@@ -1894,6 +1897,7 @@ export const Store = new (class _Store {
     packet.CommandKey = 0;
     packet.WarpInfoIndex = index;
 
+    this.noteWarp();
     NetStats.markSent('warp');
     this.sendToGS(packet.buffer);
   }
@@ -1969,14 +1973,27 @@ export const Store = new (class _Store {
     // Mu La Ronda: OpenMU only turns the hero on a step-less walk
     // (CharacterWalkBaseHandlerPlugIn) - its walker keeps going. An instant
     // move to the same tile is what stops it there (PlayerMovement.MoveAsync).
+    // Not right after a warp: it would land on the new map (syncServerPosition).
+    if (performance.now() - this.lastWarpAt < POSITION_SYNC_DELAY_MS * 2) return;
     const stop = InstantMoveRequestPacket.createPacket();
     stop.TargetX = packet.SourceX;
     stop.TargetY = packet.SourceY;
     this.sendToGS(stop.buffer);
   }
 
-  /** When the last EnterGateRequest went out (syncServerPosition stays away from it). */
-  private lastGateRequestAt = -Infinity;
+  /**
+   * Bumped by anything that may move the hero to another place on the
+   * server: a gate, a Move window row, a chat command, a MapChanged. A
+   * pending position sync from before it is dropped (syncServerPosition).
+   */
+  private warpEpoch = 0;
+  private lastWarpAt = -Infinity;
+  private positionSyncTimer: ReturnType<typeof setTimeout> | null = null;
+
+  noteWarp(): void {
+    this.warpEpoch++;
+    this.lastWarpAt = performance.now();
+  }
 
   /**
    * Mu La Ronda: pins the server's copy of the hero to the tile the client
@@ -1986,15 +2003,31 @@ export const Store = new (class _Store {
    * position. OpenMU applies an InstantMoveRequest as is (PlayerMovement.MoveAsync).
    */
   syncServerPosition(x: number, y: number): void {
-    if (this.isOffline || this.sceneLoading) return;
-    // Never after a gate: the move would land on the destination map at the
-    // gate's coordinates of the old one.
-    if (performance.now() - this.lastGateRequestAt < 3000) return;
-    const stop = InstantMoveRequestPacket.createPacket();
+    if (this.isOffline) return;
     // The hero stands on tile `trunc(pos)` (gateSystem.ts).
-    stop.TargetX = Math.trunc(x);
-    stop.TargetY = Math.trunc(y);
-    this.sendToGS(stop.buffer);
+    const tileX = Math.trunc(x);
+    const tileY = Math.trunc(y);
+    const epoch = this.warpEpoch;
+    const hero = this.world?.playerEntity;
+    if (this.positionSyncTimer) clearTimeout(this.positionSyncTimer);
+    // The move lands on whatever map the server has the hero on: sent after a
+    // warp it put the hero on the new map at the old map's tile (Atlans at a
+    // Lorencia spot). So it waits long enough for a warp's MapChanged to
+    // arrive, and goes only if nothing warped meanwhile and the hero is still
+    // standing on that tile of the same map.
+    this.positionSyncTimer = setTimeout(() => {
+      this.positionSyncTimer = null;
+      if (epoch !== this.warpEpoch || this.sceneLoading) return;
+      if (performance.now() - this.lastWarpAt < POSITION_SYNC_DELAY_MS * 2) return;
+      const now = this.world?.playerEntity;
+      if (!now || now !== hero) return;
+      if (Math.trunc(now.transform.pos.x) !== tileX || Math.trunc(now.transform.pos.z) !== tileY) return;
+      if (now.pathfinding?.path?.length) return;
+      const stop = InstantMoveRequestPacket.createPacket();
+      stop.TargetX = tileX;
+      stop.TargetY = tileY;
+      this.sendToGS(stop.buffer);
+    }, POSITION_SYNC_DELAY_MS);
   }
 
   // --- NPC shop & repair (CNewUINPCShop, NewUIMyInventory repair mode) -------

@@ -731,6 +731,9 @@ export const Social = new (class _Social {
       }
     }
 
+    // A chat command (/move, /warp, a GM's /trace...) may move the hero on
+    // the server: no position sync from before it may follow.
+    if (message.startsWith('/')) Store.noteWarp();
     const packet = PublicChatMessagePacket.createPacket(
       PublicChatMessagePacket.getRequiredSize(10 + message.length)
     );

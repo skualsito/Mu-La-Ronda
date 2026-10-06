@@ -723,6 +723,7 @@ EventBus.on('MapChanged', packet => {
   // Answers a warp the player asked for; a server-initiated one pairs with
   // nothing and is ignored (common/netStats.ts).
   NetStats.markAnswered('warp');
+  Store.noteWarp();
 
   const p = new MapChangedPacket(packet);
   const pos = { x: p.PositionX, y: p.PositionY };
