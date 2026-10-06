@@ -294,6 +294,44 @@ function wingLines(out: Lines, def: ItemDef, level: number) {
   }
 }
 
+/**
+ * Mu La Ronda: what each pet gives, as OpenMU applies it
+ * (`VersionSeasonSix/Items/Pets.cs`). The original only names most pets, so
+ * the Imp or the Panda read as doing nothing. Dark Horse and Fenrir options
+ * (their own option lines) are left to the item's options.
+ */
+type PetBonus = { key: TextKey; value?: number };
+
+const PET_BONUSES: Record<number, readonly PetBonus[]> = {
+  0: [{ key: 'item.absorbDamage', value: 20 }, { key: 'item.pet.maxHp', value: 50 }],
+  1: [{ key: 'item.increaseDamage', value: 30 }],
+  2: [{ key: 'item.pet.mount' }],
+  3: [{ key: 'item.pet.mount' }, { key: 'item.increaseDamage', value: 15 }, { key: 'item.absorbDamage', value: 10 }],
+  4: [{ key: 'item.pet.mount' }],
+  37: [{ key: 'item.pet.mount' }, { key: 'item.ableToFly' }],
+  64: [{ key: 'item.increaseDamage', value: 40 }, { key: 'item.pet.attackSpeed', value: 10 }],
+  65: [{ key: 'item.absorbDamage', value: 30 }, { key: 'item.pet.maxHp', value: 50 }],
+  80: [{ key: 'item.pet.experience', value: 50 }, { key: 'item.pet.defense', value: 50 }],
+  106: [{ key: 'item.pet.zen', value: 50 }, { key: 'item.pet.defense', value: 50 }],
+  123: [
+    { key: 'item.increaseDamage', value: 20 },
+    { key: 'item.pet.attackSpeed', value: 10 },
+    { key: 'item.pet.experience', value: 30 },
+  ],
+};
+
+export function petBonusLines(def: ItemDef): string[] {
+  if (def.group !== ItemGroup.Helper) return [];
+  return (PET_BONUSES[def.index] ?? []).map(({ key, value }) => (value === undefined ? t(key) : t(key, { value })));
+}
+
+function petLines(out: Lines, def: ItemDef) {
+  const lines = petBonusLines(def);
+  if (!lines.length) return;
+  out.blank();
+  for (const line of lines) out.add(line, 'blue');
+}
+
 function jewelLines(out: Lines, def: ItemDef) {
   if (def.group === ItemGroup.Potion) {
     switch (def.index) {
@@ -500,6 +538,7 @@ function equipmentLines(
   }
 
   wingLines(out, def, level);
+  petLines(out, def);
   jewelLines(out, def);
   consumableLines(out, def, item);
 
