@@ -1,0 +1,37 @@
+@import (reference) '../muText/style.less';
+
+// Mu La Ronda: the game menu - the options window's own art, at menu size.
+.game-menu-page {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  pointer-events: none;
+
+  .game-menu {
+    position: relative;
+    flex: none;
+    .mu-font();
+    user-select: none;
+    pointer-events: auto;
+  }
+
+  .game-menu-titlebar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-shadow: 1px 1px 0 #000;
+    cursor: move;
+  }
+
+  .options-exit-confirm {
+    pointer-events: auto;
+  }
+}

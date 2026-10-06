@@ -1,3 +1,4 @@
+import { GameMenu } from '../../../../../common/gameMenu';
 import type { TextKey } from '../../../../../i18n';
 import { Store } from '../../../../../store';
 import { Messenger } from '../../../../../messenger';
@@ -45,8 +46,10 @@ export const MAIN_FRAME_BUTTONS: readonly MainFrameButton[] = [
   {
     file: 'partCharge1/newui_menu_Bt04.OZJ',
     titleKey: 'bottomBar.options',
+    // Mu La Ronda: the game menu; settings are its first entry.
     toggle: () => {
-      Store.optionsEnabled = !Store.optionsEnabled;
+      if (Store.optionsEnabled) Store.optionsEnabled = false;
+      else GameMenu.toggle();
     },
   },
 ];

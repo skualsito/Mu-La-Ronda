@@ -1,3 +1,4 @@
+import { GameMenu } from '../../../common/gameMenu';
 import { t } from '../../../i18n';
 import './style.less';
 import { reaction, runInAction } from 'mobx';
@@ -186,7 +187,7 @@ export const CharactersPage = observer(() => {
           width={BTN_WIDTH}
           height={BTN_HEIGHT}
           frames={CREATE_FRAMES}
-          onClick={() => (Store.optionsEnabled = !Store.optionsEnabled)}
+          onClick={() => GameMenu.toggle()}
           style={{
             position: 'absolute',
             left: BTN_WIDTH + BTN_GAP,

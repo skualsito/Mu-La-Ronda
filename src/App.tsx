@@ -11,6 +11,7 @@ import { useEventBus } from './hooks/useEventBus';
 import { RondaLoader } from './ui/pages/rondaLoader';
 import { LoadingScreen } from './ui/components/loadingScreen';
 import { OptionsWindow } from './ui/components/optionsWindow';
+import { GameMenuWindow } from './ui/components/gameMenu';
 import { GameCursor } from './ui/components/gameCursor';
 import { ReconnectOverlay } from './ui/components/reconnectOverlay';
 
@@ -63,6 +64,7 @@ export const App = observer(() => {
     <div className="app">
       <CurrentPage />
       <OptionsWindow />
+      <GameMenuWindow />
       {}
       <LoadingScreen />
       {}

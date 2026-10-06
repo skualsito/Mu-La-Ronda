@@ -1,3 +1,4 @@
+import { GameMenu } from '../../../common/gameMenu';
 import { playUiSound } from '../../../libs/sfx';
 import './style.less';
 import { useEffect, useRef, useState } from 'react';
@@ -25,7 +26,6 @@ import {
   setKeyBinding,
   type KeyAction,
 } from '../../../common/keyBindings';
-import { SessionExit, type ExitKind } from '../../../common/sessionExit';
 import { tOptions, t, type TextKey } from '../../../i18n';
 import { EN_TEXT } from '../../../i18n/recipes';
 import { applyTierPreset, type TierPreset } from './presets';
@@ -81,31 +81,9 @@ const DEFAULTS_WIDTH = 96;
 const FOOTER_Y = WIN_HEIGHT - 47;
 const FOOTER_X = 24;
 const EXIT_WIDTH = 116;
-const EXIT_GAP = 6;
 const CLOSE_WIDTH = 108;
 
 const FLASH_MS = 1400;
-
-/** The ways out, in the footer: whichever the game can take right now. */
-const EXITS: { exit: ExitKind; labelKey: TextKey; helpKey: TextKey }[] = [
-  {
-    exit: 'characters',
-    labelKey: 'options.switchCharacter',
-    helpKey: 'options.help.switchCharacter',
-  },
-  {
-    exit: 'servers',
-    labelKey: 'options.selectServer',
-    helpKey: 'options.help.selectServer',
-  },
-  { exit: 'quit', labelKey: 'options.exitGame', helpKey: 'options.help.exitGame' },
-];
-
-const CONFIRM_TEXT: Record<ExitKind, TextKey> = {
-  quit: 'exit.confirmQuit',
-  servers: 'exit.confirmServers',
-  characters: 'exit.confirmCharacters',
-};
 
 /**
  * The page the window reopens on, for this session. The ways out sit in the
@@ -203,7 +181,6 @@ export const OptionsWindow = observer(() => {
 
   // Key being rebound: the next key press goes to it instead of the game.
   const [capturing, setCapturing] = useState<KeyAction | null>(null);
-  const [confirming, setConfirming] = useState<ExitKind | null>(null);
   const [confirmingDefaults, setConfirmingDefaults] = useState(false);
   const [notice, setNotice] = useState<TextKey | null>(null);
 
@@ -229,7 +206,9 @@ export const OptionsWindow = observer(() => {
 
   useEventBus('keyPressed', key => {
     if (isKey(HOT_KEY, key)) {
-      Store.optionsEnabled = !Store.optionsEnabled;
+      // Mu La Ronda: the key opens the game menu; settings are its first entry.
+      if (Store.optionsEnabled) Store.optionsEnabled = false;
+      else GameMenu.toggle();
       playUiSound('click');
     }
   });
@@ -248,7 +227,6 @@ export const OptionsWindow = observer(() => {
   useEffect(() => {
     if (Store.optionsEnabled) return;
     setCapturing(null);
-    setConfirming(null);
     setConfirmingDefaults(false);
     setNotice(null);
     setQuery('');
@@ -528,21 +506,17 @@ export const OptionsWindow = observer(() => {
         />
         <HelpStrip hovered={hovered} page={searching ? null : page} />
 
-        {EXITS.filter(entry => SessionExit.available(entry.exit)).map((entry, i) => (
-          <OptionsButton
-            key={entry.exit}
-            label={t(entry.labelKey)}
-            width={EXIT_WIDTH}
-            onHover={() =>
-              setHovered({ kind: 'exit', labelKey: entry.labelKey, helpKey: entry.helpKey })
-            }
-            onClick={() => {
-              setCapturing(null);
-              setConfirming(entry.exit);
-            }}
-            style={{ left: FOOTER_X + i * (EXIT_WIDTH + EXIT_GAP), top: FOOTER_Y }}
-          />
-        ))}
+        {/* Mu La Ronda: the ways out moved to the game menu; this goes back to it. */}
+        <OptionsButton
+          label={tOptions('options.menuTitle')}
+          width={EXIT_WIDTH}
+          onClick={() => {
+            setCapturing(null);
+            Store.optionsEnabled = false;
+            GameMenu.show();
+          }}
+          style={{ left: FOOTER_X, top: FOOTER_Y }}
+        />
         <OptionsButton
           label={tOptions('common.close')}
           width={CLOSE_WIDTH}
@@ -554,16 +528,6 @@ export const OptionsWindow = observer(() => {
 
         <MuResizeGrip id={WINDOW_ID} width={WIN_WIDTH} />
       </div>
-
-      {confirming && (
-        <ConfirmBox
-          text={t(CONFIRM_TEXT[confirming])}
-          onAnswer={yes => {
-            setConfirming(null);
-            if (yes) SessionExit.request(confirming);
-          }}
-        />
-      )}
 
       {confirmingDefaults && (
         <ConfirmBox
