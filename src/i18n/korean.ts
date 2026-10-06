@@ -776,6 +776,7 @@ export const koreanLayer: LanguageLayer = {
     'cmd.ranking': '랭킹 열기',
     'cmd.reset': '캐릭터 리셋 (레벨 400)',
     'cmd.resetinfo': '리셋 횟수와 다음 비용 보기',
+    'cmd.autoreset': '필요 레벨에서 자동 리셋 (접속 종료·이동 없음)',
     'cmd.re': '파티 초대: on(묻기), off(거절), auto(수락)',
     'party.reply.on': '파티 초대: 물어봅니다.',
     'party.reply.off': '파티 초대: 자동으로 거절합니다.',

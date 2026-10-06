@@ -1272,6 +1272,7 @@ export const polishLayer: LanguageLayer = {
     'cmd.ranking': 'Otwórz rankingi',
     'cmd.reset': 'Zresetuj postać (poziom 400)',
     'cmd.resetinfo': 'Pokaż resety i koszt następnego',
+    'cmd.autoreset': 'Automatyczny reset na wymaganym poziomie, bez wylogowania i przenoszenia',
     'cmd.re': 'Zaproszenia do party: on (pytaj), off (odrzucaj) lub auto (akceptuj)',
     'party.reply.on': 'Zaproszenia do party: będziesz pytany.',
     'party.reply.off': 'Zaproszenia do party: odrzucane automatycznie.',

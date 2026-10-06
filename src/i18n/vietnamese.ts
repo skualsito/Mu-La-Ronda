@@ -1260,6 +1260,7 @@ export const vietnameseLayer: LanguageLayer = {
     'cmd.ranking': 'Mở bảng xếp hạng',
     'cmd.reset': 'Reset nhân vật (cấp 400)',
     'cmd.resetinfo': 'Xem số lần reset và chi phí lần tới',
+    'cmd.autoreset': 'Tự reset khi đạt cấp, không thoát và không dịch chuyển',
     'cmd.re': 'Lời mời party: on (hỏi), off (từ chối) hoặc auto (chấp nhận)',
     'party.reply.on': 'Lời mời party: sẽ hỏi bạn.',
     'party.reply.off': 'Lời mời party: tự động từ chối.',

@@ -3,6 +3,11 @@ import { GameOptions } from '../../common/gameOptions';
 import { monsterVisualFor, visualMonster } from '../../effects/monsterVisuals';
 import type { EffectHandle } from '../../effects';
 
+/** OpenMU's GM MARK magic effect (Player.GMEffect). */
+const GM_MARK_EFFECT = 28;
+/** MODEL_GM_CHARACTER, whose look is the GM emblem (effects/monsterVisuals.ts). */
+const GM_CHARACTER = 378;
+
 /**
  * Consumer of the effects layer's `monsterVisuals` entry: walks the entities
  * that have an `npcType` and starts the body effects its table names once
@@ -20,6 +25,19 @@ export const MonsterVisualSystem: ISystemFactory = world => {
    */
   const skinned = world.with('skin', 'modelObject', 'transform');
   const handles = new Map<Entity, EffectHandle>();
+  /**
+   * Mu La Ronda: a game master's mark. OpenMU puts magic effect 28 ("GM
+   * MARK") on every GM character; it is drawn with the Game Master NPC's own
+   * look - the light over the head and the turning marks underfoot - since
+   * that is the client's GM emblem. Kept apart from `handles` so a GM wearing
+   * a transformation ring keeps both.
+   */
+  const players = world.with('attributeSystem', 'modelObject', 'transform');
+  const gmHandles = new Map<Entity, EffectHandle>();
+  players.onEntityRemoved.subscribe(e => {
+    gmHandles.get(e)?.stop();
+    gmHandles.delete(e);
+  });
 
   function snuff(e: Entity): void {
     handles.get(e)?.stop();
@@ -48,8 +66,25 @@ export const MonsterVisualSystem: ISystemFactory = world => {
     handles.set(e, visualMonster(world.scene, e, row));
   }
 
+  function gmMark(e: Entity): void {
+    const show = (e.buffs?.has(GM_MARK_EFFECT) || !!e.isGm) && !e.objOutOfScope && !e.dying;
+    const handle = gmHandles.get(e);
+    if (!show) {
+      if (handle) {
+        handle.stop();
+        gmHandles.delete(e);
+      }
+      return;
+    }
+    if (handle?.alive) return;
+    if (!e.modelObject?.Ready || !e.modelObject.gltf?.skeleton) return;
+    const row = monsterVisualFor(GM_CHARACTER);
+    if (row) gmHandles.set(e, visualMonster(world.scene, e, row));
+  }
+
   return {
     update: () => {
+      for (const e of players) if (e.npcType === undefined && !e.skin) gmMark(e);
       const on = GameOptions.monsterEffects;
       for (const e of characters) step(e, e.npcType, on);
       // A skinned NPC is in both queries; its npcType has already answered.

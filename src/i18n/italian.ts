@@ -796,6 +796,7 @@ export const italianLayer: LanguageLayer = {
     'cmd.ranking': 'Apri le classifiche',
     'cmd.reset': 'Resetta il personaggio (livello 400)',
     'cmd.resetinfo': 'Mostra i tuoi reset e il costo del prossimo',
+    'cmd.autoreset': 'Reset automatico al livello richiesto, senza disconnetterti né spostarti',
     'cmd.re': 'Inviti al party: on (chiedi), off (rifiuta) o auto (accetta)',
     'party.reply.on': 'Inviti al party: ti verrà chiesto.',
     'party.reply.off': 'Inviti al party: rifiutati automaticamente.',

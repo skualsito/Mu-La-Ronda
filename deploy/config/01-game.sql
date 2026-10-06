@@ -79,6 +79,7 @@ UPDATE config."PlugInConfiguration" SET "IsActive" = true
  WHERE "TypeId" IN (
    '90b35404-aade-4f22-b5d2-4cd59b8bb4c8',  -- ResetChatCommandPlugIn
    '79f2c2c2-2e4c-4f4b-8a74-4227d1209d27',  -- ResetInfoChatCommandPlugIn
-   '08953be6-dabf-49cc-a500-fdb9dc2c4d80'); -- ResetCharacterNpcPlugin
+   '08953be6-dabf-49cc-a500-fdb9dc2c4d80',  -- ResetCharacterNpcPlugin
+   '5e0c2b7a-3d41-4f6b-9a28-7c1e4d9b0a53'); -- AutoResetChatCommandPlugIn (Mu La Ronda)
 
 COMMIT;

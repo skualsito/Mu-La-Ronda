@@ -19,6 +19,7 @@ public class ResetCharacterAction
 {
     private readonly Player _player;
     private readonly NonPlayerCharacter? _npc;
+    private readonly bool _inPlace;
     private readonly LogoutAction _logoutAction = new();
 
     /// <summary>
@@ -26,10 +27,13 @@ public class ResetCharacterAction
     /// </summary>
     /// <param name="player">Player to reset.</param>
     /// <param name="npc">NPC which the player talks to to initiate the reset action.</param>
-    public ResetCharacterAction(Player player, NonPlayerCharacter? npc = null)
+    /// <param name="inPlace">Mu La Ronda: /autoreset - neither moves the character home nor logs it out,
+    /// whatever <see cref="ResetConfiguration.MoveHome"/> and <see cref="ResetConfiguration.LogOut"/> say.</param>
+    public ResetCharacterAction(Player player, NonPlayerCharacter? npc = null, bool inPlace = false)
     {
         this._player = player;
         this._npc = npc;
+        this._inPlace = inPlace;
     }
 
     /// <summary>
@@ -86,18 +90,22 @@ public class ResetCharacterAction
         this._player.Attributes[Stats.Level] = configuration.LevelAfterReset;
         this._player.SelectedCharacter.Experience = 0;
         this.UpdateStats(configuration, resetProgression);
-        if (configuration.MoveHome)
+        if (configuration.MoveHome && !this._inPlace)
         {
             await this.MoveHomeAsync().ConfigureAwait(false);
         }
 
-        if (configuration.LogOut)
+        if (configuration.LogOut && !this._inPlace)
         {
             await this._logoutAction.LogoutAsync(this._player, LogoutType.BackToCharacterSelection).ConfigureAwait(false);
         }
         else
         {
             await this.UpdateClientStatsAsync(configuration).ConfigureAwait(false);
+            if (this._inPlace)
+            {
+                await this._player.ShowBlueMessageAsync($"Auto reset: reset {resetProgression.NextResetCount} hecho.").ConfigureAwait(false);
+            }
         }
     }
 

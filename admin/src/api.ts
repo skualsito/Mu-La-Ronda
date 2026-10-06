@@ -62,6 +62,7 @@ export type Character = {
   accountId: string | null;
   account: string | null;
   class: string;
+  classId: string;
   status: number;
   points: number;
   masterPoints: number;
@@ -205,3 +206,5 @@ export type ShopList = { shops: ShopRow[]; candidates: { id: string; number: num
 export type SectionKey = 'inicio' | 'personajes' | 'cuentas' | 'spots' | 'shops' | 'mensajes' | 'config' | 'servidor';
 export type Me = { user: string; superuser: boolean; permissions: SectionKey[]; sections: { key: SectionKey; label: string }[] };
 export type PanelUser = { id: number; username: string; permissions: SectionKey[]; enabled: boolean; createdAt: string; lastLoginAt: string | null };
+
+export type CharacterClassRow = { id: string; name: string; number: number };

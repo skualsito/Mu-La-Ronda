@@ -804,6 +804,7 @@ export const germanLayer: LanguageLayer = {
     'cmd.ranking': 'Ranglisten öffnen',
     'cmd.reset': 'Charakter zurücksetzen (Level 400)',
     'cmd.resetinfo': 'Resets und Kosten des nächsten anzeigen',
+    'cmd.autoreset': 'Automatischer Reset beim nötigen Level, ohne Ausloggen oder Teleport',
     'cmd.re': 'Party-Einladungen: on (fragen), off (ablehnen) oder auto (annehmen)',
     'party.reply.on': 'Party-Einladungen: Du wirst gefragt.',
     'party.reply.off': 'Party-Einladungen: werden automatisch abgelehnt.',

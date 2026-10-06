@@ -792,6 +792,7 @@ export const frenchLayer: LanguageLayer = {
     'cmd.ranking': 'Ouvrir les classements',
     'cmd.reset': 'Réinitialiser le personnage (niveau 400)',
     'cmd.resetinfo': 'Voir tes resets et le coût du prochain',
+    'cmd.autoreset': 'Reset automatique au niveau requis, sans déconnexion ni déplacement',
     'cmd.re': 'Invitations de groupe : on (demander), off (refuser) ou auto (accepter)',
     'party.reply.on': 'Invitations de groupe : on vous demandera.',
     'party.reply.off': 'Invitations de groupe : refusées automatiquement.',

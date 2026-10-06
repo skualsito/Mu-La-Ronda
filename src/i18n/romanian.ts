@@ -793,6 +793,7 @@ export const romanianLayer: LanguageLayer = {
     'cmd.ranking': 'Deschide clasamentele',
     'cmd.reset': 'Resetează personajul (nivel 400)',
     'cmd.resetinfo': 'Arată reseturile și costul următorului',
+    'cmd.autoreset': 'Reset automat la nivelul cerut, fără deconectare sau mutare',
     'cmd.re': 'Invitații în party: on (întreabă), off (refuză) sau auto (acceptă)',
     'party.reply.on': 'Invitații în party: vei fi întrebat.',
     'party.reply.off': 'Invitații în party: refuzate automat.',

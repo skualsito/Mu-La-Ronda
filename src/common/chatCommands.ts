@@ -71,6 +71,7 @@ export const CHAT_COMMANDS: readonly ChatCommand[] = [
   // ---- server (OpenMU) ---------------------------------------------------
   { name: '/reset', helpKey: 'cmd.reset' },
   { name: '/resetinfo', helpKey: 'cmd.resetinfo' },
+  { name: '/autoreset', helpKey: 'cmd.autoreset' },
   { name: '/re', usage: '<on|off|auto>', helpKey: 'cmd.re', ui: 'partyReply' },
   { name: '/post', usage: '<message>', helpKey: 'cmd.post' },
   { name: '/help', usage: '[command]', helpKey: 'cmd.help' },

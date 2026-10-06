@@ -1,4 +1,4 @@
-import { Store } from '../store';
+import { findFreeInventorySlot, Store } from '../store';
 import { Social } from '../social';
 import { gameVersion } from '../version';
 import { skillDefinition } from '../common/skillsDatabase';
@@ -116,6 +116,7 @@ function resetRuntime(): void {
   stopRequestCooldown = 0;
   moveReissueCooldown = 0;
   manualDestination = null;
+  pickupTries.clear();
   lastBuffCastAt.clear();
 }
 
@@ -356,9 +357,47 @@ function recoverHealth(world: World, hero: Entity, config: MuHelperConfig): bool
   return true;
 }
 
+/** OpenMU's zen cap: past it a pickup is refused and the zen stays on the ground. */
+const MAX_ZEN = 2_000_000_000;
+/** Potions stack in the bag up to this (deploy/config/08-stacks.sql). */
+const POTION_GROUP = 14;
+const MAX_STACK = 255;
+
+/**
+ * Mu La Ronda: whether the pickup can succeed at all. With the zen at the cap
+ * or no room in the bag the server refuses it, the drop stays where it is,
+ * and the helper walked back to it forever instead of fighting.
+ */
+function canTake(e: Entity): boolean {
+  const drop = e.droppedItem!;
+  if (drop.isMoney) return Store.playerData.money < MAX_ZEN;
+  const item = drop.item;
+  if (!item) return true;
+  const items = Store.playerData.items;
+  if (item.group === POTION_GROUP) {
+    const stack = items.find(
+      i => i && i.group === item.group && i.num === item.num && (i.lvl ?? 0) === (item.lvl ?? 0) && (i.durability ?? 1) < MAX_STACK
+    );
+    if (stack) return true;
+  }
+  return findFreeInventorySlot(items, item) >= 0;
+}
+
+/**
+ * Drops the helper already went for and that are still there: refused for a
+ * reason the client cannot see (another player's, a quest item it already
+ * carries...). After a couple of tries they are left alone.
+ */
+const pickupTries = new Map<string, number>();
+/** Drop ids are reused by the server: the tile tells two drops with one id apart. */
+const pickupKey = (e: Entity) => `${e.netId}:${~~e.transform!.pos.x}:${~~e.transform!.pos.z}`;
+const MAX_PICKUP_TRIES = 2;
+
 /** `CMuHelper::ShouldObtainItem` - the pickup filters. */
 function shouldObtain(config: MuHelperConfig, e: Entity): boolean {
   const drop = e.droppedItem!;
+  if ((pickupTries.get(pickupKey(e)) ?? 0) >= MAX_PICKUP_TRIES) return false;
+  if (!canTake(e)) return false;
   if (config.pickZen && drop.isMoney) return true;
   if (drop.isMoney) return config.pickAllItems;
 
@@ -397,6 +436,9 @@ function obtainItem(world: World, hero: Entity, config: MuHelperConfig): boolean
   }
 
   if (!best) return true;
+  if (pickupTries.size > 500) pickupTries.clear();
+  const key = pickupKey(best);
+  pickupTries.set(key, (pickupTries.get(key) ?? 0) + 1);
   world.pickupTarget = best;
   return false;
 }

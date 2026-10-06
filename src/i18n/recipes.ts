@@ -1385,6 +1385,7 @@ export const EN_TEXT = {
   'cmd.ranking': 'Open the rankings',
   'cmd.reset': 'Reset your character (level 400)',
   'cmd.resetinfo': 'Show your resets and the next reset cost',
+  'cmd.autoreset': 'Reset automatically at the required level, without logging out or moving',
   'cmd.re': 'Party invitations: on (ask), off (refuse) or auto (accept)',
   'party.reply.on': 'Party invitations: you will be asked.',
   'party.reply.off': 'Party invitations: refused automatically.',

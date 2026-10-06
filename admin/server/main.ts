@@ -197,6 +197,7 @@ async function route(req: Request, url: URL, ip: string): Promise<Response> {
   }
 
   // ---- characters --------------------------------------------------------
+  if (path === '/api/classes' && method === 'GET') return json(await game.listClasses(sql));
   if (path === '/api/characters' && method === 'GET') {
     const q = (url.searchParams.get('q') ?? '').slice(0, 20);
     return json(await game.listCharacters(sql, q, await onlineAccounts()));

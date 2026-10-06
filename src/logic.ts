@@ -4239,7 +4239,9 @@ function applyLevelUpdate(p: LevelUpdateView) {
     // The packet has no experience fields: move the bar to the new bracket.
     playerData.currentLvlExp = experienceForLevel(p.Level);
     playerData.expToNextLvl = experienceForLevel(p.Level + 1);
-    if (playerData.exp < playerData.currentLvlExp) {
+    // A reset (/autoreset keeps the character in the world) drops the level and
+    // zeroes the experience: start the bar over instead of overflowing it.
+    if (playerData.exp < playerData.currentLvlExp || playerData.exp >= playerData.expToNextLvl) {
       playerData.exp = playerData.currentLvlExp;
     }
   });

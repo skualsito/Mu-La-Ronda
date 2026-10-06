@@ -114,7 +114,7 @@ export async function listCharacters(sql: Sql, q: string, onlineAccounts: Set<st
 export async function getCharacter(sql: Sql, id: string, onlineAccounts: Set<string>) {
   const [row] = await sql`
     SELECT c."Id" AS id, c."Name" AS name, a."Id" AS "accountId", a."LoginName" AS account,
-           cc."Name" AS class, c."CharacterStatus" AS status, c."LevelUpPoints" AS points,
+           cc."Name" AS class, c."CharacterClassId"::text AS "classId", c."CharacterStatus" AS status, c."LevelUpPoints" AS points,
            c."MasterLevelUpPoints" AS "masterPoints", c."PlayerKillCount" AS kills, c."State" AS "heroState",
            c."CurrentMapId" AS "mapId", c."PositionX" AS x, c."PositionY" AS y,
            c."Experience"::text AS experience, c."CreateDate" AS "createdAt",
@@ -138,6 +138,7 @@ export async function getCharacter(sql: Sql, id: string, onlineAccounts: Set<str
 }
 
 export type CharacterPatch = Partial<Record<StatKey, number>> & {
+  classId?: string;
   points?: number;
   masterPoints?: number;
   money?: number;
@@ -215,6 +216,13 @@ export async function updateCharacter(sql: Sql, id: string, patch: CharacterPatc
     if (patch.status !== undefined && (CHARACTER_STATUS as readonly number[]).includes(Number(patch.status))) {
       sets.CharacterStatus = Number(patch.status);
     }
+    if (patch.classId) {
+      const [cls] = await tx`SELECT 1 FROM config."CharacterClass" WHERE "Id" = ${patch.classId}::uuid`;
+      if (!cls) throw new Error('Clase inexistente');
+      // OpenMU adds the stats the new class has and the old one lacked (Comando)
+      // when the character enters (Player.AddMissingStatAttributes).
+      sets.CharacterClassId = patch.classId;
+    }
     if (patch.mapId) {
       const [map] = await tx`SELECT 1 FROM config."GameMapDefinition" WHERE "Id" = ${patch.mapId}::uuid`;
       if (!map) throw new Error('Mapa inexistente');
@@ -232,6 +240,11 @@ export async function updateCharacter(sql: Sql, id: string, patch: CharacterPatc
       await tx`UPDATE data."ItemStorage" SET "Money" = ${money} WHERE "Id" = ${character.inv}::uuid`;
     }
   });
+}
+
+/** The classes a character can be, in OpenMU's order (DW, SM, GM, DK...). */
+export async function listClasses(sql: Sql) {
+  return sql`SELECT "Id"::text AS id, "Name" AS name, "Number" AS number FROM config."CharacterClass" ORDER BY "Number"`;
 }
 
 // ---------------------------------------------------------------------------

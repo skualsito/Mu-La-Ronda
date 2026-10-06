@@ -187,7 +187,7 @@ export async function accessOf(sql: Sql, user: string, superuserName: string): P
  * needs (their own session, the map list the pickers share); 'usuarios' is
  * the superuser's alone.
  */
-export function sectionOf(path: string, method: string): Section | 'usuarios' | 'any' | null {
+export function sectionOf(path: string, method: string): Section | 'usuarios' | 'any' | 'vault' | null {
   if (path === '/api/me' || path === '/api/logout') return null;
   if (path.startsWith('/api/admin-users')) return 'usuarios';
   if (path === '/api/dashboard') return 'inicio';
@@ -196,7 +196,9 @@ export function sectionOf(path: string, method: string): Section | 'usuarios' | 
   if (path.startsWith('/api/shops')) return 'shops';
   // Both the inventory editor and the shop editor search the item catalogue.
   if (path.startsWith('/api/item-definitions')) return 'any';
-  if (path.startsWith('/api/characters')) return 'personajes';
+  if (path.startsWith('/api/characters') || path === '/api/classes') return 'personajes';
+  // The vault shows on the account page and on each of its characters'.
+  if (/^\/api\/accounts\/[^/]+\/vault/.test(path)) return 'vault';
   if (path.startsWith('/api/accounts')) return 'cuentas';
   if (path.startsWith('/api/messages')) return 'mensajes';
   if (path.startsWith('/api/config')) return 'config';
@@ -210,5 +212,6 @@ export function allowed(access: Access, path: string, method: string): boolean {
   if (access.superuser) return true;
   if (section === 'usuarios') return false;
   if (section === 'any') return access.permissions.includes('personajes') || access.permissions.includes('shops');
+  if (section === 'vault') return access.permissions.includes('personajes') || access.permissions.includes('cuentas');
   return access.permissions.includes(section);
 }

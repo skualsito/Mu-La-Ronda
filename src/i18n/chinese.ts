@@ -772,6 +772,7 @@ export const chineseLayer: LanguageLayer = {
     'cmd.ranking': '打开排行榜',
     'cmd.reset': '重置角色（400级）',
     'cmd.resetinfo': '查看重置次数和下次费用',
+    'cmd.autoreset': '达到等级后自动重置，不断线也不传送',
     'cmd.re': '组队邀请：on（询问）、off（拒绝）或 auto（接受）',
     'party.reply.on': '组队邀请：将询问你。',
     'party.reply.off': '组队邀请：自动拒绝。',

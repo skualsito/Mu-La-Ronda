@@ -800,6 +800,7 @@ export const portugueseLayer: LanguageLayer = {
     'cmd.ranking': 'Abrir os rankings',
     'cmd.reset': 'Resetar o personagem (nível 400)',
     'cmd.resetinfo': 'Ver seus resets e o custo do próximo',
+    'cmd.autoreset': 'Resetar sozinho ao atingir o nível, sem desconectar nem se mover',
     'cmd.re': 'Convites de party: on (perguntar), off (recusar) ou auto (aceitar)',
     'party.reply.on': 'Convites de party: você será perguntado.',
     'party.reply.off': 'Convites de party: recusados automaticamente.',

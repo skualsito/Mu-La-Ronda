@@ -192,7 +192,8 @@ export function ItemEditor({
         definitionId: definition.id,
         level,
         hasSkill,
-        ...(durability !== null ? { durability } : {}),
+        // Empty: the item's maximum for its level and options (server/inventory.ts maxDurability).
+        ...(durability !== null ? { durability } : item ? { durability: null } : {}),
         options: Object.entries(chosen).map(([optionId, lvl]) => ({ optionId, level: lvl })),
       },
       item
@@ -244,7 +245,14 @@ export function ItemEditor({
             </div>
             <div className="form-grid">
               <NumberField label="Nivel (+)" value={level} min={0} max={definition.maxLevel || 15} onChange={v => setLevel(v ?? 0)} />
-              <NumberField label="Durabilidad" value={durability} min={0} max={255} onChange={setDurability} hint={`máx. ${definition.durability}`} />
+              <NumberField
+                label="Durabilidad"
+                value={durability}
+                min={0}
+                max={255}
+                onChange={setDurability}
+                hint={durability === null ? 'Vacío = al máximo según nivel y opciones' : 'Borrala para dejarla al máximo'}
+              />
             </div>
             {definition.canSkill && <Toggle label="Con skill" checked={hasSkill} onChange={setHasSkill} />}
 

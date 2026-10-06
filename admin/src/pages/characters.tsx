@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { api, type Character, type CharacterRow, type MapRow, type Stats } from '../api';
+import { api, type Character, type CharacterClassRow, type CharacterRow, type MapRow, type Stats } from '../api';
 import { InventoryCard } from './inventory';
 import { SkillsCard } from './skills';
+import { VaultCard } from './accounts';
 import {
   Badge,
   Boundary,
@@ -96,6 +97,7 @@ export function CharactersPage() {
 }
 
 type Draft = Stats & {
+  classId: string;
   points: number;
   masterPoints: number;
   money: number;
@@ -110,6 +112,7 @@ type Draft = Stats & {
 function draftOf(c: Character): Draft {
   return {
     ...c.stats,
+    classId: c.classId,
     points: c.points,
     masterPoints: c.masterPoints,
     money: Number(c.money),
@@ -129,6 +132,7 @@ export function CharacterPage({ id }: { id: string }) {
   const toast = useToast();
   const { data, error, reload, setData } = useLoad(() => api<Character>(`/characters/${id}`), [id]);
   const maps = useLoad(() => api<MapRow[]>('/maps'), []);
+  const classes = useLoad(() => api<CharacterClassRow[]>('/classes'), []);
   const [draft, updateDraft, resetDraft] = useDraft(data, draftOf);
   const [saving, setSaving] = useState(false);
   const [confirm, setConfirm] = useState<null | { title: string; text: string; run: () => void }>(null);
@@ -290,6 +294,14 @@ export function CharacterPage({ id }: { id: string }) {
         <Card title="Estado">
           <div className="form-grid">
             <SelectField
+              label="Clase"
+              value={draft.classId}
+              disabled={locked || !classes.data}
+              options={(classes.data ?? []).map(c => ({ value: c.id, label: c.name }))}
+              onChange={v => set('classId', v)}
+              hint="Los poderes que no sean de la clase nueva quedan aprendidos pero no se usan"
+            />
+            <SelectField
               label="Estado del personaje"
               value={draft.status}
               disabled={locked}
@@ -329,6 +341,12 @@ export function CharacterPage({ id }: { id: string }) {
       <Boundary resetKey={id}>
         <SkillsCard characterId={id} locked={locked} />
       </Boundary>
+
+      {data.accountId && (
+        <Boundary resetKey={id}>
+          <VaultCard accountId={data.accountId} locked={locked} />
+        </Boundary>
+      )}
 
       <div className={`savebar ${dirty ? 'is-visible' : ''}`}>
         <span>

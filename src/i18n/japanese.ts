@@ -778,6 +778,7 @@ export const japaneseLayer: LanguageLayer = {
     'cmd.ranking': 'ランキングを開く',
     'cmd.reset': 'キャラクターをリセット（レベル400）',
     'cmd.resetinfo': 'リセット回数と次の費用を表示',
+    'cmd.autoreset': '必要レベルで自動リセット（切断・移動なし）',
     'cmd.re': 'パーティー招待：on（確認）、off（拒否）、auto（承諾）',
     'party.reply.on': 'パーティー招待：確認します。',
     'party.reply.off': 'パーティー招待：自動で拒否します。',

@@ -201,7 +201,7 @@ function walkDirection(rotYRadians: number): number {
  * First slot of `items`'s grid part where `item` fits (the original's
  * `FindEmptySlot`); -1 when the inventory is full.
  */
-function findFreeInventorySlot(items: (Item | null)[], item: Item): number {
+export function findFreeInventorySlot(items: (Item | null)[], item: Item): number {
   const first = InventoryConstants.LastEquippableItemSlotIndex + 1;
   const rows = Math.floor((items.length - first) / InventoryConstants.RowSize);
   const occupied: Footprint[] = [];

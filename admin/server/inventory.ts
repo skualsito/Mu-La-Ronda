@@ -26,6 +26,33 @@ const OPTION_TYPES: Record<string, string> = {
   '78e6db0b-ac53-454c-956f-cd2b5467856e': 'fenrir',
 };
 
+/** OpenMU's ItemExtensions.AdditionalDurabilityPerLevel. */
+const DURABILITY_PER_LEVEL = [0, 1, 2, 3, 4, 6, 8, 10, 12, 14, 17, 21, 26, 32, 39, 47];
+const EXCELLENT_TYPE = '6487c498-58e0-48e5-b409-35d7598313fc';
+const ANCIENT_TYPE = '436d820f-6d50-429d-af63-bb0f59567dd1';
+
+/**
+ * OpenMU's GetMaximumDurabilityOfOnePiece: what a fresh item of this kind,
+ * level and options has. Wearables add per level and for excellent / ancient,
+ * the Dark Horse and Raven are 255, anything else is one piece (a potion's
+ * durability is its stack, which `addToStorage` starts at one).
+ */
+async function maxDurability(sql: Sql, definitionId: string, level: number, optionIds: string[]): Promise<number> {
+  const [def] = await sql`
+    SELECT "Group" AS "group", "Number" AS number, "Durability" AS durability, ("ItemSlotId" IS NOT NULL) AS wearable
+      FROM config."ItemDefinition" WHERE "Id" = ${definitionId}::uuid`;
+  if (!def) return 1;
+  if (!def.wearable) return Math.max(1, def.durability);
+  if (def.group === 13 && (def.number === 4 || def.number === 5)) return 255;
+  const types = optionIds.length
+    ? (await sql`SELECT "OptionTypeId"::text AS t FROM config."IncreasableItemOption" WHERE "Id" = ANY(${optionIds}::uuid[])`).map(r => r.t)
+    : [];
+  let result = def.durability + DURABILITY_PER_LEVEL[Math.max(0, Math.min(15, level))];
+  if (types.includes(ANCIENT_TYPE)) result += 20;
+  else if (types.includes(EXCELLENT_TYPE)) result += 15;
+  return Math.min(255, result);
+}
+
 async function inventoryId(sql: Sql, characterId: string): Promise<string> {
   const [row] = await sql`SELECT "InventoryId" AS inv FROM data."Character" WHERE "Id" = ${characterId}::uuid`;
   if (!row?.inv) throw new Error('El personaje no tiene inventario');
@@ -105,7 +132,8 @@ export async function definitionOptions(sql: Sql, definitionId: string) {
 export type ItemInput = {
   definitionId?: string;
   level?: number;
-  durability?: number;
+  /** Absent on a new item, or null on an edit: the item's maximum (maxDurability). */
+  durability?: number | null;
   hasSkill?: boolean;
   options?: { optionId: string; level?: number }[];
   slot?: number;
@@ -194,8 +222,9 @@ export async function addToStorage(sql: Sql, storageId: string, grid: Grid, inpu
 
   const level = Math.min(def.maxLevel || 15, Math.max(0, Math.trunc(Number(input.level ?? 0))));
   // Potions' durability is the stack size (deploy/config/08-stacks.sql): one, unless asked.
-  const fallback = def.group === 14 && def.durability > 1 ? 1 : Math.max(1, def.durability);
-  const durability = input.durability !== undefined ? Math.max(0, Math.min(255, Number(input.durability))) : fallback;
+  const fallback =
+    def.group === 14 && def.durability > 1 ? 1 : await maxDurability(sql, def.id, level, (input.options ?? []).map(o => o.optionId));
+  const durability = input.durability != null ? Math.max(0, Math.min(255, Number(input.durability))) : fallback;
 
   await sql.begin(async tx => {
     const [item] = await tx`
@@ -231,7 +260,16 @@ export async function updateInStorage(sql: Sql, storageId: string, grid: Grid | 
   }
   await sql.begin(async tx => {
     if (input.level !== undefined) sets.Level = Math.min(item.maxLevel || 15, Math.max(0, Math.trunc(Number(input.level))));
-    if (input.durability !== undefined) sets.Durability = Math.max(0, Math.min(255, Number(input.durability)));
+    if (input.durability === null) {
+      // Back to full for what the item is after this edit.
+      const [now] = await tx`SELECT "Level" AS level FROM data."Item" WHERE "Id" = ${itemId}::uuid`;
+      const optionIds = input.options
+        ? input.options.map(o => o.optionId)
+        : (await tx`SELECT "ItemOptionId"::text AS id FROM data."ItemOptionLink" WHERE "ItemId" = ${itemId}::uuid`).map(r => r.id);
+      sets.Durability = await maxDurability(tx as unknown as Sql, item.definitionId, Number(sets.Level ?? now.level), optionIds);
+    } else if (input.durability !== undefined) {
+      sets.Durability = Math.max(0, Math.min(255, Number(input.durability)));
+    }
     if (input.hasSkill !== undefined) sets.HasSkill = !!input.hasSkill && item.canSkill;
     if (Object.keys(sets).length) await tx`UPDATE data."Item" SET ${tx(sets)} WHERE "Id" = ${itemId}::uuid`;
     if (input.options) await writeOptions(tx as unknown as Sql, itemId, item.definitionId, input.options);

@@ -306,7 +306,7 @@ export function AccountPage({ id }: { id: string }) {
 type Vault = { money: number; items: InventoryItem[] };
 
 /** The account's baúl: 8x15 like the game's, items and zen. Only while the account is offline. */
-function VaultCard({ accountId, locked }: { accountId: string; locked: boolean }) {
+export function VaultCard({ accountId, locked }: { accountId: string; locked: boolean }) {
   const toast = useToast();
   const { data, error, reload, setData } = useLoad(() => api<Vault>(`/accounts/${accountId}/vault`), [accountId]);
   const [editing, setEditing] = useState<InventoryItem | { slot: number } | 'new' | null>(null);
