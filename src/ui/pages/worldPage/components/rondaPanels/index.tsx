@@ -41,7 +41,7 @@ const CLOSE_WIDTH = 108;
  * dark table frame for the content, the MU scroll bar and a Close button in
  * the foot - so these read as part of the game, not a web page on top of it.
  */
-const Panel = ({
+const Panel = observer(({
   id,
   title,
   width,
@@ -134,7 +134,7 @@ const Panel = ({
       </div>
     </div>
   );
-};
+});
 
 // ---------------------------------------------------------------------------
 // /comandos
