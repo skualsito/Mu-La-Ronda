@@ -50,11 +50,23 @@ docker run --rm \
 echo "▶ Generando serverlist.md para $DOMAIN"
 sed "s/\${DOMAIN}/$DOMAIN/g" deploy/serverlist.template.md > dist/serverlist.md
 
+COMPOSE=(docker compose -f deploy/docker-compose.yml --env-file deploy/.env)
+
+echo "▶ Bajando imagenes"
+# De a una y con reintentos: `compose pull` en paralelo falla en Docker 29
+# con "unable to lease content: lease does not exist".
+for image in $("${COMPOSE[@]}" config --images | sort -u); do
+  for attempt in 1 2 3; do
+    docker pull -q "$image" && break
+    [[ $attempt == 3 ]] && { echo "No se pudo bajar $image" >&2; exit 1; }
+    echo "  reintentando $image..."; sleep 5
+  done
+done
+
 echo "▶ Levantando servicios"
-docker compose -f deploy/docker-compose.yml --env-file deploy/.env pull --quiet
-docker compose -f deploy/docker-compose.yml --env-file deploy/.env up -d --remove-orphans
+"${COMPOSE[@]}" up -d --pull never --remove-orphans
 # El proxy corre el codigo montado: reiniciarlo para que tome los cambios.
-docker compose -f deploy/docker-compose.yml --env-file deploy/.env restart proxy
+"${COMPOSE[@]}" restart proxy
 
 docker image prune -f >/dev/null
 echo "✔ Listo: https://play.$DOMAIN/online"
