@@ -1,11 +1,13 @@
-/* Mu La Ronda - pagina de registro. Colores del logo (turquesa + mate), igual
+/* Mu La Ronda - pagina de registro. Turquesa del logo, sin degradados, igual
  * que el cargador del cliente (src/ui/components/rondaLoading). */
 
 :root {
   --teal: #00adac;
   --teal-bright: #19c9c8;
   --teal-dim: #2d7f7e;
-  --mate: #aa6f46;
+  /* Fondo de boton: turquesa mas oscuro para que el texto blanco se lea. */
+  --teal-button: #007f7e;
+  --teal-button-hover: #009392;
   --text: #e6efee;
   --muted: #9fb5b3;
   --error: #f87171;
@@ -157,18 +159,18 @@ body {
   margin-top: 6px;
   border: 0;
   border-radius: 8px;
-  background: linear-gradient(90deg, var(--mate), var(--teal));
+  background: var(--teal-button);
   color: #fff;
   font: inherit;
   font-size: 15px;
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;
-  transition: filter 150ms, transform 100ms;
+  transition: background 150ms, transform 100ms;
 }
 
 .rg-button:hover {
-  filter: brightness(1.1);
+  background: var(--teal-button-hover);
 }
 
 .rg-button:active {

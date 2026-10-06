@@ -1,8 +1,7 @@
-// Colores del logo de La Ronda (public/brand/la-ronda.png).
+// Turquesa del logo de La Ronda (public/brand/la-ronda.png), sin degradados.
 .ronda-loader {
   --ronda-teal: #00adac;
   --ronda-teal-dim: #2d7f7e;
-  --ronda-mate: #aa6f46;
 
   position: fixed;
   inset: 0;
@@ -77,12 +76,12 @@
 .ronda-beta {
   margin-top: 12px;
   padding: 3px 10px;
-  border: 1px solid var(--ronda-mate);
+  border: 1px solid var(--ronda-teal-dim);
   border-radius: 3px;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.3em;
-  color: #d39a6f;
+  color: var(--ronda-teal);
 }
 
 .ronda-bar {
@@ -98,7 +97,7 @@
 
 .ronda-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--ronda-mate), var(--ronda-teal));
+  background: var(--ronda-teal);
   box-shadow: 0 0 12px rgba(0, 173, 172, 0.55);
   transition: width 300ms ease-out;
 }
