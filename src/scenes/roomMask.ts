@@ -45,7 +45,7 @@ import type { RoomVolume } from '../lighting/profiles';
  * G-buffer: that one refuses a map object's alpha-keyed cards on purpose, and
  * a tavern's barrels, stools and racks are all of them.
  *
- * Dev seam: `?roomMask=0` never builds the pass.
+ * Dev seam: off unless `?roomMask=1` (Mu La Ronda, see `forcedOff`).
  */
 
 const SHADER = 'muRoomMask';
@@ -88,7 +88,11 @@ let runtime: Runtime | null = null;
 
 let shown: RoomVolume | null = null;
 
-const forcedOff = devQuery('roomMask') === '0';
+// Mu La Ronda: off by default - inside the Lorencia pub (and the other rooms)
+// the town stays visible around it, as in the original client, instead of
+// going black; the cut also left black holes along the front wall's floor.
+// `?roomMask=1` brings the upstream behaviour back for comparison.
+const forcedOff = devQuery('roomMask') !== '1';
 
 function registerShader(): void {
   if (ShaderStore.ShadersStore[`${SHADER}FragmentShader`]) return;
