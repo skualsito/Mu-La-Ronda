@@ -12,6 +12,10 @@ BEGIN;
 
 CREATE SCHEMA IF NOT EXISTS mlr;
 
+-- Multiplicador de spawns y respawn: los cambia el panel admin (admin.<DOMAIN>,
+-- Configuracion > Server fast); por defecto x3 y 3 segundos.
+CREATE TABLE IF NOT EXISTS mlr.settings (key text PRIMARY KEY, value text NOT NULL);
+
 -- ─── Spots ──────────────────────────────────────────────────────────────────
 -- Todos los spots normales de monstruos (no NPCs, no eventos, no bosses que
 -- salen de a uno) con el triple de bichos, y respawn de 3 segundos.
@@ -27,7 +31,7 @@ SELECT "Id", "Quantity" FROM config."MonsterSpawnArea"
 ON CONFLICT ("Id") DO NOTHING;
 
 UPDATE config."MonsterSpawnArea" s
-   SET "Quantity" = LEAST(b."Quantity" * 3, 32767)
+   SET "Quantity" = LEAST(b."Quantity" * COALESCE((SELECT value::int FROM mlr.settings WHERE key = 'spawn_factor'), 3), 32767)
   FROM mlr.spawn_quantity b, config."MonsterDefinition" m
  WHERE b."Id" = s."Id"
    AND m."Id" = s."MonsterDefinitionId"
@@ -47,7 +51,7 @@ ON CONFLICT ("Id") DO NOTHING;
 -- Solo los que ya respawnean rapido (bichos comunes, ~10 s); los bosses con
 -- horas de respawn quedan como estan.
 UPDATE config."MonsterDefinition" m
-   SET "RespawnDelay" = LEAST(b."RespawnDelay", interval '3 seconds')
+   SET "RespawnDelay" = LEAST(b."RespawnDelay", make_interval(secs => COALESCE((SELECT value::int FROM mlr.settings WHERE key = 'respawn_seconds'), 3)))
   FROM mlr.monster_respawn b
  WHERE b."Id" = m."Id"
    AND m."ObjectKind" = 0

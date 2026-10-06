@@ -28,10 +28,12 @@ fi
 echo "  commit: $(git log --oneline -1)"
 
 # Secretos que se agregaron despues de crear el .env: se generan una vez.
-for key in MARKETPLACE_ESCROW_SECRET MARKETPLACE_TICKET_SECRET; do
+for key in MARKETPLACE_ESCROW_SECRET MARKETPLACE_TICKET_SECRET MLR_ADMIN_PASSWORD MLR_ADMIN_SECRET; do
   if ! grep -q "^$key=." deploy/.env; then
     sed -i "/^$key=/d" deploy/.env
-    echo "$key=$(openssl rand -hex 32)" >> deploy/.env
+    # La clave del panel se tipea: 24 caracteres alcanzan.
+    if [[ "$key" == MLR_ADMIN_PASSWORD ]]; then value=$(openssl rand -hex 12); else value=$(openssl rand -hex 32); fi
+    echo "$key=$value" >> deploy/.env
     echo "  generado $key en deploy/.env"
   fi
 done
@@ -55,7 +57,8 @@ docker run --rm \
   -w /app \
   oven/bun:1.2 \
   sh -c "bun install --frozen-lockfile && bun run build \
-    && VITE_DATA_URL=https://$DOMAIN/Data/ VITE_REGISTER_API=/api/register bun run build:register"
+    && VITE_DATA_URL=https://$DOMAIN/Data/ VITE_REGISTER_API=/api/register bun run build:register \
+    && bun run build:admin"
 
 echo "▶ Generando serverlist.md para $DOMAIN"
 sed "s/\${DOMAIN}/$DOMAIN/g" deploy/serverlist.template.md > dist/serverlist.md
@@ -81,10 +84,10 @@ echo "▶ Compilando OpenMU con el plugin del mercado"
 echo "▶ Levantando servicios"
 "${COMPOSE[@]}" up -d --pull never --remove-orphans
 # Proxy y registro corren el codigo montado: reiniciarlos para que tomen los cambios.
-"${COMPOSE[@]}" restart proxy register marketplace
+"${COMPOSE[@]}" restart proxy register marketplace panel
 
 echo "▶ Configuracion del juego"
 bash deploy/apply-config.sh
 
 docker image prune -f >/dev/null
-echo "✔ Listo: https://$DOMAIN/online"
+echo "✔ Listo: https://$DOMAIN/online  ·  panel: https://admin.$DOMAIN (clave: MLR_ADMIN_PASSWORD en deploy/.env)"

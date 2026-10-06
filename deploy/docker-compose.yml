@@ -133,6 +133,31 @@ services:
       database:
         condition: service_healthy
 
+  # Panel de administracion propio (admin.<DOMAIN>): la pagina la sirve nginx
+  # desde dist-admin/, esto es su API. Escribe en la base de OpenMU y habla
+  # con Docker (socket) para ver el estado de OpenMU, sus logs y reiniciarlo.
+  panel:
+    image: oven/bun:1.2-slim
+    restart: unless-stopped
+    network_mode: host
+    working_dir: /app
+    command: ["bun", "run", "admin/server/main.ts"]
+    environment:
+      HOSTNAME: 127.0.0.1
+      ADMIN_PANEL_PORT: ${ADMIN_PANEL_PORT:-3200}
+      MLR_ADMIN_USER: ${MLR_ADMIN_USER:-admin}
+      MLR_ADMIN_PASSWORD: ${MLR_ADMIN_PASSWORD:?falta MLR_ADMIN_PASSWORD en deploy/.env}
+      MLR_ADMIN_SECRET: ${MLR_ADMIN_SECRET:?falta MLR_ADMIN_SECRET en deploy/.env}
+      DATABASE_URL: postgres://postgres:${DB_PASSWORD}@127.0.0.1:${DB_PORT:-5432}/openmu
+      PRESENCE_URL: http://127.0.0.1:${PRESENCE_PORT:-3001}
+      COMPOSE_PROJECT: mu-la-ronda
+    volumes:
+      - ..:/app:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      database:
+        condition: service_healthy
+
 volumes:
   marketdata:
   dbdata:
