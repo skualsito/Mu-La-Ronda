@@ -1,8 +1,13 @@
-// Mu La Ronda: ventanas propias (comandos, rankings). Oscuro como la UI de MU,
-// con el turquesa del logo para lo que se destaca.
+@import (reference) '../../../../components/muText/style.less';
 
-@ronda-teal: #00adac;
-@ronda-teal-dim: #2d7f7e;
+// Mu La Ronda: ventanas propias (comandos, rankings) con el arte y la paleta
+// de la ventana de Opciones: piedra, marco dorado, texto claro con sombra.
+
+@gold: #e8c877;
+@gold-dim: #b9a87e;
+@text: #e2e2e2;
+@muted: #9a8f78;
+@shadow: 1px 1px 0 rgba(0, 0, 0, 0.85);
 
 .ronda-rank-button {
   position: absolute;
@@ -12,130 +17,151 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 10px;
-  border: 1px solid #3a3a3a;
-  border-radius: 4px;
-  background: rgba(10, 10, 10, 0.78);
-  color: #d8d8d8;
-  font: 600 12px/1 'Segoe UI', system-ui, sans-serif;
+  padding: 5px 10px;
+  border: 1px solid #6b5a33;
+  border-radius: 2px;
+  background: linear-gradient(#2a2418, #120f09);
+  color: @gold-dim;
+  .mu-font();
+  font-size: 11px;
+  font-weight: bold;
+  text-shadow: @shadow;
   cursor: pointer;
   pointer-events: auto;
-  transition: border-color 120ms, color 120ms;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.6);
 
   &:hover,
   &.is-on {
-    border-color: @ronda-teal;
-    color: @ronda-teal;
+    border-color: @gold;
+    color: @gold;
   }
 }
 
-.ronda-panel-backdrop {
+.ronda-mu-page {
   position: absolute;
   inset: 0;
-  z-index: 450;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  pointer-events: auto;
-}
+  display: grid;
+  place-content: center;
+  pointer-events: none;
 
-.ronda-panel {
-  display: flex;
-  flex-direction: column;
-  width: min(460px, 100%);
-  max-height: min(640px, 100%);
-  border: 1px solid #3a3a3a;
-  border-radius: 6px;
-  background: rgba(12, 12, 12, 0.94);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
-  color: #d8d8d8;
-  font: 13px/1.4 'Segoe UI', system-ui, sans-serif;
-  user-select: none;
-
-  &.is-wide {
-    width: min(620px, 100%);
+  .ronda-mu-window {
+    position: relative;
+    flex: none;
+    .mu-font();
+    user-select: none;
+    pointer-events: auto;
   }
-}
 
-.ronda-panel-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 14px;
-  border-bottom: 1px solid #2a2a2a;
-
-  h2 {
-    margin: 0;
-    font-size: 15px;
-    font-weight: 600;
-    color: @ronda-teal;
-    letter-spacing: 0.04em;
+  .ronda-mu-titlebar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-shadow: @shadow;
+    cursor: move;
   }
-}
 
-.ronda-panel-close {
-  width: 26px;
-  height: 26px;
-  border: 0;
-  border-radius: 4px;
-  background: none;
-  color: #9a9a9a;
-  font-size: 20px;
-  line-height: 1;
-  cursor: pointer;
-
-  &:hover {
-    background: #222;
-    color: #fff;
+  .ronda-mu-panel {
+    background: rgba(0, 0, 0, 0.38);
   }
-}
 
-.ronda-panel-body {
-  padding: 12px 14px 14px;
-  overflow-y: auto;
+  .ronda-mu-header {
+    position: absolute;
+  }
+
+  // ScrollBar de Opciones; sus estilos viven dentro de .options-window-page.
+  .options-scrollbar {
+    position: absolute;
+    pointer-events: auto;
+  }
+
+  .ronda-mu-rows {
+    position: absolute;
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
 }
 
 .ronda-note {
-  margin: 0 0 10px;
-  color: #8a8a8a;
-  font-size: 12px;
-
-  &:last-child {
-    margin: 10px 0 0;
-  }
+  margin: 0;
+  color: @muted;
+  font-size: 11px;
+  line-height: 14px;
+  text-shadow: @shadow;
 }
 
-.ronda-subtitle {
-  margin: 16px 0 6px;
-  font-size: 13px;
-  color: @ronda-teal;
+.ronda-note-right {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 4px;
+}
+
+// Encabezado de seccion, como los de Opciones ("OBJETOS ───").
+.ronda-section {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 8px 4px 4px;
+  color: @gold;
+  font-size: 10px;
+  font-weight: bold;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  text-shadow: @shadow;
+
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(232, 200, 119, 0.55), rgba(232, 200, 119, 0));
+  }
 }
 
 .ronda-table {
   width: 100%;
   border-collapse: collapse;
+  font-size: 11px;
+  line-height: 14px;
+  color: @text;
+  text-shadow: @shadow;
 
   th {
-    padding: 6px 8px;
-    border-bottom: 1px solid #2f2f2f;
-    color: #8a8a8a;
-    font-size: 11px;
-    font-weight: 600;
+    padding: 5px 6px;
+    border-bottom: 1px solid rgba(232, 200, 119, 0.35);
+    color: @gold;
+    font-size: 10px;
+    font-weight: bold;
+    letter-spacing: 0.6px;
     text-align: left;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
   }
 
   td {
-    padding: 5px 8px;
-    border-bottom: 1px solid #1d1d1d;
+    padding: 4px 6px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     vertical-align: top;
   }
 
+  tbody tr:hover td {
+    background: rgba(232, 200, 119, 0.06);
+  }
+
   tr.is-me td {
-    background: rgba(0, 173, 172, 0.12);
-    color: #fff;
+    background: rgba(232, 200, 119, 0.16);
+    color: #ffffff;
   }
 }
 
@@ -149,54 +175,32 @@
 }
 
 .ronda-strong {
-  color: @ronda-teal;
-  font-weight: 600;
+  color: @gold;
+  font-weight: bold;
 }
 
 .ronda-pos {
-  width: 28px;
-  color: #8a8a8a;
+  width: 26px;
+  color: @muted;
 }
 
 .ronda-commands {
   .ronda-cmd {
-    width: 42%;
-    color: @ronda-teal;
-    font-family: 'Consolas', 'JetBrains Mono', monospace;
-    font-size: 12px;
+    width: 40%;
+    color: @gold;
+    font-weight: bold;
     white-space: nowrap;
   }
 
   .ronda-usage {
-    color: #777;
+    color: @muted;
+    font-weight: normal;
   }
 }
 
 .ronda-tabs {
-  display: flex;
-  gap: 6px;
-  margin-bottom: 10px;
-}
-
-.ronda-tab {
-  padding: 6px 14px;
-  border: 1px solid #2f2f2f;
-  border-radius: 4px;
-  background: #151515;
-  color: #b5b5b5;
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-
-  &:hover {
-    color: #fff;
-  }
-
-  &.is-on {
-    border-color: @ronda-teal;
-    color: @ronda-teal;
-    background: rgba(0, 173, 172, 0.08);
-  }
+  position: relative;
+  height: 30px;
 }
 
 .ronda-ranking {
@@ -205,6 +209,8 @@
 
 .ronda-empty {
   margin: 24px 0;
-  color: #8a8a8a;
+  color: @muted;
+  font-size: 11px;
   text-align: center;
+  text-shadow: @shadow;
 }

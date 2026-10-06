@@ -1,5 +1,5 @@
 import './style.less';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { tOptions } from '../../../../../i18n';
 import { Store } from '../../../../../store';
@@ -16,7 +16,11 @@ import {
   type RankingType,
   type ResetRow,
 } from '../../../../../common/statsApi';
-import { useWindowStackEntry } from '../../../../components/muWindow/useWindowChrome';
+import { useWindowChrome } from '../../../../components/muWindow/useWindowChrome';
+import { MuTableFrame } from '../../../../components/muWindow';
+import { OptionsFrame } from '../../../../components/optionsWindow/frame';
+import { OptionsButton } from '../../../../components/optionsWindow/controls';
+import { ScrollBar } from '../../../../components/optionsWindow/scrollbar';
 import { playUiSound } from '../../../../../libs/sfx';
 
 /**
@@ -26,45 +30,108 @@ import { playUiSound } from '../../../../../libs/sfx';
  * there is no art to match.
  */
 
+const PANEL_TOP = 36;
+const PANEL_PAD = 8;
+const FOOTER_SPACE = 52;
+const SCROLL_WIDTH = 15;
+const CLOSE_WIDTH = 108;
+
+/**
+ * The options window's chrome at another size: stone, rails, title bar, the
+ * dark table frame for the content, the MU scroll bar and a Close button in
+ * the foot - so these read as part of the game, not a web page on top of it.
+ */
 const Panel = ({
   id,
   title,
-  wide,
+  width,
+  height,
+  header,
+  headerHeight = 0,
+  contentKey,
   children,
 }: {
   id: string;
   title: string;
-  wide?: boolean;
+  width: number;
+  height: number;
+  /** Fixed strip above the scrolling rows (tabs, a note). */
+  header?: React.ReactNode;
+  headerHeight?: number;
+  /** Changes whenever the rows are refilled (for the scroll bar). */
+  contentKey: string;
   children: React.ReactNode;
 }) => {
-  useWindowStackEntry(id, true, () => {
+  const rowsRef = useRef<HTMLDivElement>(null);
+  const close = () => {
     closeRondaPanel();
     playUiSound('click');
-  });
+  };
+  const chrome = useWindowChrome(id, { width, height, onClose: close });
+
+  const panelHeight = height - PANEL_TOP - FOOTER_SPACE;
+  const rowsTop = PANEL_TOP + PANEL_PAD + headerHeight;
+  const rowsHeight = panelHeight - PANEL_PAD * 2 - headerHeight;
+  const innerLeft = 16 + PANEL_PAD;
+  const innerWidth = width - 32 - PANEL_PAD * 2;
 
   return (
-    <div className="ronda-panel-backdrop" onMouseDown={closeRondaPanel}>
-      <section
-        className={`ronda-panel${wide ? ' is-wide' : ''}`}
-        onMouseDown={e => e.stopPropagation()}
+    <div className="ronda-mu-page">
+      <div
+        ref={chrome.ref as React.Ref<HTMLDivElement>}
+        className="ronda-mu-window"
+        style={{
+          ...chrome.style,
+          position: chrome.anchored ? 'relative' : 'absolute',
+          transformOrigin: chrome.anchored ? 'center' : '0 0',
+          width,
+          height,
+        }}
         onContextMenu={e => e.preventDefault()}
       >
-        <header className="ronda-panel-head">
-          <h2>{title}</h2>
-          <button
-            type="button"
-            className="ronda-panel-close"
-            aria-label="Cerrar"
-            onClick={() => {
-              closeRondaPanel();
-              playUiSound('click');
-            }}
+        <OptionsFrame width={width} height={height} />
+        <div className="ronda-mu-titlebar" style={{ width }} onPointerDown={chrome.onPointerDown}>
+          {title}
+        </div>
+
+        <MuTableFrame
+          className="ronda-mu-panel"
+          left={16}
+          top={PANEL_TOP}
+          width={width - 32}
+          height={panelHeight}
+        />
+        {header && (
+          <div
+            className="ronda-mu-header"
+            style={{ left: innerLeft, top: PANEL_TOP + PANEL_PAD, width: innerWidth, height: headerHeight }}
           >
-            ×
-          </button>
-        </header>
-        <div className="ronda-panel-body">{children}</div>
-      </section>
+            {header}
+          </div>
+        )}
+        <div
+          ref={rowsRef}
+          className="ronda-mu-rows"
+          style={{ left: innerLeft, top: rowsTop, width: innerWidth - SCROLL_WIDTH - 4, height: rowsHeight }}
+        >
+          {children}
+        </div>
+        <ScrollBar
+          target={rowsRef}
+          windowId={id}
+          left={innerLeft + innerWidth - SCROLL_WIDTH}
+          top={rowsTop}
+          height={rowsHeight}
+          contentKey={contentKey}
+        />
+
+        <OptionsButton
+          label={tOptions('common.close')}
+          width={CLOSE_WIDTH}
+          onClick={close}
+          style={{ left: width - 24 - CLOSE_WIDTH, top: height - 47 }}
+        />
+      </div>
     </div>
   );
 };
@@ -95,15 +162,25 @@ const CommandsWindow = observer(() => {
   const master = CHAT_COMMANDS.filter(c => c.gm);
 
   return (
-    <Panel id="ronda-commands" title="Comandos" wide>
-      <p className="ronda-note">
-        Escribilos en el chat (Enter para abrirlo). Los que actúan sobre otro jugador usan el que
-        tenés bajo el cursor.
-      </p>
+    <Panel
+      id="ronda-commands"
+      title="Comandos"
+      width={600}
+      height={540}
+      headerHeight={34}
+      contentKey={gm ? 'gm' : 'player'}
+      header={
+        <p className="ronda-note">
+          Escribilos en el chat (Enter para abrirlo). Los que actúan sobre otro jugador usan el
+          que tenés bajo el cursor.
+        </p>
+      }
+    >
+      <h3 className="ronda-section">Jugador</h3>
       <CommandRows commands={player} />
       {gm && (
         <>
-          <h3 className="ronda-subtitle">Game Master</h3>
+          <h3 className="ronda-section">Game Master</h3>
           <CommandRows commands={master} />
         </>
       )}
@@ -207,25 +284,36 @@ const RankingsWindow = observer(() => {
   }, [type]);
 
   return (
-    <Panel id="ronda-rankings" title="Rankings" wide>
-      <nav className="ronda-tabs" role="tablist">
-        {TABS.map(tab => (
-          <button
-            key={tab.type}
-            type="button"
-            role="tab"
-            aria-selected={type === tab.type}
-            className={`ronda-tab${type === tab.type ? ' is-on' : ''}`}
-            onClick={() => {
-              setType(tab.type);
-              playUiSound('click');
-            }}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </nav>
-
+    <Panel
+      id="ronda-rankings"
+      title="Rankings"
+      width={600}
+      height={540}
+      headerHeight={60}
+      contentKey={`${type}|${loaded.state}`}
+      header={
+        <>
+          <div className="ronda-tabs" role="tablist">
+            {TABS.map((tab, i) => (
+              <OptionsButton
+                key={tab.type}
+                label={tab.label}
+                width={110}
+                checked={type === tab.type}
+                onClick={() => {
+                  setType(tab.type);
+                  playUiSound('click');
+                }}
+                style={{ left: i * 116, top: 0 }}
+              />
+            ))}
+          </div>
+          <p className="ronda-note ronda-note-right">
+            Se actualiza cada minuto. Los Game Masters no aparecen.
+          </p>
+        </>
+      }
+    >
       <div className="ronda-ranking">
         {loaded.state === 'loading' && <p className="ronda-empty">Cargando…</p>}
         {loaded.state === 'error' && (
@@ -235,7 +323,6 @@ const RankingsWindow = observer(() => {
           <RankingTable type={type} rows={loaded.rows} me={me} />
         )}
       </div>
-      <p className="ronda-note">Se actualiza cada minuto. Los Game Masters no aparecen.</p>
     </Panel>
   );
 });
