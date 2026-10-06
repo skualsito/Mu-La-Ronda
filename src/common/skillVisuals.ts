@@ -260,6 +260,21 @@ const seq = (...steps: Step[]): Step => (at, c) => {
 /** `step`, but at the caster instead of the point. */
 const atCaster = (step: Step, height = CAST_HEIGHT): Step => (_at, c) =>
   step(entityPos(c.caster, height, new Vector3()), c);
+/**
+ * Mu La Ronda: `step`, but at most once every `gap` seconds per caster. A
+ * high-reset character casts several times a second, and a skill whose
+ * effect outlives that rate (dark smoke above all) piles up into a screen
+ * nobody can see through; the server still lands every hit.
+ */
+const perCasterGap = (gap: number, step: Step): Step => {
+  const last = new WeakMap<object, number>();
+  return (at, c) => {
+    const now = fxNow();
+    if (now - (last.get(c.caster) ?? -Infinity) < gap) return;
+    last.set(c.caster, now);
+    step(at, c);
+  };
+};
 /** `step`, `n` times around `at` within `radius` tiles, staggered by `every` seconds. */
 const scatter = (step: Step, n: number, radius: number, every = 0): Step => (at, c) => {
   for (let i = 0; i < n; i++) {
@@ -11591,7 +11606,11 @@ export const SKILL_VISUALS: Partial<Record<number, SkillVisual>> = {
   // 238 Chaotic Diseier (523): the dark stars on the body, eight dark 2line_gost ribbons with their birds, feathers and
   // smoke flying the facing, and on the caster's own screen the dark bomb at his target (ClassAttack.cpp:698-775,
   // WSclient.cpp:4971-5025). SOUND_SKILL_CAOTIC is SKILL_SOUNDS[238].
-  238: { area: seq(chaoticStars, chaoticGhosts, chaoticBomb), enhanced: { area: seq(chaoticStars, chaoticGhostsOf(true), chaoticBombOf(true)) } },
+  // Mu La Ronda: its dark smoke stacked like Evil Spirit's at high attack speed (`perCasterGap`).
+  238: {
+    area: perCasterGap(0.5, seq(chaoticStars, chaoticGhosts, chaoticBomb)),
+    enhanced: { area: perCasterGap(0.5, seq(chaoticStars, chaoticGhostsOf(true), chaoticBombOf(true))) },
+  },
   // 239 Doppelganger self explosion
   239: { impact: seq(fireHit, shockRing(RGBS.fire, 4)) },
   // 260-270 Rage Fighter (MonkSystem.cpp RageCreateEffect).
