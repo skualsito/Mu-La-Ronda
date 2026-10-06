@@ -72,4 +72,13 @@ BEGIN
   END IF;
 END $$;
 
+-- Los comandos de reset (/reset, /resetinfo) y Leo the Helper, por si quedaron
+-- desactivados en la base: OpenMU ignora en silencio un comando cuyo plugin
+-- no esta activo.
+UPDATE config."PlugInConfiguration" SET "IsActive" = true
+ WHERE "TypeId" IN (
+   '90b35404-aade-4f22-b5d2-4cd59b8bb4c8',  -- ResetChatCommandPlugIn
+   '79f2c2c2-2e4c-4f4b-8a74-4227d1209d27',  -- ResetInfoChatCommandPlugIn
+   '08953be6-dabf-49cc-a500-fdb9dc2c4d80'); -- ResetCharacterNpcPlugin
+
 COMMIT;

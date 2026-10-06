@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { forgetSignupsBefore, recordAccount, recordSignup, signupsSince } from './db';
 import { BurstLimit, bucketFor, clientIp } from '../../src/common/rateLimit';
 import { isReservedName } from '../../src/common/reservedNames';
+import { handleStats } from './stats';
 
 /**
  * The account-creation endpoint behind `register.ignies.net`.
@@ -260,6 +261,10 @@ Bun.serve({
   async fetch(req, server) {
     const url = new URL(req.url);
     const cors = corsHeaders(req);
+
+    // Mu La Ronda: rankings and per-character numbers (stats.ts).
+    const stats = await handleStats(req, url, sql);
+    if (stats) return stats;
 
     if (url.pathname !== '/api/register') {
       return json({ error: 'Not found' }, 404, cors);

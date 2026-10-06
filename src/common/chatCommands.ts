@@ -45,6 +45,8 @@ export type ChatCommand = {
   local?: CommandKind;
   /** Needs a game master character (OpenMU `CharacterStatus.GameMaster`). */
   gm?: boolean;
+  /** Mu La Ronda: opens one of our own windows instead of reaching the server. */
+  ui?: 'commands' | 'rankings';
 };
 
 export const CHAT_COMMANDS: readonly ChatCommand[] = [
@@ -62,7 +64,12 @@ export const CHAT_COMMANDS: readonly ChatCommand[] = [
   { name: '/whisper', helpKey: 'cmd.whisper', local: 'whisper' },
   { name: '/addfriend', helpKey: 'cmd.addfriend', local: 'addFriend' },
   { name: '/follow', helpKey: 'cmd.follow', local: 'follow' },
+  // ---- Mu La Ronda windows --------------------------------------------
+  { name: '/comandos', helpKey: 'cmd.comandos', ui: 'commands' },
+  { name: '/ranking', helpKey: 'cmd.ranking', ui: 'rankings' },
   // ---- server (OpenMU) ---------------------------------------------------
+  { name: '/reset', helpKey: 'cmd.reset' },
+  { name: '/resetinfo', helpKey: 'cmd.resetinfo' },
   { name: '/post', usage: '<message>', helpKey: 'cmd.post' },
   { name: '/help', usage: '[command]', helpKey: 'cmd.help' },
   { name: '/list', helpKey: 'cmd.list' },
@@ -148,5 +155,5 @@ export function matchChatCommands(text: string, gm: boolean): ChatCommand[] {
 /** The client-side command a typed line stands for, if any (`/pt`, `/trade`…). */
 export function localCommandOf(text: string): ChatCommand | undefined {
   const word = text.trim().split(' ')[0].toLowerCase();
-  return CHAT_COMMANDS.find(c => c.local && c.name === word);
+  return CHAT_COMMANDS.find(c => (c.local || c.ui) && c.name === word);
 }

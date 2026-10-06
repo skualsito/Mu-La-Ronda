@@ -51,14 +51,12 @@ import {
   CLOSE,
   CLOSE_SPRITE,
   EXP_HOVER,
-  EXP_PERCENT_X,
   EXP_TIP,
   HEADER_Y,
   ICON_GREY_SPRITE,
   ICON_INSET_X,
   ICON_INSET_Y,
   ICON_SPRITE,
-  LEVEL_POINT_X,
   LEVEL_TEXT_X,
   LEVEL_TEXT_Y,
   MASTER_LEVEL_X,
@@ -369,7 +367,14 @@ export const MasterSkillsWindow = observer(() => {
     <div className="master-skills-overlay" onContextMenu={e => e.preventDefault()}>
       <div
         className="master-skills-stage"
-        style={{ width: SHEET_WIDTH, height: SHEET_HEIGHT, transform: `scale(${scale})` }}
+        // Mu La Ronda: centred by the *scaled* width. A fixed -320px margin
+        // only centres at scale 1; above it the sheet ran off the right edge.
+        style={{
+          width: SHEET_WIDTH,
+          height: SHEET_HEIGHT,
+          left: `calc(50% - ${(SHEET_WIDTH * scale) / 2}px)`,
+          transform: `scale(${scale})`,
+        }}
       >
         <MuSpriteFrame
           file={BACK_LEFT_SPRITE}
@@ -409,17 +414,13 @@ export const MasterSkillsWindow = observer(() => {
         <Text x={CLASS_NAME_X} y={HEADER_Y}>
           {text.className}
         </Text>
-        <Text x={MASTER_LEVEL_X} y={HEADER_Y}>
-          {formatMasterText(MASTER_TEXT.masterLevel, skills.masterLevel)}
-        </Text>
-        <Text x={LEVEL_POINT_X} y={HEADER_Y}>
-          {formatMasterText(MASTER_TEXT.levelPoints, skills.masterLevelUpPoints)}
-        </Text>
-        {next !== 0 && (
-          <Text x={EXP_PERCENT_X} y={HEADER_Y}>
-            {formatMasterText(MASTER_TEXT.expPercent, expPercent)}
-          </Text>
-        )}
+        {/* Mu La Ronda: one row with gaps instead of the original's fixed x
+            per figure - translated labels are longer and ran into each other. */}
+        <div className="master-header" style={{ left: MASTER_LEVEL_X, top: HEADER_Y }}>
+          <span>{formatMasterText(MASTER_TEXT.masterLevel, skills.masterLevel)}</span>
+          <span>{formatMasterText(MASTER_TEXT.levelPoints, skills.masterLevelUpPoints)}</span>
+          {next !== 0 && <span>{formatMasterText(MASTER_TEXT.expPercent, expPercent)}</span>}
+        </div>
         <div
           style={{ left: EXP_HOVER.x, top: EXP_HOVER.y, width: EXP_HOVER.width, height: EXP_HOVER.height }}
           onMouseEnter={() => setExpHover(true)}

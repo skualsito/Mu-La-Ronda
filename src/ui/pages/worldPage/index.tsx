@@ -15,6 +15,7 @@ import { PetInfoWindow } from './components/petInfo';
 import { MuHelperWindow } from './components/muHelper';
 import { CashShop } from './components/cashShop';
 import { MarketplaceWindow } from './components/marketplace';
+import { RondaPanels } from './components/rondaPanels';
 import { Inventory } from './components/inventory';
 import { NpcShop } from './components/npcShop';
 import { Vault } from './components/vault';
@@ -91,6 +92,7 @@ const HUD = observer(() => {
       <MuHelperWindow />
       <CashShop />
       <MarketplaceWindow />
+      <RondaPanels />
       <MoveCommandWindow />
       <EmoteMenu />
       <InstrumentWindow />

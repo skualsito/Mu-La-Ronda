@@ -24,6 +24,7 @@ import {
 } from '../../../../components/muWindow';
 import { InventoryConstants } from '../../../../../common/inventoryConstants';
 import { pkTextColour, PVP_NEUTRAL } from '../../../../../common/nameTags';
+import { useCharacterResets } from '../../../../../common/statsApi';
 import {
   BaseClass,
   deriveCharacterStats,
@@ -396,6 +397,9 @@ export const CharacterInfo = observer(() => {
 
   useEffect(() => stageStatPoints(), []);
 
+  // Mu La Ronda: re-read on open and on every level change (a reset drops it).
+  const resets = useCharacterResets(open ? playerData.name : '', playerData.level);
+
   if (!open) {
     return null;
   }
@@ -605,6 +609,10 @@ export const CharacterInfo = observer(() => {
       </div>
       <div className="character-class" style={{ top: CLASS_Y }}>
         ({getClassName(playerData.charClass)})
+        {/* Mu La Ronda: resets, from the stats service (not in the protocol). */}
+        {resets !== null && (
+          <span className="character-resets"> · Resets: {resets}</span>
+        )}
       </div>
 
       {}

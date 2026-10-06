@@ -16,16 +16,23 @@
 
 .master-skills-stage {
   position: absolute;
-  left: 50%;
   top: 0;
   transform-origin: 0 0;
-  margin-left: -320px;
 
   > * {
     position: absolute;
   }
 
   .master-text {
+    white-space: nowrap;
+    text-shadow: 1px 1px 0 #000;
+  }
+
+  .master-header {
+    display: flex;
+    gap: 14px;
+    max-width: 330px;
+    overflow: hidden;
     white-space: nowrap;
     text-shadow: 1px 1px 0 #000;
   }

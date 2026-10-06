@@ -1,0 +1,210 @@
+// Mu La Ronda: ventanas propias (comandos, rankings). Oscuro como la UI de MU,
+// con el turquesa del logo para lo que se destaca.
+
+@ronda-teal: #00adac;
+@ronda-teal-dim: #2d7f7e;
+
+.ronda-rank-button {
+  position: absolute;
+  right: 12px;
+  bottom: 96px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid #3a3a3a;
+  border-radius: 4px;
+  background: rgba(10, 10, 10, 0.78);
+  color: #d8d8d8;
+  font: 600 12px/1 'Segoe UI', system-ui, sans-serif;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: border-color 120ms, color 120ms;
+
+  &:hover,
+  &.is-on {
+    border-color: @ronda-teal;
+    color: @ronda-teal;
+  }
+}
+
+.ronda-panel-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 450;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  pointer-events: auto;
+}
+
+.ronda-panel {
+  display: flex;
+  flex-direction: column;
+  width: min(460px, 100%);
+  max-height: min(640px, 100%);
+  border: 1px solid #3a3a3a;
+  border-radius: 6px;
+  background: rgba(12, 12, 12, 0.94);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+  color: #d8d8d8;
+  font: 13px/1.4 'Segoe UI', system-ui, sans-serif;
+  user-select: none;
+
+  &.is-wide {
+    width: min(620px, 100%);
+  }
+}
+
+.ronda-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid #2a2a2a;
+
+  h2 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: @ronda-teal;
+    letter-spacing: 0.04em;
+  }
+}
+
+.ronda-panel-close {
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: #9a9a9a;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+
+  &:hover {
+    background: #222;
+    color: #fff;
+  }
+}
+
+.ronda-panel-body {
+  padding: 12px 14px 14px;
+  overflow-y: auto;
+}
+
+.ronda-note {
+  margin: 0 0 10px;
+  color: #8a8a8a;
+  font-size: 12px;
+
+  &:last-child {
+    margin: 10px 0 0;
+  }
+}
+
+.ronda-subtitle {
+  margin: 16px 0 6px;
+  font-size: 13px;
+  color: @ronda-teal;
+}
+
+.ronda-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th {
+    padding: 6px 8px;
+    border-bottom: 1px solid #2f2f2f;
+    color: #8a8a8a;
+    font-size: 11px;
+    font-weight: 600;
+    text-align: left;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  td {
+    padding: 5px 8px;
+    border-bottom: 1px solid #1d1d1d;
+    vertical-align: top;
+  }
+
+  tr.is-me td {
+    background: rgba(0, 173, 172, 0.12);
+    color: #fff;
+  }
+}
+
+.ronda-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.ronda-table th:nth-child(n + 4) {
+  text-align: right;
+}
+
+.ronda-strong {
+  color: @ronda-teal;
+  font-weight: 600;
+}
+
+.ronda-pos {
+  width: 28px;
+  color: #8a8a8a;
+}
+
+.ronda-commands {
+  .ronda-cmd {
+    width: 42%;
+    color: @ronda-teal;
+    font-family: 'Consolas', 'JetBrains Mono', monospace;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .ronda-usage {
+    color: #777;
+  }
+}
+
+.ronda-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.ronda-tab {
+  padding: 6px 14px;
+  border: 1px solid #2f2f2f;
+  border-radius: 4px;
+  background: #151515;
+  color: #b5b5b5;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover {
+    color: #fff;
+  }
+
+  &.is-on {
+    border-color: @ronda-teal;
+    color: @ronda-teal;
+    background: rgba(0, 173, 172, 0.08);
+  }
+}
+
+.ronda-ranking {
+  min-height: 120px;
+}
+
+.ronda-empty {
+  margin: 24px 0;
+  color: #8a8a8a;
+  text-align: center;
+}

@@ -36,6 +36,7 @@ import {
   type EmojiBubbleId,
 } from './common/emojiBubbles';
 import { localCommandOf } from './common/chatCommands';
+import { openRondaPanel } from './common/rondaPanels';
 import {
   chatEmojiAdvance,
   chatEmojiBubbleOf,
@@ -666,6 +667,12 @@ export const Social = new (class _Social {
     // `CheckCommand` (ZzzInterface.cpp:3990): `/trade`, `/party`, `/guild`,
     // `/union`… act on the player under the cursor and are never sent.
     const local = localCommandOf(text);
+    if (local?.ui) {
+      // Mu La Ronda: /comandos and /ranking open our own windows.
+      openRondaPanel(local.ui);
+      this.remember(this.chatHistory, text);
+      return true;
+    }
     if (local?.local) {
       if (local.name === '/duelend') Commands.duelStop();
       else Commands.run(local.local, Store.world?.currentPointerTarget);
