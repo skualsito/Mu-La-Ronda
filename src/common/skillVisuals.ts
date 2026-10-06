@@ -200,6 +200,10 @@ const SPIRIT_SMOKE: ParticleRecipe = {
   blend: 'alpha',
   capacity: 384,
 };
+/** Mu La Ronda: the shortest gap between two Evil Spirit visuals of one caster, seconds. */
+const EVIL_SPIRIT_MIN_GAP = 0.7;
+/** When each caster's last drawn Evil Spirit started (effects clock). */
+const lastEvilSpirit = new WeakMap<object, number>();
 /** The skill's distance in tiles (skillsDatabase, 7): the area the spirits spread over. */
 const SPIRIT_REACH = 7;
 /** Innermost and outermost orbit as fractions of the reach. */
@@ -11130,6 +11134,16 @@ export const SKILL_VISUALS: Partial<Record<number, SkillVisual>> = {
     area: atCaster((at, c) => {
       const seconds = ticks(49);
       const fadeTail = 10 / 49;
+      // Mu La Ronda: with a high-reset wizard's attack speed the casts come
+      // several a second and each one lives ~2 s - their smoke, dark ribbons
+      // and shrouds stacked into a black screen. A cast this close behind the
+      // caster's last one draws nothing new, and only the first of an
+      // overlapping run brings the shroud.
+      const now = fxNow();
+      const last = lastEvilSpirit.get(c.caster) ?? -Infinity;
+      if (now - last < EVIL_SPIRIT_MIN_GAP) return;
+      const overlapping = now - last < seconds;
+      lastEvilSpirit.set(c.caster, now);
       const centre = followEntity(c.caster, 0);
       const start = fxNow();
       const spirit = (i: number): SwarmSpirit => {
@@ -11169,7 +11183,7 @@ export const SKILL_VISUALS: Partial<Record<number, SkillVisual>> = {
       // The shadow they bring: smoke closing in from the edge of the view, lighter on the caster's
       // own screen than on anyone else's near the cast.
       const mine = c.caster === storeRef().world?.playerEntity;
-      effects.spawn('shroud', c.scene, at, {
+      if (!overlapping) effects.spawn('shroud', c.scene, at, {
         seconds,
         fadeTail,
         follow: followEntity(c.caster, 0.9),
