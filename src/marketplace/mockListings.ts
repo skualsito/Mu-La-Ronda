@@ -25,6 +25,14 @@ export type Listing = {
   state?: ListingState;
   /** Zen waiting for the seller, on a sold row. */
   proceeds?: number;
+  /**
+   * Mu La Ronda: up "to negotiate" - no price (it is 0), the buyer whispers
+   * the seller instead of buying. `offerId` is the service's id for it.
+   */
+  negotiate?: boolean;
+  offerId?: string;
+  /** What the seller wants in exchange, if they said. */
+  note?: string;
 };
 
 const SELLERS = [

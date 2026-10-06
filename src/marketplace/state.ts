@@ -29,14 +29,21 @@ export type BagEntry = { item: Item; slot: number };
 export type MarketApi = Pick<
   typeof realApi,
   'browse' | 'mine' | 'history' | 'list' | 'settle' | 'claim' | 'release' | 'cancel' | 'payout' | 'settlePayout'
->;
+> &
+  // Mu La Ronda: adverts to negotiate. Optional so a harness without them still fits.
+  Partial<Pick<typeof realApi, 'offers' | 'offer' | 'removeOffer'>>;
 
 /** The game, as the store needs it: a token in, the server's answer out. */
 export type EscrowBridge = {
   send(tokenHex: string, listingId: string): Promise<EscrowResult>;
 };
 
-export type MarketDeps = { api: MarketApi; bridge: EscrowBridge };
+/** Mu La Ronda: the game's whisper, for "negotiate". False when the line was not sent. */
+export type ChatBridge = {
+  whisper(to: string, text: string): boolean;
+};
+
+export type MarketDeps = { api: MarketApi; bridge: EscrowBridge; chat?: ChatBridge };
 
 const noBridge: EscrowBridge = {
   send: () => Promise.reject(new Error(t('marketplace.notConnected'))),
@@ -111,6 +118,9 @@ export class MarketplaceStore {
   /** Sell tab: which bag entry is picked, and the price typed for it. */
   sellPick: number | null = null;
   sellPrice = '';
+  /** Mu La Ronda: post it "to negotiate" instead of for a price, with an optional note. */
+  sellNegotiate = false;
+  sellNote = '';
 
   private deps: MarketDeps = { api: realApi, bridge: noBridge };
 
@@ -199,14 +209,21 @@ export class MarketplaceStore {
     });
 
     try {
-      const [catalogue, own] = await Promise.all([
+      const [catalogue, own, adverts] = await Promise.all([
         this.deps.api.browse({ limit: 200 }),
         this.deps.api.mine(),
+        // A service from before the adverts answers 404 here; the rest still loads.
+        this.deps.api.offers?.().catch(() => ({ offers: [] })) ?? { offers: [] },
       ]);
       runInAction(() => {
         this.mode = 'live';
         this.problem = null;
-        this.listings = mergeCatalogue(catalogue.listings, own.listings);
+        this.listings = mergeCatalogue(
+          catalogue.listings,
+          own.listings,
+          adverts.offers,
+          own.offers ?? []
+        );
         this.payoutOwed = own.balance;
         this.loading = false;
       });
@@ -343,23 +360,27 @@ export class MarketplaceStore {
         return false;
       }
       if (this.excellentOnly && !l.item.isExcellent && !l.item.isAncient) return false;
-      if (this.affordableOnly && l.price > this.zen) return false;
+      if (this.affordableOnly && !l.negotiate && l.price > this.zen) return false;
       if (needle && !displayName(l.item).toLowerCase().includes(needle)) {
         if (!l.seller.toLowerCase().includes(needle)) return false;
       }
       return true;
     });
 
+    // Adverts to negotiate have no price: the price sorts put them last.
+    const priced = (l: Listing) => (l.negotiate ? 1 : 0);
     const sorted = filtered.slice();
     switch (this.sort) {
       case 'price-asc':
-        sorted.sort((a, b) => a.price - b.price);
+        sorted.sort((a, b) => priced(a) - priced(b) || a.price - b.price);
         break;
       case 'price-desc':
-        sorted.sort((a, b) => b.price - a.price);
+        sorted.sort((a, b) => priced(a) - priced(b) || b.price - a.price);
         break;
       case 'deal':
-        sorted.sort((a, b) => a.price / a.median - b.price / b.median);
+        sorted.sort(
+          (a, b) => priced(a) - priced(b) || (priced(a) ? 0 : a.price / a.median - b.price / b.median)
+        );
         break;
       default:
         sorted.sort((a, b) => b.listedAt - a.listedAt);
@@ -382,7 +403,7 @@ export class MarketplaceStore {
   }
 
   canAfford(listing: Listing): boolean {
-    return this.zen >= listing.price;
+    return !!listing.negotiate || this.zen >= listing.price;
   }
 
   askBuy(listing: Listing): void {
@@ -487,6 +508,11 @@ export class MarketplaceStore {
     if (!listing || this.busy) return;
     const name = displayName(listing.item);
 
+    if (listing.negotiate && listing.offerId && this.mode !== 'offline') {
+      await this.removeOffer(listing.offerId, name);
+      return;
+    }
+
     if (this.mode === 'offline') {
       this.listings = this.listings.filter(l => l.id !== id);
       this.flash = t('marketplace.cancelled', { name });
@@ -519,6 +545,101 @@ export class MarketplaceStore {
   pickForSale(index: number | null): void {
     this.sellPick = index;
     this.sellPrice = '';
+    this.sellNote = '';
+  }
+
+  setSellNegotiate(on: boolean): void {
+    this.sellNegotiate = on;
+  }
+
+  setSellNote(value: string): void {
+    this.sellNote = value.replace(/[\r\n]/g, ' ').slice(0, NOTE_MAX);
+  }
+
+  // ---- to negotiate (Mu La Ronda) ----------------------------------------
+
+  /**
+   * Posts the picked item "to negotiate": nothing leaves the bag and no Zen
+   * changes hands here. The advert names the character to whisper.
+   */
+  async postForNegotiation(): Promise<void> {
+    const index = this.sellPick;
+    const entry = index === null ? null : this.inventory[index];
+    if (!entry || this.busy) return;
+    const { item, slot } = entry;
+    const name = displayName(item);
+    const note = this.sellNote.trim();
+
+    if (this.mode === 'offline' || !this.deps.api.offer) {
+      this.listings = [
+        {
+          id: `offer-${Math.random().toString(36).slice(2, 7)}`,
+          item,
+          category: categoryOf(item),
+          seller: this.characterName || t('marketplace.you'),
+          price: 0,
+          listedAt: Date.now(),
+          median: 0,
+          mine: true,
+          negotiate: true,
+          note: note || undefined,
+        },
+        ...this.listings,
+      ];
+      this.sellPick = null;
+      this.sellNote = '';
+      this.flash = t('marketplace.negotiateListed', { name });
+      this.setTab('mine');
+      return;
+    }
+
+    this.setBusy(true);
+    try {
+      await this.deps.api.offer({
+        character: this.characterName,
+        slot,
+        category: categoryOf(item),
+        item,
+        note,
+      });
+      runInAction(() => {
+        this.sellPick = null;
+        this.sellNote = '';
+        this.flash = t('marketplace.negotiateListed', { name });
+      });
+      this.setTab('mine');
+    } catch (error) {
+      this.setFlash(MarketplaceStore.errorText(error, 'marketplace.listRefused'));
+    } finally {
+      this.setBusy(false);
+    }
+    await this.refresh();
+  }
+
+  private async removeOffer(offerId: string, name: string): Promise<void> {
+    this.setBusy(true);
+    try {
+      await this.deps.api.removeOffer?.(offerId);
+      this.setFlash(t('marketplace.cancelled', { name }));
+    } catch (error) {
+      this.setFlash(MarketplaceStore.errorText(error, 'marketplace.cancelFailed'));
+    } finally {
+      this.setBusy(false);
+    }
+    await this.refresh();
+  }
+
+  /**
+   * "Negotiate": whispers the seller's character about the item. The deal
+   * itself is a trade in game, where both sides see the real item.
+   */
+  negotiate(listing: Listing): void {
+    if (!listing.negotiate || listing.mine) return;
+    const text = negotiateWhisper(displayName(listing.item));
+    const sent = this.deps.chat?.whisper(listing.seller, text) ?? false;
+    this.flash = sent
+      ? t('marketplace.whisperSent', { seller: listing.seller })
+      : t('marketplace.whisperFailed');
   }
 
   setSellPrice(value: string): void {
@@ -541,7 +662,9 @@ export class MarketplaceStore {
     const item = this.sellPick === null ? null : this.inventory[this.sellPick]?.item;
     if (!item) return [];
     return this.listings
-      .filter(l => isOnSale(l) && l.item.group === item.group && l.item.num === item.num)
+      .filter(
+        l => isOnSale(l) && !l.negotiate && l.item.group === item.group && l.item.num === item.num
+      )
       .sort((a, b) => a.price - b.price);
   }
 
@@ -678,6 +801,23 @@ export class MarketplaceStore {
     // The picked bag entry may have left the bag (listed, or moved in game).
     if (this.sellPick !== null && this.sellPick >= inventory.length) this.sellPick = null;
   }
+}
+
+/** What a note may hold; the service trims to the same. */
+export const NOTE_MAX = 60;
+
+/** The game's chat line limit (`MAX_CHAT_LENGTH`). */
+const WHISPER_MAX = 60;
+
+/**
+ * The whisper a buyer sends, with the item's name cut short when the line
+ * would not fit the game's chat limit.
+ */
+export function negotiateWhisper(itemName: string): string {
+  const full = t('marketplace.negotiateWhisper', { name: itemName });
+  if (full.length <= WHISPER_MAX) return full;
+  const room = Math.max(4, itemName.length - (full.length - WHISPER_MAX) - 1);
+  return t('marketplace.negotiateWhisper', { name: `${itemName.slice(0, room)}…` }).slice(0, WHISPER_MAX);
 }
 
 export const Marketplace = new MarketplaceStore();

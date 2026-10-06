@@ -1,5 +1,6 @@
 import { autorun } from 'mobx';
 import { Store } from '../store';
+import { Social } from '../social';
 import { InventoryConstants } from '../common/inventoryConstants';
 import { buildEscrowRequest, parseEscrowResult, type EscrowResult } from '../common/escrowWire';
 import { t } from '../i18n';
@@ -117,4 +118,8 @@ export function onEscrowResultPacket(bytes: Uint8Array): void {
   waiter.resolve(result);
 }
 
-Marketplace.attach({ bridge: { send: sendEscrow } });
+Marketplace.attach({
+  bridge: { send: sendEscrow },
+  // Mu La Ronda: "negotiate" whispers the seller from the game's own chat.
+  chat: { whisper: (to, text) => Social.whisper(to, text) },
+});

@@ -1,4 +1,4 @@
-import type { ApiListing, HistoryEntry, Payout, Token } from './api';
+import type { ApiListing, ApiOffer, HistoryEntry, Payout, Token } from './api';
 import { MarketError } from './api';
 import type { Listing } from './mockListings';
 import type { MarketDeps, MarketplaceStore } from './state';
@@ -46,6 +46,22 @@ export function createMockMarket(
     mine: !!l.mine,
   }));
 
+  // Mu La Ronda: a few adverts to negotiate, drawn off the same fixtures.
+  const adverts: (ApiOffer & { mine: boolean })[] = fixtures.listings
+    .filter((_, i) => i % 11 === 3)
+    .slice(0, 4)
+    .map((l, i) => ({
+      id: uuid(),
+      sellerCharacter: l.seller,
+      item: l.item,
+      category: l.category,
+      note: ['', 'Cambio por alas', 'Acepto jewels', ''][i],
+      listedAt: l.listedAt,
+      expiresAt: Date.now() + 86_400_000,
+      mine: false,
+    }));
+  const stripAdvert = ({ mine: _mine, ...advert }: ApiOffer & { mine: boolean }): ApiOffer => advert;
+
   /** What each token, once relayed, will do to the fixtures. */
   const pending = new Map<Token, { op: EscrowOperationName; row: Row }>();
 
@@ -75,7 +91,34 @@ export function createMockMarket(
       return {
         listings: own.map(strip),
         balance: own.reduce((sum, r) => sum + (r.state === 'sold' ? r.proceeds ?? 0 : 0), 0),
+        offers: adverts.filter(a => a.mine).map(stripAdvert),
       };
+    },
+    async offers() {
+      await wait(latency);
+      return { offers: adverts.map(stripAdvert) };
+    },
+    async offer(input) {
+      await wait(latency);
+      const advert = {
+        id: uuid(),
+        sellerCharacter: input.character,
+        item: input.item,
+        category: input.category,
+        note: input.note,
+        listedAt: Date.now(),
+        expiresAt: Date.now() + 86_400_000,
+        mine: true,
+      };
+      adverts.unshift(advert);
+      return { offer: stripAdvert(advert) };
+    },
+    async removeOffer(id) {
+      await wait(latency);
+      const index = adverts.findIndex(a => a.id === id && a.mine);
+      if (index < 0) throw new MarketError('no such advert', 404);
+      adverts.splice(index, 1);
+      return { removed: true };
     },
     async history() {
       await wait(latency);
@@ -203,6 +246,14 @@ export function createMockMarket(
     },
   };
 
+  /** The game's whisper: the harness has no chat, so it only logs the line. */
+  const chat: MarketDeps['chat'] = {
+    whisper(to, text) {
+      console.info(`mock whisper to ${to}: ${text}`);
+      return true;
+    },
+  };
+
   void FEE;
-  return { api, bridge };
+  return { api, bridge, chat };
 }

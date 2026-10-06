@@ -668,17 +668,7 @@ export const Social = new (class _Social {
       this.whisperEnabled && !text.startsWith('/') ? this.whisperTarget.trim() : '';
 
     if (whisperTo) {
-      const wire = toChatWire(text);
-      // Name (10) + message: getRequiredSize counts from the code byte.
-      const packet = WhisperMessagePacket.createPacket(
-        WhisperMessagePacket.getRequiredSize(10 + wire.length)
-      );
-      packet.setReceiverName(whisperTo);
-      packet.setMessage(wire);
-      Store.sendToGS(packet.buffer);
-      // The original logs an outgoing whisper under the hero's name.
-      this.addChatLine(heroName, text, ChatLineType.Whisper);
-      this.remember(this.whisperHistory, whisperTo);
+      this.sendWhisper(whisperTo, text);
       return true;
     }
 
@@ -752,6 +742,39 @@ export const Social = new (class _Social {
     Store.sendToGS(packet.buffer);
 
     this.remember(this.chatHistory, text);
+    return true;
+  }
+
+  private sendWhisper(to: string, text: string): void {
+    const wire = toChatWire(text);
+    // Name (10) + message: getRequiredSize counts from the code byte.
+    const packet = WhisperMessagePacket.createPacket(
+      WhisperMessagePacket.getRequiredSize(10 + wire.length)
+    );
+    packet.setReceiverName(to);
+    packet.setMessage(wire);
+    Store.sendToGS(packet.buffer);
+    // The original logs an outgoing whisper under the hero's name.
+    this.addChatLine(Store.playerData.name, text, ChatLineType.Whisper);
+    this.remember(this.whisperHistory, to);
+  }
+
+  /**
+   * Mu La Ronda: a whisper sent from outside the chat box (the marketplace's
+   * "negotiate"). The whisper field is set to the same name, so the player's
+   * next line carries on the conversation. False when the cooldown refused it.
+   */
+  whisper(to: string, rawText: string): boolean {
+    const name = to.trim().slice(0, 10);
+    const text = clipChatText(rawText.replace(/[\r\n]/g, ''), MAX_CHAT_LENGTH);
+    if (!name || !text.trim() || Store.isOffline) return false;
+
+    const now = performance.now();
+    if (now - this.lastChatTime < CHAT_COOLDOWN_MS) return false;
+    this.lastChatTime = now;
+
+    this.sendWhisper(name, text);
+    this.setWhisperTarget(name);
     return true;
   }
 

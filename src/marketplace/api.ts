@@ -147,10 +147,47 @@ export function browse(options: { category?: string; limit?: number; offset?: nu
 
 export function mine() {
   return withTicket(t =>
-    request<{ listings: ApiListing[]; balance: number }>(
+    request<{ listings: ApiListing[]; balance: number; offers?: ApiOffer[] }>(
       `/mine?ticket=${encodeURIComponent(t.ticket)}`
     )
   );
+}
+
+/**
+ * Mu La Ronda: an item up "to negotiate". No price and no escrow - the item
+ * stays in the seller's bag, a buyer whispers the seller's character, and the
+ * deal is a trade in game. The service never names the seller's account.
+ */
+export type ApiOffer = {
+  id: string;
+  sellerCharacter: string;
+  item: Item;
+  category: string;
+  note: string;
+  listedAt: number;
+  expiresAt: number;
+};
+
+export function offers() {
+  return withTicket(t =>
+    request<{ offers: ApiOffer[] }>(`/offers?ticket=${encodeURIComponent(t.ticket)}`)
+  );
+}
+
+export type OfferInput = {
+  character: string;
+  slot: number;
+  category: string;
+  item: Item;
+  note: string;
+};
+
+export function offer(input: OfferInput) {
+  return post<{ offer: ApiOffer }>('/offers', input);
+}
+
+export function removeOffer(id: string) {
+  return post<{ removed: boolean }>(`/offers/${encodeURIComponent(id)}/remove`, {});
 }
 
 export type ListInput = {

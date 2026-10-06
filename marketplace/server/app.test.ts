@@ -452,3 +452,45 @@ describe('a commit body without the page session', () => {
     expect((await post('/payout', withSession('alice'))).status).toBe(200);
   });
 });
+
+describe('to negotiate (offers)', () => {
+  const item = { group: 0, num: 5, lvl: 9 };
+
+  test('an advert is listed without the account and taken down by its seller only', async () => {
+    const made = await call<{ offer: { id: string; sellerCharacter: string; seller?: string; note: string } }>(
+      'POST',
+      '/offers',
+      { ...as('alice'), slot: 14, item, category: 'weapons', note: '  cambio por\nalas  ' }
+    );
+    expect(made.status).toBe(201);
+    expect(made.body.offer.sellerCharacter).toBe('alice');
+    expect(made.body.offer.seller).toBeUndefined();
+    expect(made.body.offer.note).toBe('cambio por alas');
+
+    const seen = await call<{ offers: { id: string; seller?: string }[] }>('GET', '/offers', as('bob'));
+    expect(seen.body.offers.map(o => o.id)).toContain(made.body.offer.id);
+    expect(seen.body.offers.every(o => o.seller === undefined)).toBe(true);
+
+    expect((await call('POST', `/offers/${made.body.offer.id}/remove`, as('bob'))).status).toBe(404);
+    expect((await call('POST', `/offers/${made.body.offer.id}/remove`, as('alice'))).status).toBe(200);
+    const after = await call<{ offers: { id: string }[] }>('GET', '/offers', as('bob'));
+    expect(after.body.offers.map(o => o.id)).not.toContain(made.body.offer.id);
+  });
+
+  test('the same slot replaces its advert, and a gone session cannot advertise', async () => {
+    const first = await call<{ offer: { id: string } }>('POST', '/offers', { ...as('carol'), slot: 20, item, category: 'misc' });
+    const second = await call<{ offer: { id: string } }>('POST', '/offers', { ...as('carol'), slot: 20, item, category: 'misc' });
+    const mine = await call<{ offers: { id: string }[] }>('GET', '/mine', as('carol'));
+    expect(mine.body.offers.map(o => o.id)).toEqual([second.body.offer.id]);
+    expect(first.body.offer.id).not.toBe(second.body.offer.id);
+
+    expect((await call('POST', '/offers', { ...as('dave'), slot: 20, item, category: 'misc' })).status).toBe(403);
+  });
+
+  test('adverts expire', async () => {
+    const made = await call<{ offer: { id: string } }>('POST', '/offers', { ...as('bob'), slot: 30, item, category: 'misc' });
+    clock += 4 * 24 * 60 * 60 * 1000;
+    const seen = await call<{ offers: { id: string }[] }>('GET', '/offers', as('alice'));
+    expect(seen.body.offers.map(o => o.id)).not.toContain(made.body.offer.id);
+  });
+});

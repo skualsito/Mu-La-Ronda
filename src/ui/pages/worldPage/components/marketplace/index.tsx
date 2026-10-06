@@ -10,6 +10,7 @@ import { cancellable, stateLabelKey, statePillKey } from '../../../../../marketp
 import { lookClasses } from '../../../../../marketplace/tiers';
 import {
   Marketplace,
+  NOTE_MAX,
   SORTS,
   formatZen,
   sinceLabel,
@@ -32,7 +33,7 @@ const TABS: { id: Tab; labelKey: TextKey }[] = [
 
 /** Price against the going rate, which is the number that says "deal". */
 function dealDelta(listing: Listing): { label: string; tone: string } | null {
-  if (!listing.median) return null;
+  if (listing.negotiate || !listing.median) return null;
   const ratio = listing.price / listing.median;
   const pct = Math.round((ratio - 1) * 100);
   if (pct <= -12) return { label: `${pct}%`, tone: 'is-good' };
@@ -83,6 +84,17 @@ const RowAction = observer(({ listing }: { listing: Listing }) => {
       </button>
     );
   }
+  if (listing.negotiate) {
+    return (
+      <button
+        className="mp-btn"
+        title={t('marketplace.negotiateNote')}
+        onClick={() => Marketplace.negotiate(listing)}
+      >
+        {t('marketplace.negotiate')}
+      </button>
+    );
+  }
   const affordable = Marketplace.canAfford(listing);
   return (
     <button
@@ -94,6 +106,27 @@ const RowAction = observer(({ listing }: { listing: Listing }) => {
     </button>
   );
 });
+
+/** The price, or "to negotiate" for an advert with none (Mu La Ronda). */
+const Price = observer(({ listing }: { listing: Listing }) =>
+  listing.negotiate ? (
+    <span className="mp-negotiate">{t('marketplace.toNegotiate')}</span>
+  ) : (
+    <>
+      {formatZen(listing.price)}
+      <span className="mp-zen">{t('common.zen')}</span>
+    </>
+  )
+);
+
+/** What the seller wants in exchange, under the name. */
+const Note = observer(({ listing }: { listing: Listing }) =>
+  listing.note ? (
+    <div className="mp-offer-note" title={listing.note}>
+      {listing.note}
+    </div>
+  ) : null
+);
 
 /**
  * Nothing to show, and the two reasons for it read very differently: the
@@ -128,6 +161,7 @@ const ListingCard = observer(({ listing }: { listing: Listing }) => {
         <div className={`mp-card-name${nameClass(listing.item)}`}>
           {displayName(listing.item)}
         </div>
+        <Note listing={listing} />
         <div className="mp-card-meta">
           <span className="mp-card-seller">
             {/* Your own card says so with its pill and its Cancel; the
@@ -148,8 +182,7 @@ const ListingCard = observer(({ listing }: { listing: Listing }) => {
         </div>
         <div className="mp-card-foot">
           <span className={`mp-price${affordable ? '' : ' is-short'}`}>
-            {formatZen(listing.price)}
-            <span className="mp-zen">{t('common.zen')}</span>
+            <Price listing={listing} />
           </span>
           <RowAction listing={listing} />
         </div>
@@ -177,8 +210,11 @@ const ListingRow = observer(({ listing }: { listing: Listing }) => {
         <ItemIcon item={listing.item} />
       </div>
 
-      <div className={`mp-card-name${nameClass(listing.item)}`}>
-        {displayName(listing.item)}
+      <div className="mp-row-name">
+        <div className={`mp-card-name${nameClass(listing.item)}`}>
+          {displayName(listing.item)}
+        </div>
+        <Note listing={listing} />
       </div>
 
       <div className="mp-row-seller">{listing.seller}</div>
@@ -192,8 +228,7 @@ const ListingRow = observer(({ listing }: { listing: Listing }) => {
       </div>
 
       <div className={`mp-row-price${affordable ? '' : ' is-short'}`}>
-        {formatZen(listing.price)}
-        <span className="mp-zen">{t('common.zen')}</span>
+        <Price listing={listing} />
       </div>
 
       {/* Always one cell, even when empty: the grid counts children. */}
@@ -367,27 +402,67 @@ const SellTab = observer(() => {
               <div className={`mp-card-name${nameClass(picked)}`}>{displayName(picked)}</div>
             </div>
 
-            <label className="mp-sell-price">
-              <span>{t('marketplace.price')}</span>
-              <input
-                className="mp-input"
-                inputMode="numeric"
-                value={Marketplace.sellPrice}
-                placeholder="0"
-                onChange={e => Marketplace.setSellPrice(e.target.value)}
-              />
-              <span className="mp-zen">{t('common.zen')}</span>
-            </label>
+            {/* Mu La Ronda: for Zen through the escrow, or up to negotiate. */}
+            <div className="mp-sell-mode">
+              <button
+                className={`mp-chip${Marketplace.sellNegotiate ? '' : ' is-on'}`}
+                onClick={() => Marketplace.setSellNegotiate(false)}
+              >
+                {t('marketplace.modeZen')}
+              </button>
+              <button
+                className={`mp-chip${Marketplace.sellNegotiate ? ' is-on' : ''}`}
+                onClick={() => Marketplace.setSellNegotiate(true)}
+              >
+                {t('marketplace.modeNegotiate')}
+              </button>
+            </div>
 
-            <button
-              className="mp-btn is-wide"
-              disabled={Marketplace.sellPriceValue <= 0 || Marketplace.busy}
-              onClick={() => Marketplace.listForSale()}
-            >
-              {t('marketplace.listIt')}
-            </button>
+            {Marketplace.sellNegotiate ? (
+              <>
+                <input
+                  className="mp-input mp-sell-note"
+                  value={Marketplace.sellNote}
+                  maxLength={NOTE_MAX}
+                  placeholder={t('marketplace.notePlaceholder')}
+                  onChange={e => Marketplace.setSellNote(e.target.value)}
+                />
 
-            <p className="mp-note">{t('marketplace.sellNote')}</p>
+                <button
+                  className="mp-btn is-wide"
+                  disabled={Marketplace.busy}
+                  onClick={() => Marketplace.postForNegotiation()}
+                >
+                  {t('marketplace.publishNegotiate')}
+                </button>
+
+                <p className="mp-note">{t('marketplace.negotiateNote')}</p>
+              </>
+            ) : (
+              <>
+                <label className="mp-sell-price">
+                  <span>{t('marketplace.price')}</span>
+                  <input
+                    className="mp-input"
+                    inputMode="numeric"
+                    value={Marketplace.sellPrice}
+                    placeholder="0"
+                    onChange={e => Marketplace.setSellPrice(e.target.value)}
+                  />
+                  <span className="mp-zen">{t('common.zen')}</span>
+                </label>
+
+                <button
+                  className="mp-btn is-wide"
+                  disabled={Marketplace.sellPriceValue <= 0 || Marketplace.busy}
+                  onClick={() => Marketplace.listForSale()}
+                >
+                  {t('marketplace.listIt')}
+                </button>
+
+                <p className="mp-note">{t('marketplace.sellNote')}</p>
+              </>
+            )}
           </div>
         </div>
       ) : (
