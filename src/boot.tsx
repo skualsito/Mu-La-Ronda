@@ -5,6 +5,7 @@ import './style.less';
 import './logic';
 import { Store, UIState } from './store';
 import { GameOptions } from './common/gameOptions';
+import { FramePacer, fpsLimitForStep } from './common/fpsLimit';
 import { Social } from './social';
 import { Commands } from './commands';
 import { GmPanel } from './gmPanel';
@@ -248,9 +249,15 @@ let frameErrorsSinceLog = 0;
 const COVERED_RENDER_EVERY = 6;
 let coveredFrames = 0;
 
+const framePacer = new FramePacer();
+
 let lastTime = performance.now();
 engine.runRenderLoop(() => {
   const now = performance.now();
+
+  // Mu La Ronda: the FPS cap. A skipped frame runs nothing - the next drawn
+  // one gets the whole elapsed time as its dt.
+  if (!framePacer.due(now, fpsLimitForStep(GameOptions.fpsLimit))) return;
 
   const frameMs = now - lastTime;
   const deltaTime = Math.min(frameMs / 1000, MAX_FRAME_DELTA);

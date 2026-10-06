@@ -1641,6 +1641,9 @@ export const portugueseLayer: LanguageLayer = {
     'options.lootZen': 'Montes de Zen a partir de',
     'options.firstPersonBob': 'Balanço da cabeça em primeira pessoa',
     'options.chatTimestamps': 'Horário no chat',
+    'options.fpsLimit': 'Limite de FPS',
+    'options.fpsUnlimited': 'Sem limite',
+    'options.help.fpsLimit': 'Limita quantos quadros por segundo são desenhados. Menos usa menos CPU, GPU e bateria.',
     'options.chatSystemMessages': 'Mensagens do sistema',
     'options.help.chatSystemMessages':
       'Mostra os avisos do servidor e do sistema no chat. O mesmo que o botão de sistema da barra do chat.',

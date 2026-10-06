@@ -1590,6 +1590,9 @@ export const chineseLayer: LanguageLayer = {
     'options.lootZen': '金币堆下限',
     'options.firstPersonBob': '第一人称视角头部晃动',
     'options.chatTimestamps': '聊天时间',
+    'options.fpsLimit': '帧率限制',
+    'options.fpsUnlimited': '不限制',
+    'options.help.fpsLimit': '限制每秒绘制的帧数。越低越省 CPU、GPU 和电量。',
     'options.chatSystemMessages': '系统消息',
     'options.help.chatSystemMessages':
       '在聊天记录中显示服务器和系统消息。与聊天框中的系统按钮相同。',

@@ -58,6 +58,7 @@ import {
   RENDER_SCALE_STEP_MAX,
   renderScaleForStep,
 } from '../../../libs/renderScale';
+import { FPS_LIMIT_MAX, fpsLimitForStep } from '../../../common/fpsLimit';
 import { LOOT_ZEN_MAX, lootZenThreshold } from '../../../common/lootFilter';
 import { CHAT_EMOJI_SIZE_LABEL_KEYS, CHAT_EMOJI_SIZE_MAX } from '../../../common/chatEmojis';
 import { BUS_VOLUME_MAX } from '../../../sound/buses';
@@ -471,6 +472,9 @@ export const CATEGORIES: Category[] = [
           {
             titleKey: 'options.section.resolution',
             rows: [
+              choice('fpsLimit', FPS_LIMIT_MAX, v =>
+                v > 0 ? `${fpsLimitForStep(v)} FPS` : tOptions('options.fpsUnlimited')
+              ),
               slider('renderScale', RENDER_SCALE_STEP_MAX, v =>
                 `${Math.round(renderScaleForStep(v) * 100)}%`
               ),

@@ -263,6 +263,9 @@ export const polishLayer: LanguageLayer = {
     'options.quickItemActions': 'Ctrl+klik przenosi przedmioty',
     'options.confirmValuableItems': 'Pytaj przed wyrzuceniem lub sprzedażą cennych rzeczy',
     'options.chatTimestamps': 'Godzina w czacie',
+    'options.fpsLimit': 'Limit FPS',
+    'options.fpsUnlimited': 'Bez limitu',
+    'options.help.fpsLimit': 'Ogranicza liczbę klatek na sekundę. Mniej to mniejsze zużycie CPU, GPU i baterii.',
     'options.chatSystemMessages': 'Wiadomości systemowe',
     'options.help.chatSystemMessages':
       'Pokazuje komunikaty serwera i systemu w czacie. To samo co przycisk systemowy na pasku czatu.',

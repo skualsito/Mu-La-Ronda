@@ -1649,6 +1649,9 @@ export const germanLayer: LanguageLayer = {
     'options.lootZen': 'Zen-Haufen ab',
     'options.firstPersonBob': 'Kopfbewegung in der Egoperspektive',
     'options.chatTimestamps': 'Uhrzeit im Chat',
+    'options.fpsLimit': 'FPS-Limit',
+    'options.fpsUnlimited': 'Unbegrenzt',
+    'options.help.fpsLimit': 'Begrenzt die gezeichneten Bilder pro Sekunde. Weniger spart CPU, GPU und Akku.',
     'options.chatSystemMessages': 'Systemnachrichten',
     'options.help.chatSystemMessages':
       'Zeigt Server- und Systemmeldungen im Chat an. Entspricht dem System-Knopf in der Chatleiste.',

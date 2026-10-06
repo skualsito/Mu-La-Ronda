@@ -1643,6 +1643,9 @@ export const italianLayer: LanguageLayer = {
     'options.lootZen': 'Mucchi di Zen da',
     'options.firstPersonBob': 'Oscillazione della testa in prima persona',
     'options.chatTimestamps': 'Orario nella chat',
+    'options.fpsLimit': 'Limite FPS',
+    'options.fpsUnlimited': 'Illimitato',
+    'options.help.fpsLimit': 'Limita i fotogrammi al secondo disegnati. Meno usa meno CPU, GPU e batteria.',
     'options.chatSystemMessages': 'Messaggi di sistema',
     'options.help.chatSystemMessages':
       'Mostra gli avvisi del server e di sistema nella chat. Come il pulsante di sistema nella barra della chat.',

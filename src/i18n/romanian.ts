@@ -1636,6 +1636,9 @@ export const romanianLayer: LanguageLayer = {
     'options.lootZen': 'Grămezi de Zen de la',
     'options.firstPersonBob': 'Legănarea capului la persoana întâi',
     'options.chatTimestamps': 'Ora în chat',
+    'options.fpsLimit': 'Limită FPS',
+    'options.fpsUnlimited': 'Nelimitat',
+    'options.help.fpsLimit': 'Limitează cadrele pe secundă desenate. Mai puțin folosește mai puțin CPU, GPU și baterie.',
     'options.chatSystemMessages': 'Mesaje de sistem',
     'options.help.chatSystemMessages':
       'Afișează mesajele serverului și ale sistemului în chat. La fel ca butonul de sistem din bara de chat.',

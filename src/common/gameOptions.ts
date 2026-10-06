@@ -12,6 +12,7 @@ import {
 } from './lowVitals';
 import { LocalStorage } from '../libs/localStorage';
 import { RENDER_SCALE_STEP_MAX } from '../libs/renderScale';
+import { FPS_LIMIT_MAX } from './fpsLimit';
 
 const OPTIONS_KEY = 'mu_options';
 
@@ -63,6 +64,8 @@ export type GameOptions = {
    * to native (libs/renderScale.ts).
    */
   renderScale: number;
+  /** Frame-rate cap, an index into FPS_LIMIT_STEPS (0 uncapped; common/fpsLimit.ts). */
+  fpsLimit: number;
   /**
    * How a reduced `renderScale` is presented: 0 hands the small drawing
    * buffer to the browser and lets it stretch the canvas, 1 draws the world
@@ -483,6 +486,7 @@ const RANGES: Partial<Record<keyof GameOptions, readonly [number, number]>> = {
   chromatic: [0, 9],
   sharpness: [0, 9],
   renderScale: [0, RENDER_SCALE_STEP_MAX],
+  fpsLimit: [0, FPS_LIMIT_MAX],
   upscale: [0, 1],
   vignette: [0, 9],
   sunShafts: [0, 9],
@@ -516,6 +520,7 @@ const DEFAULTS: GameOptions = {
   chromatic: 0,
   sharpness: 2,
   renderScale: 0,
+  fpsLimit: 0,
   upscale: 1,
   vignette: 0,
   sunShafts: 3,

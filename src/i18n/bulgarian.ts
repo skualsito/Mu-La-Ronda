@@ -1628,6 +1628,9 @@ export const bulgarianLayer: LanguageLayer = {
     'options.lootZen': 'Купчини Zen от',
     'options.firstPersonBob': 'Поклащане на главата от първо лице',
     'options.chatTimestamps': 'Час в чата',
+    'options.fpsLimit': 'Ограничение на FPS',
+    'options.fpsUnlimited': 'Без ограничение',
+    'options.help.fpsLimit': 'Ограничава кадрите в секунда. По-малко натоварва по-малко CPU, GPU и батерията.',
     'options.chatSystemMessages': 'Системни съобщения',
     'options.help.chatSystemMessages':
       'Показва съобщенията от сървъра и системата в чата. Същото като бутона за системни съобщения в чата.',

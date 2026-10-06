@@ -1598,6 +1598,9 @@ export const japaneseLayer: LanguageLayer = {
     'options.lootZen': 'Zen の下限',
     'options.firstPersonBob': '一人称視点の頭の揺れ',
     'options.chatTimestamps': 'チャットの時刻',
+    'options.fpsLimit': 'FPS制限',
+    'options.fpsUnlimited': '無制限',
+    'options.help.fpsLimit': '1秒あたりの描画フレーム数を制限します。低いほどCPU・GPU・バッテリーの負荷が減ります。',
     'options.chatSystemMessages': 'システムメッセージ',
     'options.help.chatSystemMessages':
       'サーバーとシステムのメッセージをチャットに表示します。チャット欄のシステムボタンと同じです。',

@@ -1643,6 +1643,9 @@ export const frenchLayer: LanguageLayer = {
     'options.lootZen': 'Tas de Zen à partir de',
     'options.firstPersonBob': 'Balancement de la tête en vue subjective',
     'options.chatTimestamps': 'Horodatage du chat',
+    'options.fpsLimit': 'Limite d’IPS',
+    'options.fpsUnlimited': 'Illimité',
+    'options.help.fpsLimit': 'Limite le nombre d’images par seconde. Moins consomme moins de CPU, GPU et batterie.',
     'options.chatSystemMessages': 'Messages système',
     'options.help.chatSystemMessages':
       'Affiche les messages du serveur et du système dans le chat. Identique au bouton système de la barre de chat.',

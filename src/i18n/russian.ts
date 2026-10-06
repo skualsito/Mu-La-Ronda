@@ -1622,6 +1622,9 @@ export const russianLayer: LanguageLayer = {
     'options.lootZen': 'Кучки Zen от',
     'options.firstPersonBob': 'Покачивание головы от первого лица',
     'options.chatTimestamps': 'Время в чате',
+    'options.fpsLimit': 'Ограничение FPS',
+    'options.fpsUnlimited': 'Без ограничения',
+    'options.help.fpsLimit': 'Ограничивает число кадров в секунду. Меньше — меньше нагрузка на CPU, GPU и батарею.',
     'options.chatSystemMessages': 'Системные сообщения',
     'options.help.chatSystemMessages':
       'Показывает сообщения сервера и системы в чате. То же, что кнопка системных сообщений в панели чата.',

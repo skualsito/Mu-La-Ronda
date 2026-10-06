@@ -1596,6 +1596,9 @@ export const koreanLayer: LanguageLayer = {
     'options.lootZen': '젠 더미 기준',
     'options.firstPersonBob': '1인칭 시점 흔들림',
     'options.chatTimestamps': '채팅 시각 표시',
+    'options.fpsLimit': 'FPS 제한',
+    'options.fpsUnlimited': '제한 없음',
+    'options.help.fpsLimit': '초당 그리는 프레임 수를 제한합니다. 낮을수록 CPU, GPU, 배터리 사용이 줄어듭니다.',
     'options.chatSystemMessages': '시스템 메시지',
     'options.help.chatSystemMessages':
       '서버 및 시스템 알림을 채팅창에 표시합니다. 채팅창의 시스템 버튼과 같습니다.',

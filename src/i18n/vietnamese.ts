@@ -263,6 +263,9 @@ export const vietnameseLayer: LanguageLayer = {
     'options.quickItemActions': 'Ctrl-click để chuyển vật phẩm',
     'options.confirmValuableItems': 'Hỏi trước khi vứt hoặc bán đồ quý',
     'options.chatTimestamps': 'Hiện giờ trong trò chuyện',
+    'options.fpsLimit': 'Giới hạn FPS',
+    'options.fpsUnlimited': 'Không giới hạn',
+    'options.help.fpsLimit': 'Giới hạn số khung hình mỗi giây. Thấp hơn dùng ít CPU, GPU và pin hơn.',
     'options.chatSystemMessages': 'Tin nhắn hệ thống',
     'options.help.chatSystemMessages':
       'Hiện thông báo của máy chủ và hệ thống trong khung trò chuyện. Giống nút hệ thống trên thanh trò chuyện.',
