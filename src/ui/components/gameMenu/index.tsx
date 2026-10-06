@@ -65,6 +65,13 @@ export const GameMenuWindow = observer(() => {
           GameMenu.hide();
           openRondaPanel('rankings');
         },
+      },
+      {
+        labelKey: 'options.vip',
+        run: () => {
+          GameMenu.hide();
+          openRondaPanel('vip');
+        },
       }
     );
   }

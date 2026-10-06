@@ -5,6 +5,7 @@ import * as users from './users';
 import * as game from './game';
 import * as spots from './spots';
 import * as inventory from './inventory';
+import * as vip from './vip';
 import * as skills from './skills';
 import * as messages from './messages';
 import * as shops from './shops';
@@ -239,6 +240,20 @@ async function route(req: Request, url: URL, ip: string): Promise<Response> {
       else throw new HttpError(405, 'Metodo no permitido');
     }
     return json(await inventory.getVault(sql, accountId));
+  }
+  const vipRoute = path.match(/^\/api\/accounts\/([0-9a-f-]{36})\/vip$/i);
+  if (vipRoute) {
+    const accountId = vipRoute[1];
+    if (method === 'PATCH') {
+      const account = await game.getAccount(sql, accountId, await onlineAccounts());
+      if (!account) throw new HttpError(404, 'No existe');
+      if (account.online) throw new HttpError(409, 'La cuenta esta conectada: que salga primero (OpenMU pisaria el VIP).');
+      const input = await body(req);
+      await vip.setVip(sql, accountId, Number(input.tier), Number(input.days));
+    } else if (method !== 'GET') {
+      throw new HttpError(405, 'Metodo no permitido');
+    }
+    return json(await vip.getVip(sql, accountId));
   }
   if (path === '/api/accounts/delete' && method === 'POST') {
     const ids = (await body(req)).ids;

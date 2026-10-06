@@ -186,3 +186,72 @@
   text-align: center;
   text-shadow: @shadow;
 }
+
+// ---- VIP ------------------------------------------------------------------
+
+.ronda-vip-name {
+  color: #f0c95a;
+}
+
+.ronda-vip-tiers {
+  display: flex;
+  gap: 10px;
+  padding: 8px 2px 4px;
+}
+
+.ronda-vip-tier {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 6px 10px;
+  min-height: 210px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid #4a3c26;
+  border-radius: 4px;
+  text-align: center;
+
+  h3 {
+    margin: 0 0 6px;
+    font-size: 16px;
+    letter-spacing: 0.5px;
+  }
+
+  &.tier-1 h3 { color: #d39461; }
+  &.tier-2 h3 { color: #d7dde6; }
+  &.tier-3 h3 { color: #f0c95a; }
+
+  &.is-current {
+    border-color: #f0c95a;
+    box-shadow: 0 0 8px rgba(240, 201, 90, 0.35) inset;
+  }
+}
+
+.ronda-vip-bonus {
+  margin: 0;
+  color: #9fe08a;
+}
+
+.ronda-vip-price {
+  margin: 8px 0 0;
+  white-space: nowrap;
+  color: #fff;
+  font-weight: bold;
+}
+
+.ronda-vip-days,
+.ronda-vip-short {
+  margin: 0;
+  font-size: 11px;
+  color: #b9a988;
+}
+
+.ronda-vip-short {
+  color: #e07a6a;
+}
+
+.ronda-vip-foot {
+  margin-top: 10px;
+}

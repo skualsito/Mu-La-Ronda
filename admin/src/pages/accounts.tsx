@@ -251,6 +251,8 @@ export function AccountPage({ id }: { id: string }) {
         </Card>
       </div>
 
+      <VipCard accountId={id} locked={data.online} />
+
       <VaultCard accountId={id} locked={data.online} />
 
       <Card title={`Personajes (${data.characters.length})`}>
@@ -390,6 +392,67 @@ export function VaultCard({ accountId, locked }: { accountId: string; locked: bo
           saveLabel={editingItem ? 'Guardar' : 'Agregar al baúl'}
         />
       )}
+    </Card>
+  );
+}
+
+type Vip = { tier: number; name: string; expiresAt: string | null; active: boolean };
+
+const VIP_OPTIONS = [
+  { value: 0, label: 'Sin VIP' },
+  { value: 1, label: 'Bronce (+10% exp y zen)' },
+  { value: 2, label: 'Plata (+20% exp y zen)' },
+  { value: 3, label: 'Oro (+30% exp y zen)' },
+];
+
+/** The account's VIP: what it has and until when, and a way to give one by hand. */
+function VipCard({ accountId, locked }: { accountId: string; locked: boolean }) {
+  const toast = useToast();
+  const { data, error, reload, setData } = useLoad(() => api<Vip>(`/accounts/${accountId}/vip`), [accountId]);
+  const [tier, setTier] = useState<number | null>(null);
+  const [days, setDays] = useState(30);
+
+  if (error) return <ErrorBox error={error} onRetry={reload} />;
+  if (!data) return <Loading />;
+
+  const chosen = tier ?? (data.active ? data.tier : 1);
+  const save = async () => {
+    try {
+      setData(await api<Vip>(`/accounts/${accountId}/vip`, { method: 'PATCH', body: { tier: chosen, days } }));
+      setTier(null);
+      toast(chosen === 0 ? 'VIP quitado' : 'VIP guardado');
+    } catch (err) {
+      toast(err instanceof Error ? err.message : String(err), 'error');
+    }
+  };
+
+  return (
+    <Card title="VIP">
+      <p>
+        {data.active ? (
+          <>
+            <Badge tone="ok">{data.name}</Badge> hasta {formatDate(data.expiresAt!)}
+          </>
+        ) : (
+          <span className="muted">Sin VIP{data.expiresAt ? ` (el último venció ${formatDate(data.expiresAt)})` : ''}.</span>
+        )}
+      </p>
+      <div className="form-grid">
+        <SelectField label="Nivel" value={chosen} disabled={locked} options={VIP_OPTIONS} onChange={v => setTier(v)} />
+        <label className="field">
+          <span className="field-label">Días desde hoy</span>
+          <input type="number" min={1} max={3650} value={days} disabled={locked || chosen === 0} onChange={e => setDays(Number(e.target.value) || 0)} />
+        </label>
+      </div>
+      <div className="row-actions">
+        <button className="btn btn-primary" disabled={locked || (chosen !== 0 && days < 1)} onClick={save}>
+          {chosen === 0 ? 'Quitar VIP' : 'Dar VIP'}
+        </button>
+      </div>
+      <p className="muted small">
+        Los jugadores lo compran en el juego (menú Esc → VIP, o /vip oro). Se aplica cuando entra con un personaje.
+        {locked && ' La cuenta está conectada: que salga primero.'}
+      </p>
     </Card>
   );
 }

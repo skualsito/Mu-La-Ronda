@@ -21,6 +21,9 @@ import { OptionsFrame } from '../../../../components/optionsWindow/frame';
 import { OptionsButton } from '../../../../components/optionsWindow/controls';
 import { ScrollBar } from '../../../../components/optionsWindow/scrollbar';
 import { playUiSound } from '../../../../../libs/sfx';
+import { ConfirmBox } from '../../../../components/optionsWindow/dialogs';
+import { Social } from '../../../../../social';
+import { markVipBuying, VIP_TIERS, vipState, type VipTierInfo } from '../../../../../common/vip';
 
 /**
  * Mu La Ronda's own in-game windows: the command list (`/comandos`) and the
@@ -326,9 +329,88 @@ const RankingsWindow = observer(() => {
   );
 });
 
+// ---------------------------------------------------------------------------
+// VIP (game menu → VIP, /vip)
+// ---------------------------------------------------------------------------
+
+const zen = (n: number) => n.toLocaleString('es-AR');
+
+const VipWindow = observer(() => {
+  const [confirm, setConfirm] = useState<VipTierInfo | null>(null);
+  const money = Store.playerData.money;
+  const current = vipState.name;
+
+  // What the account has comes from the server's answer to /vip.
+  useEffect(() => {
+    if (!vipState.known) Social.sendChat('/vip');
+  }, []);
+
+  return (
+    <Panel
+      id="ronda-vip"
+      title="VIP"
+      width={620}
+      height={450}
+      headerHeight={44}
+      contentKey={`${current}-${vipState.until}-${vipState.buying}`}
+      header={
+        <p className="ronda-note">
+          {!vipState.known
+            ? 'Consultando tu VIP…'
+            : current
+              ? <>Tenés <b className="ronda-vip-name">VIP {current}</b> hasta el {vipState.until}. Comprar el mismo nivel le suma 30 días.</>
+              : 'No tenés VIP. Es de la cuenta: vale para todos tus personajes durante 30 días.'}
+        </p>
+      }
+    >
+      <div className="ronda-vip-tiers">
+        {VIP_TIERS.map(tier => {
+          const short = money < tier.price;
+          return (
+            <div key={tier.tier} className={`ronda-vip-tier tier-${tier.tier} ${current === tier.name ? 'is-current' : ''}`}>
+              <h3>{tier.name}</h3>
+              <p className="ronda-vip-bonus">+{tier.bonus}% experiencia</p>
+              <p className="ronda-vip-bonus">+{tier.bonus}% zen</p>
+              <p className="ronda-vip-price">{zen(tier.price)} zen</p>
+              <p className="ronda-vip-days">30 días</p>
+              <OptionsButton
+                label={vipState.buying ? '…' : current === tier.name ? 'Renovar' : 'Comprar'}
+                width={110}
+                disabled={short || vipState.buying}
+                onClick={() => {
+                  playUiSound('click');
+                  setConfirm(tier);
+                }}
+                style={{ position: 'relative', marginTop: 6 }}
+              />
+              {short && <p className="ronda-vip-short">Te faltan {zen(tier.price - money)} zen</p>}
+            </div>
+          );
+        })}
+      </div>
+      <p className="ronda-note ronda-vip-foot">
+        Durante la beta el VIP se paga con zen. Más adelante se va a poder pagar con Mercado Pago.
+      </p>
+
+      {confirm && (
+        <ConfirmBox
+          text={`¿Comprar VIP ${confirm.name} por ${zen(confirm.price)} zen?`}
+          onAnswer={yes => {
+            const tier = confirm;
+            setConfirm(null);
+            if (!yes) return;
+            if (Social.sendChat(`/vip ${tier.name.toLowerCase()}`)) markVipBuying();
+          }}
+        />
+      )}
+    </Panel>
+  );
+});
+
 export const RondaPanels = observer(() => (
   <>
     {rondaPanels.open === 'commands' && <CommandsWindow />}
     {rondaPanels.open === 'rankings' && <RankingsWindow />}
+    {rondaPanels.open === 'vip' && <VipWindow />}
   </>
 ));

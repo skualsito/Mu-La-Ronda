@@ -243,6 +243,7 @@ import {
   localIndexOf,
 } from './common/itemStorage';
 import { NetStats } from './common/netStats';
+import { readVipLine } from './common/vip';
 import { Notices } from './common/notices';
 import { SlideHelp } from './common/slideHelp';
 import { ChatLineType, classifyInboundChat, cleanName } from './common/chat';
@@ -3625,6 +3626,7 @@ EventBus.on('ServerMessage', packet => {
       // (SelfDefensePlugIn.cs); keep the state alongside showing it. It reads
       // the server's English, so it has to run before the line is translated.
       Social.trackSelfDefense(text);
+      readVipLine(text);
       // Mu La Ronda: no "Congratulations, you are Level N now." per level-up.
       if (isHiddenServerLine(text)) break;
       Social.systemMessage(translateServerText(text));

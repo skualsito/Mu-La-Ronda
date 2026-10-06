@@ -72,6 +72,7 @@ export const CHAT_COMMANDS: readonly ChatCommand[] = [
   { name: '/reset', helpKey: 'cmd.reset' },
   { name: '/resetinfo', helpKey: 'cmd.resetinfo' },
   { name: '/autoreset', helpKey: 'cmd.autoreset' },
+  { name: '/vip', usage: '[bronce|plata|oro]', helpKey: 'cmd.vip' },
   { name: '/re', usage: '<on|off|auto>', helpKey: 'cmd.re', ui: 'partyReply' },
   { name: '/post', usage: '<message>', helpKey: 'cmd.post' },
   { name: '/help', usage: '[command]', helpKey: 'cmd.help' },
