@@ -33,7 +33,11 @@ async function inventoryId(sql: Sql, characterId: string): Promise<string> {
 }
 
 export async function getInventory(sql: Sql, characterId: string) {
-  const inv = await inventoryId(sql, characterId);
+  return storageItems(sql, await inventoryId(sql, characterId));
+}
+
+/** Every item of a storage (an inventory, a merchant's store) with its options. */
+export async function storageItems(sql: Sql, inv: string) {
   const items = await sql`
     SELECT i."Id" AS id, i."ItemSlot" AS slot, i."Level" AS level, i."Durability" AS durability,
            i."HasSkill" AS "hasSkill", d."Id" AS "definitionId", d."Name" AS name, d."Group" AS "group",
@@ -122,40 +126,71 @@ async function writeOptions(sql: Sql, itemId: string, definitionId: string, opti
   }
 }
 
-/** First bag slot where a w x h item fits, or null when the bag is full. */
-function freeSlot(taken: { slot: number; width: number; height: number }[], w: number, h: number): number | null {
-  const grid = new Array(BAG_COLUMNS * BAG_ROWS).fill(false);
+/** A grid of slots: the bag (12 + 8x8) or a merchant's store (0 + 8x15). */
+export type Grid = { first: number; columns: number; rows: number };
+export const BAG_GRID: Grid = { first: BAG_FIRST, columns: BAG_COLUMNS, rows: BAG_ROWS };
+
+type Placed = { id?: string; slot: number; width: number; height: number };
+
+function occupancy(taken: Placed[], grid: Grid, except?: string): boolean[] {
+  const cells = new Array(grid.columns * grid.rows).fill(false);
   for (const item of taken) {
-    if (item.slot < BAG_FIRST || item.slot >= BAG_FIRST + BAG_COLUMNS * BAG_ROWS) continue;
-    const cell = item.slot - BAG_FIRST;
-    const x0 = cell % BAG_COLUMNS;
-    const y0 = Math.floor(cell / BAG_COLUMNS);
-    for (let y = y0; y < y0 + item.height && y < BAG_ROWS; y++)
-      for (let x = x0; x < x0 + item.width && x < BAG_COLUMNS; x++) grid[y * BAG_COLUMNS + x] = true;
+    if (except && item.id === except) continue;
+    const cell = item.slot - grid.first;
+    if (cell < 0 || cell >= grid.columns * grid.rows) continue;
+    const x0 = cell % grid.columns;
+    const y0 = Math.floor(cell / grid.columns);
+    for (let y = y0; y < y0 + item.height && y < grid.rows; y++)
+      for (let x = x0; x < x0 + item.width && x < grid.columns; x++) cells[y * grid.columns + x] = true;
   }
-  for (let y = 0; y + h <= BAG_ROWS; y++)
-    for (let x = 0; x + w <= BAG_COLUMNS; x++) {
-      let fits = true;
-      for (let dy = 0; dy < h && fits; dy++) for (let dx = 0; dx < w; dx++) if (grid[(y + dy) * BAG_COLUMNS + x + dx]) { fits = false; break; }
-      if (fits) return BAG_FIRST + y * BAG_COLUMNS + x;
+  return cells;
+}
+
+function fitsAt(cells: boolean[], grid: Grid, slot: number, w: number, h: number): boolean {
+  const cell = slot - grid.first;
+  if (cell < 0 || cell >= grid.columns * grid.rows) return false;
+  const x0 = cell % grid.columns;
+  const y0 = Math.floor(cell / grid.columns);
+  if (x0 + w > grid.columns || y0 + h > grid.rows) return false;
+  for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) if (cells[y * grid.columns + x]) return false;
+  return true;
+}
+
+/** First slot of the grid where a w x h item fits, or null when it is full. */
+function freeSlot(cells: boolean[], grid: Grid, w: number, h: number): number | null {
+  for (let y = 0; y + h <= grid.rows; y++)
+    for (let x = 0; x + w <= grid.columns; x++) {
+      const slot = grid.first + y * grid.columns + x;
+      if (fitsAt(cells, grid, slot, w, h)) return slot;
     }
   return null;
 }
 
-export async function addItem(sql: Sql, characterId: string, input: ItemInput) {
-  const inv = await inventoryId(sql, characterId);
+async function placed(sql: Sql, storageId: string): Promise<Placed[]> {
+  const rows = await sql`
+    SELECT i."Id" AS id, i."ItemSlot" AS slot, d."Width" AS width, d."Height" AS height
+      FROM data."Item" i JOIN config."ItemDefinition" d ON d."Id" = i."DefinitionId"
+     WHERE i."ItemStorageId" = ${storageId}::uuid`;
+  return rows as unknown as Placed[];
+}
+
+/** Adds an item to a storage: at `input.slot` when it is free there, else at the first free slot. */
+export async function addToStorage(sql: Sql, storageId: string, grid: Grid, input: ItemInput, fullMessage: string) {
   const [def] = await sql`
     SELECT "Id" AS id, "Width" AS width, "Height" AS height, "Durability" AS durability,
            "MaximumItemLevel" AS "maxLevel", ("SkillId" IS NOT NULL) AS "canSkill"
       FROM config."ItemDefinition" WHERE "Id" = ${input.definitionId ?? ''}::uuid`;
   if (!def) throw new Error('Item inexistente');
 
-  const taken = await sql`
-    SELECT i."ItemSlot" AS slot, d."Width" AS width, d."Height" AS height
-      FROM data."Item" i JOIN config."ItemDefinition" d ON d."Id" = i."DefinitionId"
-     WHERE i."ItemStorageId" = ${inv}::uuid`;
-  const slot = freeSlot(taken as never, def.width, def.height);
-  if (slot === null) throw new Error('No hay lugar en el inventario para ese item');
+  const cells = occupancy(await placed(sql, storageId), grid);
+  let slot: number | null;
+  if (input.slot !== undefined) {
+    slot = Number(input.slot);
+    if (!fitsAt(cells, grid, slot, def.width, def.height)) throw new Error('El item no entra en ese lugar');
+  } else {
+    slot = freeSlot(cells, grid, def.width, def.height);
+  }
+  if (slot === null) throw new Error(fullMessage);
 
   const level = Math.min(def.maxLevel || 15, Math.max(0, Math.trunc(Number(input.level ?? 0))));
   const durability = input.durability !== undefined ? Math.max(0, Math.min(255, Number(input.durability))) : Math.max(1, def.durability);
@@ -164,27 +199,35 @@ export async function addItem(sql: Sql, characterId: string, input: ItemInput) {
     const [item] = await tx`
       INSERT INTO data."Item"
         ("Id", "DefinitionId", "Durability", "HasSkill", "ItemSlot", "ItemStorageId", "Level", "PetExperience", "SocketCount", "StorePrice")
-      VALUES (gen_random_uuid(), ${def.id}, ${durability}, ${!!input.hasSkill && def.canSkill}, ${slot}, ${inv}::uuid, ${level}, 0, 0, NULL)
+      VALUES (gen_random_uuid(), ${def.id}, ${durability}, ${!!input.hasSkill && def.canSkill}, ${slot}, ${storageId}::uuid, ${level}, 0, 0, NULL)
       RETURNING "Id"`;
     await writeOptions(tx as unknown as Sql, item.Id, def.id, input.options);
   });
   return slot;
 }
 
-async function itemOf(sql: Sql, characterId: string, itemId: string) {
-  const inv = await inventoryId(sql, characterId);
+async function storageItem(sql: Sql, storageId: string, itemId: string) {
   const [item] = await sql`
-    SELECT i."Id" AS id, i."DefinitionId" AS "definitionId", d."MaximumItemLevel" AS "maxLevel", (d."SkillId" IS NOT NULL) AS "canSkill"
+    SELECT i."Id" AS id, i."DefinitionId" AS "definitionId", d."MaximumItemLevel" AS "maxLevel",
+           (d."SkillId" IS NOT NULL) AS "canSkill", d."Width" AS width, d."Height" AS height
       FROM data."Item" i JOIN config."ItemDefinition" d ON d."Id" = i."DefinitionId"
-     WHERE i."Id" = ${itemId}::uuid AND i."ItemStorageId" = ${inv}::uuid`;
-  if (!item) throw new Error('Ese item no es de este personaje');
+     WHERE i."Id" = ${itemId}::uuid AND i."ItemStorageId" = ${storageId}::uuid`;
+  if (!item) throw new Error('Ese item no está ahí');
   return item;
 }
 
-export async function updateItem(sql: Sql, characterId: string, itemId: string, input: ItemInput) {
-  const item = await itemOf(sql, characterId, itemId);
+/** Edits an item; `input.slot` moves it within the grid when the new place is free. */
+export async function updateInStorage(sql: Sql, storageId: string, grid: Grid | null, itemId: string, input: ItemInput) {
+  const item = await storageItem(sql, storageId, itemId);
+  const sets: Record<string, unknown> = {};
+  if (input.slot !== undefined) {
+    if (!grid) throw new Error('Ese item no se puede mover');
+    const slot = Number(input.slot);
+    const cells = occupancy(await placed(sql, storageId), grid, itemId);
+    if (!fitsAt(cells, grid, slot, item.width, item.height)) throw new Error('El item no entra en ese lugar');
+    sets.ItemSlot = slot;
+  }
   await sql.begin(async tx => {
-    const sets: Record<string, unknown> = {};
     if (input.level !== undefined) sets.Level = Math.min(item.maxLevel || 15, Math.max(0, Math.trunc(Number(input.level))));
     if (input.durability !== undefined) sets.Durability = Math.max(0, Math.min(255, Number(input.durability)));
     if (input.hasSkill !== undefined) sets.HasSkill = !!input.hasSkill && item.canSkill;
@@ -193,11 +236,27 @@ export async function updateItem(sql: Sql, characterId: string, itemId: string, 
   });
 }
 
-export async function deleteItem(sql: Sql, characterId: string, itemId: string) {
-  await itemOf(sql, characterId, itemId);
+export async function deleteFromStorage(sql: Sql, storageId: string, itemId: string) {
+  await storageItem(sql, storageId, itemId);
   await sql.begin(async tx => {
     await tx`DELETE FROM data."ItemOptionLink" WHERE "ItemId" = ${itemId}::uuid`;
     await tx`DELETE FROM data."ItemItemOfItemSet" WHERE "ItemId" = ${itemId}::uuid`;
     await tx`DELETE FROM data."Item" WHERE "Id" = ${itemId}::uuid`;
   });
+}
+
+// ---- a character's inventory ---------------------------------------------------------
+
+export async function addItem(sql: Sql, characterId: string, input: ItemInput) {
+  return addToStorage(sql, await inventoryId(sql, characterId), BAG_GRID, input, 'No hay lugar en el inventario para ese item');
+}
+
+export async function updateItem(sql: Sql, characterId: string, itemId: string, input: ItemInput) {
+  const inv = await inventoryId(sql, characterId);
+  // Equipped items (slots 0-11) are not moved by slot; only bag items are.
+  return updateInStorage(sql, inv, BAG_GRID, itemId, input);
+}
+
+export async function deleteItem(sql: Sql, characterId: string, itemId: string) {
+  return deleteFromStorage(sql, await inventoryId(sql, characterId), itemId);
 }

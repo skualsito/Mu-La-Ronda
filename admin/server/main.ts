@@ -1,11 +1,13 @@
 import postgres from 'postgres';
 import { BurstLimit, bucketFor, clientIp } from '../../src/common/rateLimit';
-import { checkCredentials, issueSession, passwordConfigured, sessionCookie, sessionUser } from './auth';
+import { USER, checkCredentials, issueSession, passwordConfigured, sessionCookie, sessionUser } from './auth';
+import * as users from './users';
 import * as game from './game';
 import * as spots from './spots';
 import * as inventory from './inventory';
 import * as skills from './skills';
 import * as messages from './messages';
+import * as shops from './shops';
 import { hasTerrain, terrainOf } from './terrain';
 import { openmuLogs, openmuStatus, restartOpenmu } from './docker';
 
@@ -79,15 +81,20 @@ async function route(req: Request, url: URL, ip: string): Promise<Response> {
       return json({ error: 'El panel no tiene contraseña configurada (OPENMU_ADMIN_PASSWORD en deploy/.env, 8 caracteres o mas).' }, 503);
     }
     const { user, password } = await body(req);
-    if (!checkCredentials(String(user ?? ''), String(password ?? ''))) {
-      return json({ error: 'Usuario o contraseña incorrectos' }, 401);
-    }
-    const session = issueSession();
+    const name = checkCredentials(String(user ?? ''), String(password ?? ''))
+      ? USER
+      : await users.checkUser(sql, String(user ?? ''), String(password ?? ''));
+    if (!name) return json({ error: 'Usuario o contraseña incorrectos' }, 401);
+    const session = issueSession(name);
     return json({ ok: true }, 200, { 'Set-Cookie': sessionCookie(session.value, session.maxAge) });
   }
 
   const user = sessionUser(req);
   if (!user) return json({ error: 'Sesion vencida' }, 401);
+  // A panel user that was disabled or deleted loses the session right away.
+  const access = await users.accessOf(sql, user, USER);
+  if (!access) return json({ error: 'Sesion vencida' }, 401, { 'Set-Cookie': sessionCookie('', 0) });
+  if (!users.allowed(access, path, method)) return json({ error: 'No tenés permiso para esta sección' }, 403);
 
   if (method !== 'GET' && req.headers.get('x-mlr') !== '1') {
     return json({ error: 'Falta el encabezado X-MLR' }, 403);
@@ -96,7 +103,22 @@ async function route(req: Request, url: URL, ip: string): Promise<Response> {
   if (path === '/api/logout' && method === 'POST') {
     return json({ ok: true }, 200, { 'Set-Cookie': sessionCookie('', 0) });
   }
-  if (path === '/api/me') return json({ user });
+  if (path === '/api/me') return json({ ...access, sections: users.SECTIONS });
+
+  // ---- panel users (superuser only, see users.allowed) ----------------------
+  if (path === '/api/admin-users') {
+    if (method === 'POST') await users.createUser(sql, await body(req), USER);
+    else if (method !== 'GET') throw new HttpError(405, 'Metodo no permitido');
+    return json(await users.listUsers(sql));
+  }
+  const adminUser = path.match(/^\/api\/admin-users\/(\d+)$/);
+  if (adminUser) {
+    const id = Number(adminUser[1]);
+    if (method === 'PATCH') await users.updateUser(sql, id, await body(req));
+    else if (method === 'DELETE') await users.deleteUser(sql, id);
+    else throw new HttpError(405, 'Metodo no permitido');
+    return json(await users.listUsers(sql));
+  }
 
   if (path === '/api/dashboard') {
     const [data, server] = await Promise.all([game.dashboard(sql, await onlineAccounts()), openmuStatus()]);
@@ -230,6 +252,27 @@ async function route(req: Request, url: URL, ip: string): Promise<Response> {
     const { active } = await body(req);
     await game.setPlugin(sql, id, !!active);
     return json(await game.getConfig(sql));
+  }
+
+  // ---- shops ------------------------------------------------------------------------
+  if (path === '/api/shops') {
+    if (method === 'POST') {
+      const { monsterId } = await body(req);
+      if (typeof monsterId !== 'string' || !UUID_RE.test(monsterId)) throw new HttpError(400, 'Falta el NPC');
+      await shops.makeShop(sql, monsterId);
+    } else if (method !== 'GET') throw new HttpError(405, 'Metodo no permitido');
+    const [list, candidates] = await Promise.all([shops.listShops(sql), shops.candidateNpcs(sql)]);
+    return json({ shops: list, candidates });
+  }
+  const shop = path.match(/^\/api\/shops\/([0-9a-f-]{36})\/(items|clear)(?:\/([0-9a-f-]{36}))?$/i);
+  if (shop) {
+    const [, monsterId, what, itemId] = shop;
+    if (what === 'clear' && method === 'POST' && !itemId) await shops.clearShop(sql, monsterId);
+    else if (what === 'items' && !itemId && method === 'POST') await shops.addShopItem(sql, monsterId, (await body(req)) as inventory.ItemInput);
+    else if (what === 'items' && itemId && method === 'PATCH') await shops.updateShopItem(sql, monsterId, itemId, (await body(req)) as inventory.ItemInput);
+    else if (what === 'items' && itemId && method === 'DELETE') await shops.deleteShopItem(sql, monsterId, itemId);
+    else if (method !== 'GET' || what !== 'items' || itemId) throw new HttpError(405, 'Metodo no permitido');
+    return json(await shops.shopItems(sql, monsterId));
   }
 
   // ---- automatic messages -------------------------------------------------------

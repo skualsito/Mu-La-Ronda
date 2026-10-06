@@ -1,15 +1,14 @@
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 
 /**
- * The panel's own login: one operator account from the environment
+ * The panel's own login: the operator account from the environment
  * (`MLR_ADMIN_USER` / `MLR_ADMIN_PASSWORD`, which docker-compose fills with
  * OpenMU's OPENMU_ADMIN_USER / OPENMU_ADMIN_PASSWORD - one login for both
- * panels) and a signed, HttpOnly session cookie. No user table on purpose - this panel
- * writes straight into OpenMU's database, and the fewer moving parts guard
- * that, the better.
+ * panels) and a signed, HttpOnly session cookie. That operator is the
+ * superuser; the users it creates (users.ts) sign in with the same cookie.
  */
 
-const USER = process.env.MLR_ADMIN_USER || 'admin';
+export const USER = process.env.MLR_ADMIN_USER || 'admin';
 const PASSWORD = process.env.MLR_ADMIN_PASSWORD || '';
 
 const SECRET: Buffer = process.env.MLR_ADMIN_SECRET
@@ -45,9 +44,9 @@ function sign(payload: string): string {
   return createHmac('sha256', SECRET).update(payload).digest('base64url');
 }
 
-export function issueSession(): { value: string; maxAge: number } {
+export function issueSession(user: string = USER): { value: string; maxAge: number } {
   const expires = Date.now() + SESSION_MS;
-  const payload = `${USER}|${expires}`;
+  const payload = `${user}|${expires}`;
   return { value: `${Buffer.from(payload).toString('base64url')}.${sign(payload)}`, maxAge: SESSION_MS / 1000 };
 }
 

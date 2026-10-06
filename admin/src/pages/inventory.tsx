@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api, type DefinitionOption, type InventoryItem, type ItemDefinition } from '../api';
 import { Card, Confirm, ErrorBox, Loading, NumberField, Toggle, useLoad, useToast } from '../ui';
+import { MuGrid } from '../muGrid';
 
 /** A character's inventory: the equipped slots, the 8x8 bag and an item editor. */
 
@@ -78,29 +79,19 @@ export function InventoryCard({ characterId, locked }: { characterId: string; lo
         </div>
         <div>
           <h3 className="subhead">Bolsa</h3>
-          <div className="bag" style={{ width: COLUMNS * CELL, height: ROWS * CELL }}>
-            {bag.map(item => {
-              const cell = item.slot - BAG_FIRST;
-              const exc = item.options.some(o => o.type === 'excellent');
-              return (
-                <button
-                  key={item.id}
-                  className={`bag-item ${exc ? 'exc' : ''} ${item.level >= 7 ? 'high' : ''}`}
-                  title={itemTitle(item, item.options)}
-                  style={{
-                    left: (cell % COLUMNS) * CELL,
-                    top: Math.floor(cell / COLUMNS) * CELL,
-                    width: item.width * CELL - 2,
-                    height: item.height * CELL - 2,
-                  }}
-                  onClick={() => setEditing(item)}
-                >
-                  <span className="bag-name">{item.name}</span>
-                  {item.level > 0 && <span className="bag-level">+{item.level}</span>}
-                </button>
-              );
-            })}
-          </div>
+          <MuGrid
+            items={bag}
+            first={BAG_FIRST}
+            columns={COLUMNS}
+            rows={ROWS}
+            cell={CELL}
+            disabled={locked}
+            selectedId={editing && editing !== 'new' ? editing.id : null}
+            onSelect={item => setEditing(item)}
+            onMove={(item, slot) =>
+              run(api(`/characters/${characterId}/items/${item.id}`, { method: 'PATCH', body: { slot } }), `${item.name} movido`)
+            }
+          />
           {others.length > 0 && (
             <p className="muted small">
               + {others.length} items en otros espacios (tienda personal / extensiones):{' '}
@@ -130,18 +121,22 @@ export function InventoryCard({ characterId, locked }: { characterId: string; lo
   );
 }
 
-function ItemEditor({
+export function ItemEditor({
   item,
   locked,
   onClose,
   onSave,
   onDelete,
+  saveLabel,
+  deleteLabel = 'Borrar item',
 }: {
   item: InventoryItem | null;
   locked: boolean;
   onClose: () => void;
   onSave: (body: unknown, item: InventoryItem | null) => void;
   onDelete: (item: InventoryItem) => void;
+  saveLabel?: string;
+  deleteLabel?: string;
 }) {
   const [query, setQuery] = useState('');
   const [definition, setDefinition] = useState<ItemDefinition | null>(
@@ -264,14 +259,14 @@ function ItemEditor({
         <div className="modal-actions">
           {item && (
             <button className="btn btn-danger" disabled={locked} onClick={() => setConfirmDelete(true)} style={{ marginRight: 'auto' }}>
-              Borrar item
+              {deleteLabel}
             </button>
           )}
           <button className="btn btn-ghost" onClick={onClose}>
             Cancelar
           </button>
           <button className="btn btn-primary" disabled={locked || !definition} onClick={submit}>
-            {item ? 'Guardar' : 'Agregar a la bolsa'}
+            {saveLabel ?? (item ? 'Guardar' : 'Agregar a la bolsa')}
           </button>
         </div>
         {locked && <p className="muted small">El personaje está conectado: no se puede tocar su inventario.</p>}

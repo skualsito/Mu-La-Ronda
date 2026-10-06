@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { api, setOnUnauthorized } from './api';
+import { api, setOnUnauthorized, type Me } from './api';
 import { Boundary, ToastProvider } from './ui';
 import { DashboardPage } from './pages/dashboard';
 import { CharactersPage, CharacterPage } from './pages/characters';
@@ -7,6 +7,8 @@ import { AccountsPage, AccountPage } from './pages/accounts';
 import { ConfigPage } from './pages/config';
 import { SpotsPage } from './pages/spots';
 import { MessagesPage } from './pages/messages';
+import { ShopsPage } from './pages/shops';
+import { UsersPage } from './pages/users';
 import { ServerPage } from './pages/server';
 
 /** Hash routes: #/, #/personajes, #/personajes/<id>, #/cuentas, #/cuentas/<id>, #/config, #/servidor. */
@@ -21,15 +23,22 @@ function useRoute(): string[] {
   return route;
 }
 
+/** `key` is the permission each entry needs (server/users.ts SECTIONS); 'usuarios' is the superuser's. */
 const NAV = [
-  { path: '', label: 'Inicio', icon: 'M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z' },
-  { path: 'personajes', label: 'Personajes', icon: 'M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm-8 9a8 8 0 0 1 16 0z' },
-  { path: 'cuentas', label: 'Cuentas', icon: 'M4 5h16v14H4zM8 9h8M8 13h5' },
-  { path: 'spots', label: 'Spots', icon: 'M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12zm0-9a3 3 0 1 0 0-6 3 3 0 0 0 0 6z' },
-  { path: 'mensajes', label: 'Mensajes', icon: 'M4 5h16v11H8l-4 4zM8 9h8M8 12h5' },
-  { path: 'config', label: 'Configuración', icon: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm8-3l2-1-2-4-2 .5-1.5-1.5L16 4h-4l-.5 2L10 7.5 8 7 6 11l2 1-2 1 2 4 2-.5 1.5 1.5.5 2h4l.5-2 1.5-1.5 2 .5 2-4z' },
-  { path: 'servidor', label: 'Servidor', icon: 'M4 4h16v6H4zm0 10h16v6H4zM8 7h.01M8 17h.01' },
+  { path: '', key: 'inicio', label: 'Inicio', icon: 'M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z' },
+  { path: 'personajes', key: 'personajes', label: 'Personajes', icon: 'M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm-8 9a8 8 0 0 1 16 0z' },
+  { path: 'cuentas', key: 'cuentas', label: 'Cuentas', icon: 'M4 5h16v14H4zM8 9h8M8 13h5' },
+  { path: 'spots', key: 'spots', label: 'Spots', icon: 'M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12zm0-9a3 3 0 1 0 0-6 3 3 0 0 0 0 6z' },
+  { path: 'shops', key: 'shops', label: 'Shops', icon: 'M4 9l1.5-5h13L20 9M4 9v11h16V9M4 9h16M9 20v-6h6v6' },
+  { path: 'mensajes', key: 'mensajes', label: 'Mensajes', icon: 'M4 5h16v11H8l-4 4zM8 9h8M8 12h5' },
+  { path: 'config', key: 'config', label: 'Configuración', icon: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm8-3l2-1-2-4-2 .5-1.5-1.5L16 4h-4l-.5 2L10 7.5 8 7 6 11l2 1-2 1 2 4 2-.5 1.5 1.5.5 2h4l.5-2 1.5-1.5 2 .5 2-4z' },
+  { path: 'servidor', key: 'servidor', label: 'Servidor', icon: 'M4 4h16v6H4zm0 10h16v6H4zM8 7h.01M8 17h.01' },
+  { path: 'usuarios', key: 'usuarios', label: 'Usuarios', icon: 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-7 10a7 7 0 0 1 14 0M17 11a3 3 0 1 0 0-6M22 21a6 6 0 0 0-4-5.6' },
 ];
+
+function navFor(me: Me) {
+  return NAV.filter(item => (item.key === 'usuarios' ? me.superuser : me.permissions.includes(item.key as never)));
+}
 
 function Icon({ d }: { d: string }) {
   return (
@@ -83,30 +92,43 @@ function Login({ onDone }: { onDone: () => void }) {
 }
 
 export function App() {
-  const [session, setSession] = useState<'checking' | 'out' | string>('checking');
+  const [session, setSession] = useState<'checking' | 'out' | Me>('checking');
   const [menuOpen, setMenuOpen] = useState(false);
   const route = useRoute();
 
   useEffect(() => {
     setOnUnauthorized(() => setSession('out'));
-    api<{ user: string }>('/me').then(
-      me => setSession(me.user),
+    api<Me>('/me').then(
+      me => setSession(me),
       () => setSession('out')
     );
   }, []);
+
+  // A section this user may not see sends them to the first one they can.
+  useEffect(() => {
+    if (typeof session !== 'object') return;
+    const nav = navFor(session);
+    if (nav.length && !nav.some(item => item.path === (route[0] ?? ''))) location.hash = `#/${nav[0].path}`;
+  }, [session, route]);
 
   if (session === 'checking') return <div className="loading full">Cargando…</div>;
   if (session === 'out') {
     return (
       <ToastProvider>
-        <Login onDone={() => api<{ user: string }>('/me').then(me => setSession(me.user))} />
+        <Login onDone={() => api<Me>('/me').then(me => setSession(me))} />
       </ToastProvider>
     );
   }
 
+  const me = session;
+  const nav = navFor(me);
   const [section, id] = route;
+  const allowedHere = nav.some(item => item.path === (section ?? ''));
   let page;
-  switch (section ?? '') {
+  switch (allowedHere ? section ?? '' : 'none') {
+    case 'none':
+      page = nav.length ? null : <p className="muted">Tu usuario no tiene ninguna sección habilitada.</p>;
+      break;
     case 'personajes':
       page = id ? <CharacterPage id={id} /> : <CharactersPage />;
       break;
@@ -121,6 +143,12 @@ export function App() {
       break;
     case 'mensajes':
       page = <MessagesPage />;
+      break;
+    case 'shops':
+      page = <ShopsPage shop={id} />;
+      break;
+    case 'usuarios':
+      page = <UsersPage me={me} />;
       break;
     case 'servidor':
       page = <ServerPage />;
@@ -146,7 +174,7 @@ export function App() {
             </div>
           </div>
           <nav>
-            {NAV.map(item => (
+            {nav.map(item => (
               <a key={item.path} href={`#/${item.path}`} className={(section ?? '') === item.path ? 'active' : ''} onClick={() => setMenuOpen(false)}>
                 <Icon d={item.icon} />
                 {item.label}
@@ -154,7 +182,7 @@ export function App() {
             ))}
           </nav>
           <div className="sidebar-foot">
-            <span className="muted small">Sesión: {session}</span>
+            <span className="muted small">Sesión: {me.user}</span>
             <button className="btn btn-ghost btn-small" onClick={logout}>
               Salir
             </button>

@@ -198,3 +198,10 @@ export type LearnedSkill = SkillRow & { id: string; level: number };
 export type CharacterSkills = { learned: LearnedSkill[]; available: SkillRow[] };
 
 export type AutoMessage = { id: number; text: string; intervalMinutes: number; enabled: boolean; sendNowAt: string | null };
+
+export type ShopRow = { id: string; number: number; name: string; storeId: string | null; items: number; maps: string[] };
+export type ShopList = { shops: ShopRow[]; candidates: { id: string; number: number; name: string }[] };
+
+export type SectionKey = 'inicio' | 'personajes' | 'cuentas' | 'spots' | 'shops' | 'mensajes' | 'config' | 'servidor';
+export type Me = { user: string; superuser: boolean; permissions: SectionKey[]; sections: { key: SectionKey; label: string }[] };
+export type PanelUser = { id: number; username: string; permissions: SectionKey[]; enabled: boolean; createdAt: string; lastLoginAt: string | null };
