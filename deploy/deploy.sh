@@ -45,7 +45,8 @@ docker run --rm \
   -v "$BUN_CACHE:/cache" \
   -w /app \
   oven/bun:1.2 \
-  sh -c "bun install --frozen-lockfile && bun run build"
+  sh -c "bun install --frozen-lockfile && bun run build \
+    && VITE_DATA_URL=https://play.$DOMAIN/Data/ VITE_REGISTER_API=/api/register bun run build:register"
 
 echo "▶ Generando serverlist.md para $DOMAIN"
 sed "s/\${DOMAIN}/$DOMAIN/g" deploy/serverlist.template.md > dist/serverlist.md
@@ -65,8 +66,8 @@ done
 
 echo "▶ Levantando servicios"
 "${COMPOSE[@]}" up -d --pull never --remove-orphans
-# El proxy corre el codigo montado: reiniciarlo para que tome los cambios.
-"${COMPOSE[@]}" restart proxy
+# Proxy y registro corren el codigo montado: reiniciarlos para que tomen los cambios.
+"${COMPOSE[@]}" restart proxy register
 
 docker image prune -f >/dev/null
 echo "✔ Listo: https://play.$DOMAIN/online"

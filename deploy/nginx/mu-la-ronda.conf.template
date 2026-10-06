@@ -55,6 +55,30 @@ server {
     }
 }
 
+# Pagina de registro (dist-register/) y su API. El cliente tambien postea aca
+# desde play.<DOMAIN> (CORS_ORIGIN del servicio).
+server {
+    listen 80;
+    listen [::]:80;
+    server_name register.${DOMAIN};
+
+    root ${APP_DIR}/dist-register;
+    index index.html;
+
+    location /api/ {
+        proxy_pass http://127.0.0.1:${REGISTER_PORT};
+        proxy_set_header Host $host;
+        # El servicio limita cuentas por IP y toma el ultimo salto de este header.
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        client_max_body_size 4k;
+    }
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
+
 # Panel de administracion de OpenMU (Blazor: necesita WebSocket tambien).
 server {
     listen 80;

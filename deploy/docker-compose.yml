@@ -24,6 +24,9 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${DB_PASSWORD:?falta DB_PASSWORD en deploy/.env}
       POSTGRES_DB: openmu
+    # Solo loopback: lo usa el servicio de registro (red del host).
+    ports:
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
     volumes:
       - dbdata:/var/lib/postgresql/data
     healthcheck:
@@ -75,7 +78,32 @@ services:
     depends_on:
       - openmu
 
+  # Alta de cuentas (register.<DOMAIN>/api/register). Escribe directo en
+  # data."Account" de OpenMU. Red del host para ver la IP real del jugador via
+  # X-Forwarded-For de nginx (clientIp solo le cree a un peer loopback), que es
+  # lo que usa el limite de cuentas por dia.
+  register:
+    image: oven/bun:1.2-slim
+    restart: unless-stopped
+    network_mode: host
+    working_dir: /app
+    command: ["bun", "run", "register/server/main.ts"]
+    environment:
+      HOSTNAME: 127.0.0.1
+      PORT: ${REGISTER_PORT:-3100}
+      DATABASE_URL: postgres://postgres:${DB_PASSWORD}@127.0.0.1:${DB_PORT:-5432}/openmu
+      RATE_DB_PATH: /data/signups.sqlite
+      RATE_LIMIT: ${REGISTER_RATE_LIMIT:-3}
+      CORS_ORIGIN: https://play.${DOMAIN:?falta DOMAIN en deploy/.env}
+    volumes:
+      - ..:/app:ro
+      - registerdata:/data
+    depends_on:
+      database:
+        condition: service_healthy
+
 volumes:
   dbdata:
   adminpanel-keys:
   proxydata:
+  registerdata:

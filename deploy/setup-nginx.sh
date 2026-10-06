@@ -14,6 +14,7 @@ APP_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 set -a; source "$APP_DIR/deploy/.env"; set +a
 PROXY_PORT="${PROXY_PORT:-3000}"
 ADMIN_PORT="${ADMIN_PORT:-8090}"
+REGISTER_PORT="${REGISTER_PORT:-3100}"
 
 if [[ -d /etc/nginx/sites-available ]]; then
   TARGET=/etc/nginx/sites-available/mu-la-ronda.conf
@@ -28,6 +29,7 @@ sed -e "s|\${DOMAIN}|$DOMAIN|g" \
     -e "s|\${APP_DIR}|$APP_DIR|g" \
     -e "s|\${PROXY_PORT}|$PROXY_PORT|g" \
     -e "s|\${ADMIN_PORT}|$ADMIN_PORT|g" \
+    -e "s|\${REGISTER_PORT}|$REGISTER_PORT|g" \
     "$APP_DIR/deploy/nginx/mu-la-ronda.conf.template" > "$TARGET"
 [[ -n "$LINK" ]] && ln -sf "$TARGET" "$LINK"
 
@@ -46,7 +48,9 @@ fi
 
 echo "▶ Certificados HTTPS"
 if [[ -n "${ACME_EMAIL:-}" ]]; then EMAIL_ARGS=(-m "$ACME_EMAIL"); else EMAIL_ARGS=(--register-unsafely-without-email); fi
-certbot --nginx --non-interactive --agree-tos --redirect "${EMAIL_ARGS[@]}" \
-  -d "play.$DOMAIN" -d "ws.$DOMAIN" -d "admin.$DOMAIN"
+# --expand: al sumar un subdominio nuevo, amplia el certificado existente.
+certbot --nginx --non-interactive --agree-tos --redirect --expand "${EMAIL_ARGS[@]}" \
+  --cert-name "play.$DOMAIN" \
+  -d "play.$DOMAIN" -d "ws.$DOMAIN" -d "admin.$DOMAIN" -d "register.$DOMAIN"
 
 echo "✔ nginx listo: https://play.$DOMAIN"
