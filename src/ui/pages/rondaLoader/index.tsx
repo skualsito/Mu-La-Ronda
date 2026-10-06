@@ -142,11 +142,10 @@ export const RondaLoader = observer(() => {
       <div className="ronda-glow" aria-hidden />
 
       <main className="ronda-center">
-        <p className="ronda-kicker">Season 6 · Episode 3</p>
         <h1 className="ronda-title">
-          <span>MU</span>
-          <span className="ronda-title-sub">La Ronda</span>
+          <img src="./brand/la-ronda.png" alt="Mu La Ronda" draggable={false} />
         </h1>
+        <p className="ronda-kicker">MU Online · Season 6 Episode 3</p>
         <span className="ronda-beta">BETA</span>
 
         <div

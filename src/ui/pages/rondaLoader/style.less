@@ -1,7 +1,8 @@
+// Colores del logo de La Ronda (public/brand/la-ronda.png).
 .ronda-loader {
-  --ronda-gold: #e9b55a;
-  --ronda-gold-dim: #8a6a33;
-  --ronda-ember: #c2410c;
+  --ronda-teal: #00adac;
+  --ronda-teal-dim: #2d7f7e;
+  --ronda-mate: #aa6f46;
 
   position: fixed;
   inset: 0;
@@ -11,8 +12,8 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background: radial-gradient(ellipse at 50% 60%, #1c120b 0%, #0b0806 55%, #050403 100%);
-  color: #efe6d6;
+  background: radial-gradient(ellipse at 50% 55%, #10201f 0%, #0a0f0f 55%, #050707 100%);
+  color: #e6efee;
   font-family: var(--font-ui, 'Inter', system-ui, sans-serif);
   opacity: 1;
   transition: opacity 400ms ease;
@@ -27,12 +28,12 @@
 .ronda-glow {
   position: absolute;
   left: 50%;
-  top: 55%;
-  width: 70vmin;
-  height: 70vmin;
+  top: 45%;
+  width: 75vmin;
+  height: 75vmin;
   transform: translate(-50%, -50%);
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(194, 65, 12, 0.22) 0%, rgba(194, 65, 12, 0) 65%);
+  background: radial-gradient(circle, rgba(0, 173, 172, 0.18) 0%, rgba(0, 173, 172, 0) 65%);
   animation: ronda-breathe 4s ease-in-out infinite;
   pointer-events: none;
 }
@@ -46,71 +47,59 @@
   text-align: center;
 }
 
-.ronda-kicker {
-  margin: 0 0 12px;
-  font-size: 12px;
-  letter-spacing: 0.32em;
-  text-transform: uppercase;
-  color: var(--ronda-gold-dim);
-}
-
 .ronda-title {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
   margin: 0;
-  line-height: 0.9;
-  font-family: var(--font-display, Georgia, serif);
-  font-weight: 700;
-  color: var(--ronda-gold);
-  text-shadow: 0 0 24px rgba(233, 181, 90, 0.35), 0 2px 0 #3b2611;
+  line-height: 0;
 
-  span:first-child {
-    font-size: clamp(64px, 14vw, 112px);
-    letter-spacing: 0.08em;
+  img {
+    width: min(300px, 62vw);
+    height: auto;
+    filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.55));
+    animation: ronda-float 5s ease-in-out infinite;
   }
 }
 
-.ronda-title-sub {
-  margin-top: 6px;
-  font-size: clamp(24px, 5vw, 38px);
-  letter-spacing: 0.24em;
+.ronda-kicker {
+  margin: 22px 0 0;
+  font-size: 12px;
+  letter-spacing: 0.28em;
   text-transform: uppercase;
+  color: var(--ronda-teal-dim);
 }
 
 .ronda-beta {
-  margin-top: 14px;
+  margin-top: 12px;
   padding: 3px 10px;
-  border: 1px solid var(--ronda-ember);
+  border: 1px solid var(--ronda-mate);
   border-radius: 3px;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.3em;
-  color: #fb923c;
+  color: #d39a6f;
 }
 
 .ronda-bar {
   position: relative;
   width: 100%;
   height: 6px;
-  margin-top: 44px;
+  margin-top: 36px;
   overflow: hidden;
-  border: 1px solid #3b2a17;
+  border: 1px solid #1d3533;
   border-radius: 3px;
-  background: #140d08;
+  background: #0b1514;
 }
 
 .ronda-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--ronda-ember), var(--ronda-gold));
-  box-shadow: 0 0 12px rgba(233, 181, 90, 0.6);
+  background: linear-gradient(90deg, var(--ronda-mate), var(--ronda-teal));
+  box-shadow: 0 0 12px rgba(0, 173, 172, 0.55);
   transition: width 300ms ease-out;
 }
 
 .ronda-status {
   margin: 12px 0 0;
   font-size: 13px;
-  color: #b8a88f;
+  color: #9fb5b3;
   font-variant-numeric: tabular-nums;
 }
 
@@ -121,7 +110,7 @@
   right: 16px;
   text-align: center;
   font-size: 13px;
-  color: #8c7d67;
+  color: #6f8785;
 }
 
 @keyframes ronda-breathe {
@@ -136,8 +125,19 @@
   }
 }
 
+@keyframes ronda-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .ronda-glow {
+  .ronda-glow,
+  .ronda-title img {
     animation: none;
   }
 }
