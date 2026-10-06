@@ -15,6 +15,9 @@ CREATE SCHEMA IF NOT EXISTS mlr;
 -- ─── Spots ──────────────────────────────────────────────────────────────────
 -- Todos los spots normales de monstruos (no NPCs, no eventos, no bosses que
 -- salen de a uno) con el triple de bichos, y respawn de 3 segundos.
+-- Los spots de la zona de leveleo (06-leveling.sql) ya tienen su cantidad.
+CREATE TABLE IF NOT EXISTS mlr.leveling_spawns ("Id" uuid PRIMARY KEY);
+
 CREATE TABLE IF NOT EXISTS mlr.spawn_quantity (
   "Id" uuid PRIMARY KEY,
   "Quantity" smallint NOT NULL
@@ -30,7 +33,8 @@ UPDATE config."MonsterSpawnArea" s
    AND m."Id" = s."MonsterDefinitionId"
    AND m."ObjectKind" = 0      -- NpcObjectKind.Monster
    AND s."SpawnTrigger" = 0    -- SpawnTrigger.Automatic
-   AND b."Quantity" >= 2;
+   AND b."Quantity" >= 2
+   AND s."Id" NOT IN (SELECT "Id" FROM mlr.leveling_spawns);
 
 CREATE TABLE IF NOT EXISTS mlr.monster_respawn (
   "Id" uuid PRIMARY KEY,
