@@ -1,128 +1,228 @@
-/*
- * Mirrors the client's login window styling (`ui/pages/loginPage/style.less`).
- * MU's UI is authored at fixed pixel sizes: the window is positioned, never
- * stretched or reflowed, so every rule here is absolute placement over the art.
- */
+/* Mu La Ronda - pagina de registro. Colores del logo (turquesa + mate), igual
+ * que el cargador del cliente (src/ui/components/rondaLoading). */
 
-@font-face {
-  font-family: 'Segoe UI';
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  /*
-   * The client's font, referenced where it already lives rather than copied.
-   * Vite resolves these at build time and emits hashed copies into the register
-   * bundle, so the path holds wherever the output is served from.
-   */
-  src:
-    url('../../public/fonts/segoeuib.woff2') format('woff2'),
-    url('../../public/fonts/segoeuib.woff') format('woff'),
-    url('../../public/fonts/segoeuib.ttf') format('truetype');
+:root {
+  --teal: #00adac;
+  --teal-bright: #19c9c8;
+  --teal-dim: #2d7f7e;
+  --mate: #aa6f46;
+  --text: #e6efee;
+  --muted: #9fb5b3;
+  --error: #f87171;
+  --card: rgba(10, 20, 19, 0.82);
+  --border: #1d3533;
+  color-scheme: dark;
 }
 
 * {
+  box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
-  user-select: none;
 }
 
 html,
 body {
-  width: 100%;
-  height: 100%;
   margin: 0;
-  padding: 0;
+  min-height: 100%;
+  background: #050707;
+  color: var(--text);
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+.rg-page {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px 64px;
   overflow: hidden;
-  background: #000;
-  font-family: 'Segoe UI', sans-serif, Arial;
+  background: radial-gradient(ellipse at 50% 40%, #10201f 0%, #0a0f0f 55%, #050707 100%);
 }
 
-.register-page {
-  position: absolute;
-  inset: 0;
-  /*
-   * The client draws a 3D scene behind its login box. There is no engine here,
-   * so a dark wash stands in - dim enough that the window art carries the page.
-   */
-  background:
-    radial-gradient(ellipse at 50% 40%, #2a2118 0%, #0b0907 70%, #000 100%);
-}
-
-/*
- * `UIMng.cpp:226` centres the window horizontally and puts it two thirds of the
- * way down, which is where MU actually places it - not dead centre.
- */
-.register-win {
+.rg-glow {
   position: absolute;
   left: 50%;
-  top: calc((100% - 245px) * 2 / 3);
-  transform: translateX(-50%);
-  flex: none;
-  user-select: none;
-}
-
-.register-win form {
-  position: absolute;
-  inset: 0;
-  /* The art is the backdrop; only the fields themselves take input. */
+  top: 30%;
+  width: 80vmin;
+  height: 80vmin;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 173, 172, 0.16) 0%, rgba(0, 173, 172, 0) 65%);
   pointer-events: none;
 }
 
-.register-label {
-  position: absolute;
-  color: #ffffff;
-  font-size: 11px;
-  line-height: 1;
-  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.85);
-  white-space: nowrap;
-}
-
-/*
- * The box art *is* the input's background, so the field is invisible chrome
- * sitting exactly on top of it.
- */
-.register-input {
-  position: absolute;
-  inset: 0;
+.rg-card {
+  position: relative;
   width: 100%;
-  height: 100%;
-  box-sizing: border-box;
-  pointer-events: auto;
-
-  background: transparent;
-  border: none;
-  outline: none;
-
-  color: #ffffff;
-  font-family: inherit;
-  font-size: 12px;
-  line-height: 1;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-/* Enter submits the form; the visible OK button is a sprite. */
-.register-submit {
-  position: absolute;
-  width: 0;
-  height: 0;
-  padding: 0;
-  border: none;
-  opacity: 0;
+.rg-logo {
+  width: min(220px, 60vw);
+  height: auto;
+  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.55));
 }
 
-.register-message {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 222px;
-  margin: 0;
-  text-align: center;
+.rg-kicker {
+  margin: 14px 0 22px;
   font-size: 11px;
-  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.85);
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--teal-dim);
+  text-align: center;
 }
 
-.register-error {
-  color: #ff5a5a;
+.rg-form,
+.rg-done {
+  width: 100%;
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(6px);
 }
 
-.register-ok {
-  color: #7dff7d;
+.rg-form h1,
+.rg-done h1 {
+  margin: 0 0 18px;
+  font-size: 20px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.rg-field {
+  display: block;
+  margin-bottom: 14px;
+}
+
+.rg-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.rg-label small {
+  font-size: 11px;
+  font-weight: 400;
+  color: #6f8785;
+}
+
+.rg-input {
+  width: 100%;
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #0b1514;
+  color: var(--text);
+  font: inherit;
+  font-size: 16px;
+  outline: none;
+  transition: border-color 150ms, box-shadow 150ms;
+}
+
+.rg-input:focus {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px rgba(0, 173, 172, 0.2);
+}
+
+.rg-error {
+  margin: 4px 0 14px;
+  padding: 10px 12px;
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  border-radius: 8px;
+  background: rgba(248, 113, 113, 0.08);
+  color: var(--error);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.rg-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 46px;
+  margin-top: 6px;
+  border: 0;
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--mate), var(--teal));
+  color: #fff;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: filter 150ms, transform 100ms;
+}
+
+.rg-button:hover {
+  filter: brightness(1.1);
+}
+
+.rg-button:active {
+  transform: translateY(1px);
+}
+
+.rg-button:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.rg-button:focus-visible,
+.rg-link:focus-visible {
+  outline: 2px solid var(--teal-bright);
+  outline-offset: 2px;
+}
+
+.rg-link {
+  display: block;
+  width: 100%;
+  margin-top: 14px;
+  padding: 4px;
+  border: 0;
+  background: none;
+  color: var(--teal);
+  font: inherit;
+  font-size: 13px;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.rg-link:hover {
+  color: var(--teal-bright);
+  text-decoration: underline;
+}
+
+.rg-done p {
+  margin: 0 0 18px;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.5;
+}
+
+.rg-done strong {
+  color: var(--text);
+}
+
+.rg-footer {
+  position: absolute;
+  bottom: 20px;
+  left: 16px;
+  right: 16px;
+  font-size: 12px;
+  color: #5f7472;
+  text-align: center;
 }

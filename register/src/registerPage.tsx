@@ -7,61 +7,49 @@ import {
   validateSignup,
   type SignupProblem,
 } from '../../src/common/registerRules';
-import { MuSpriteFrame } from './muSprite';
-import { MuButton } from './muButton';
 
 /**
- * Account registration, drawn with the game's own interface art so it reads as
- * part of MU rather than a web form bolted onto it.
- *
- * The window is `login_back.OZT` - the same frame the client's login screen
- * uses - because a register box is the login box with two more rows. MU's UI is
- * authored at fixed pixel sizes, so everything here is absolutely positioned
- * against the art and must never reflow.
- *
- * The coordinates below were derived from the client's login window
- * (`ui/pages/loginPage`, inputs at y=106/131) and re-spaced to fit three rows.
- * They are a starting point: nudge them against the actual art rather than
- * trusting the arithmetic.
+ * Mu La Ronda's account registration: a plain branded form with the logo, in
+ * the same look as the client's loading screens. Upstream drew it with the
+ * game's interface sprites (`login_back.OZT`, fetched cross-origin from the
+ * client's Data/), which here rendered as an empty box - this page needs
+ * nothing but its own bundle.
  */
-
-const WIN_WIDTH = 329;
-const WIN_HEIGHT = 245;
-
-const INPUT_WIDTH = 156;
-const INPUT_HEIGHT = 23;
-const INPUT_X = 109;
-const LABEL_X = 22;
-
-/** First row, then one row every `ROW_STEP` px. */
-const FIRST_ROW_Y = 100;
-const ROW_STEP = 24;
-
-/** The label sits a few px below the input's top edge to look centred. */
-const LABEL_OFFSET_Y = 7;
-
-const TEXT_INSET_X = 6;
-const TEXT_INSET_Y = 6;
-
-const BUTTON_WIDTH = 54;
-const BUTTON_HEIGHT = 30;
-const BUTTON_Y = 192;
-const OK_X = 150;
-const CANCEL_X = 211;
 
 /** Where the account actually gets created. See `register/server/main.ts`. */
 const API = import.meta.env.VITE_REGISTER_API || '/api/register';
 
-/**
- * The login window's two rows, plus the confirmation a password needs when it
- * is being set rather than typed back. No e-mail: nothing sends one, and a
- * field the server stores as the empty string is a field that asks for a
- * stranger's address for nothing.
- */
+/** The game: `register.<domain>` -> `<domain>/online`. */
+function gameUrl(): string {
+  const host = location.hostname.replace(/^register\./, '');
+  return `${location.protocol}//${host}/online`;
+}
+
 const ROWS = [
-  { key: 'username', label: 'ID', type: 'text' },
-  { key: 'password', label: 'Password', type: 'password' },
-  { key: 'confirm', label: 'Confirm', type: 'password' },
+  {
+    key: 'username',
+    label: 'Usuario',
+    type: 'text',
+    hint: `${MIN_ACCOUNT_LENGTH}-${MAX_ACCOUNT_LENGTH} letras o números`,
+    max: MAX_ACCOUNT_LENGTH,
+    autoComplete: 'username',
+  },
+  {
+    key: 'password',
+    label: 'Contraseña',
+    type: 'password',
+    hint: `${MIN_ACCOUNT_PASSWORD_LENGTH}-${MAX_ACCOUNT_PASSWORD_LENGTH} caracteres`,
+    max: MAX_ACCOUNT_PASSWORD_LENGTH,
+    autoComplete: 'new-password',
+  },
+  {
+    key: 'confirm',
+    label: 'Repetir contraseña',
+    type: 'password',
+    hint: '',
+    max: MAX_ACCOUNT_PASSWORD_LENGTH,
+    autoComplete: 'new-password',
+  },
 ] as const;
 
 type Field = (typeof ROWS)[number]['key'];
@@ -70,7 +58,7 @@ type Status =
   | { kind: 'idle' }
   | { kind: 'sending' }
   | { kind: 'error'; message: string }
-  | { kind: 'done' };
+  | { kind: 'done'; username: string };
 
 const EMPTY: Record<Field, string> = {
   username: '',
@@ -78,26 +66,43 @@ const EMPTY: Record<Field, string> = {
   confirm: '',
 };
 
-/**
- * The shared reasons, said in the English this page is written in. The client's
- * own register window says the same things through `t()`; the service says them
- * again for anything that POSTs without a form.
- */
 const PROBLEM_TEXT: Record<SignupProblem, string> = {
-  empty: 'Please fill in every field.',
-  idShort: `ID must be at least ${MIN_ACCOUNT_LENGTH} characters.`,
-  idChars: 'ID may contain only letters and numbers.',
-  passwordShort: `Password must be at least ${MIN_ACCOUNT_PASSWORD_LENGTH} characters.`,
-  passwordChars: 'Password may contain only letters, numbers and basic symbols.',
-  mismatch: 'Passwords do not match.',
+  empty: 'Completá todos los campos.',
+  idShort: `El usuario tiene que tener al menos ${MIN_ACCOUNT_LENGTH} caracteres.`,
+  idChars: 'El usuario solo puede tener letras y números.',
+  passwordShort: `La contraseña tiene que tener al menos ${MIN_ACCOUNT_PASSWORD_LENGTH} caracteres.`,
+  passwordChars:
+    'La contraseña solo puede tener letras, números y símbolos básicos (sin espacios ni acentos).',
+  mismatch: 'Las contraseñas no coinciden.',
 };
+
+/** The service answers in English; the common cases, said in Spanish. */
+function serverError(message: string | undefined, status: number): string {
+  if (!message) return `No se pudo crear la cuenta (error ${status}).`;
+  if (/already taken/i.test(message)) return 'Ese usuario ya existe. Probá con otro.';
+  if (/reserved/i.test(message)) return 'Ese usuario no está permitido. Probá con otro.';
+  if (/already been created from this network/i.test(message))
+    return 'Ya se crearon demasiadas cuentas desde tu conexión hoy. Probá de nuevo mañana.';
+  if (/too many requests/i.test(message))
+    return 'Demasiados intentos seguidos. Esperá unos minutos y probá de nuevo.';
+  if (/ID must be/i.test(message))
+    return `El usuario tiene que tener entre ${MIN_ACCOUNT_LENGTH} y ${MAX_ACCOUNT_LENGTH} caracteres.`;
+  if (/Password must be/i.test(message))
+    return `La contraseña tiene que tener entre ${MIN_ACCOUNT_PASSWORD_LENGTH} y ${MAX_ACCOUNT_PASSWORD_LENGTH} caracteres.`;
+  if (/only letters and numbers/i.test(message)) return PROBLEM_TEXT.idChars;
+  if (/basic symbols/i.test(message)) return PROBLEM_TEXT.passwordChars;
+  if (/try again/i.test(message)) return 'No se pudo crear la cuenta. Probá de nuevo.';
+  return message;
+}
 
 export const RegisterPage = () => {
   const [values, setValues] = useState<Record<Field, string>>(EMPTY);
   const [status, setStatus] = useState<Status>({ kind: 'idle' });
 
-  const set = (field: Field, value: string) =>
+  const set = (field: Field, value: string) => {
     setValues(current => ({ ...current, [field]: value }));
+    if (status.kind === 'error') setStatus({ kind: 'idle' });
+  };
 
   const submit = async () => {
     if (status.kind === 'sending') return;
@@ -124,110 +129,95 @@ export const RegisterPage = () => {
       const body = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        setStatus({
-          kind: 'error',
-          message: body.error || `Registration failed (${response.status}).`,
-        });
+        setStatus({ kind: 'error', message: serverError(body.error, response.status) });
         return;
       }
 
-      setStatus({ kind: 'done' });
+      setStatus({ kind: 'done', username: values.username });
       setValues(EMPTY);
     } catch {
-      // Offline, DNS, CORS - none of which the player can act on beyond
-      // trying again.
-      setStatus({ kind: 'error', message: 'Could not reach the server.' });
+      setStatus({
+        kind: 'error',
+        message: 'No se pudo contactar con el servidor. Probá de nuevo en un rato.',
+      });
     }
   };
 
   return (
-    <div className="register-page">
-      <MuSpriteFrame
-        file="login_back.OZT"
-        width={WIN_WIDTH}
-        height={WIN_HEIGHT}
-        className="register-win"
-      >
-        <form
-          onSubmit={e => {
-            e.preventDefault();
-            submit();
-          }}
-        >
-          {ROWS.map((row, i) => {
-            const top = FIRST_ROW_Y + i * ROW_STEP;
+    <div className="rg-page">
+      <div className="rg-glow" aria-hidden />
 
-            return (
-              <div key={row.key}>
-                <span
-                  className="register-label"
-                  style={{ left: LABEL_X, top: top + LABEL_OFFSET_Y }}
-                >
-                  {row.label}
-                </span>
+      <main className="rg-card">
+        <img className="rg-logo" src="./la-ronda.png" alt="Mu La Ronda" />
+        <p className="rg-kicker">MU Online · Season 6 Episode 3</p>
 
-                <MuSpriteFrame
-                  file="login_me.OZT"
-                  width={INPUT_WIDTH}
-                  height={INPUT_HEIGHT}
-                  style={{ position: 'absolute', left: INPUT_X, top }}
-                >
-                  <input
-                    className="register-input"
-                    type={row.type}
-                    autoFocus={i === 0}
-                    autoComplete="off"
-                    value={values[row.key]}
-                    onChange={e => set(row.key, e.target.value)}
-                    maxLength={
-                      row.key === 'username'
-                        ? MAX_ACCOUNT_LENGTH
-                        : MAX_ACCOUNT_PASSWORD_LENGTH
-                    }
-                    style={{
-                      paddingLeft: TEXT_INSET_X,
-                      paddingTop: TEXT_INSET_Y,
-                    }}
-                  />
-                </MuSpriteFrame>
-              </div>
-            );
-          })}
-
-          <MuButton
-            file="message_ok_b_all.OZT"
-            width={BUTTON_WIDTH}
-            height={BUTTON_HEIGHT}
-            frames={{ up: 0, active: 1, down: 2 }}
-            disabled={status.kind === 'sending'}
-            onClick={submit}
-            style={{ position: 'absolute', left: OK_X, top: BUTTON_Y }}
-          />
-          <MuButton
-            file="loding_cancel_b_all.OZT"
-            width={BUTTON_WIDTH}
-            height={BUTTON_HEIGHT}
-            frames={{ up: 0, active: 1, down: 2 }}
-            onClick={() => {
-              setValues(EMPTY);
-              setStatus({ kind: 'idle' });
+        {status.kind === 'done' ? (
+          <section className="rg-done">
+            <h1>¡Cuenta creada!</h1>
+            <p>
+              Ya podés entrar con el usuario <strong>{status.username}</strong>.
+            </p>
+            <a className="rg-button" href={gameUrl()}>
+              Ir a jugar
+            </a>
+            <button
+              type="button"
+              className="rg-link"
+              onClick={() => setStatus({ kind: 'idle' })}
+            >
+              Crear otra cuenta
+            </button>
+          </section>
+        ) : (
+          <form
+            className="rg-form"
+            onSubmit={e => {
+              e.preventDefault();
+              void submit();
             }}
-            style={{ position: 'absolute', left: CANCEL_X, top: BUTTON_Y }}
-          />
+            noValidate
+          >
+            <h1>Crear cuenta</h1>
 
-          {/* Enter submits; the visible OK button is a sprite, not a submit. */}
-          <button type="submit" className="register-submit" tabIndex={-1} />
-        </form>
+            {ROWS.map((row, i) => (
+              <label className="rg-field" key={row.key}>
+                <span className="rg-label">
+                  {row.label}
+                  {row.hint && <small>{row.hint}</small>}
+                </span>
+                <input
+                  className="rg-input"
+                  type={row.type}
+                  name={row.key}
+                  autoFocus={i === 0}
+                  autoComplete={row.autoComplete}
+                  autoCapitalize="off"
+                  spellCheck={false}
+                  maxLength={row.max}
+                  value={values[row.key]}
+                  onChange={e => set(row.key, e.target.value)}
+                />
+              </label>
+            ))}
 
-        {status.kind === 'error' && (
-          <p className="register-message register-error">{status.message}</p>
+            {status.kind === 'error' && (
+              <p className="rg-error" role="alert">
+                {status.message}
+              </p>
+            )}
+
+            <button className="rg-button" type="submit" disabled={status.kind === 'sending'}>
+              {status.kind === 'sending' ? 'Creando…' : 'Crear cuenta'}
+            </button>
+
+            <a className="rg-link" href={gameUrl()}>
+              Ya tengo cuenta, ir a jugar
+            </a>
+          </form>
         )}
-        {status.kind === 'done' && (
-          <p className="register-message register-ok">
-            Account created. You can log in now.
-          </p>
-        )}
-      </MuSpriteFrame>
+      </main>
+
+      <footer className="rg-footer">Servidor en beta · rates altos para que pruebes todo</footer>
     </div>
   );
 };
