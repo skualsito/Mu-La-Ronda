@@ -29,7 +29,7 @@ END $$;
 
 -- ─── Spots ──────────────────────────────────────────────────────────────────
 -- Todos los spots normales de monstruos (no NPCs, no eventos, no bosses que
--- salen de a uno) por el multiplicador, y respawn de 3 segundos. Al arrancar,
+-- salen de a uno) por el multiplicador, y respawn de 5 segundos. Al arrancar,
 -- OpenMU reparte cada area en spots de hasta 8 bichos sobre terreno caminable.
 -- Los spots de la zona de leveleo (06-leveling.sql) ya tienen su cantidad.
 CREATE TABLE IF NOT EXISTS mlr.leveling_spawns ("Id" uuid PRIMARY KEY);
@@ -60,10 +60,18 @@ INSERT INTO mlr.monster_respawn ("Id", "RespawnDelay")
 SELECT "Id", "RespawnDelay" FROM config."MonsterDefinition"
 ON CONFLICT ("Id") DO NOTHING;
 
+-- El respawn pasa de 3 a 5 segundos (una sola vez: despues manda el panel,
+-- Configuracion > Server fast).
+INSERT INTO mlr.settings (key, value) VALUES ('respawn_seconds', '5')
+ON CONFLICT (key) DO UPDATE SET value = '5'
+ WHERE NOT EXISTS (SELECT 1 FROM mlr.settings WHERE key = 'respawn_5s_applied');
+INSERT INTO mlr.settings (key, value) VALUES ('respawn_5s_applied', now()::text)
+ON CONFLICT (key) DO NOTHING;
+
 -- Solo los que ya respawnean rapido (bichos comunes, ~10 s); los bosses con
 -- horas de respawn quedan como estan.
 UPDATE config."MonsterDefinition" m
-   SET "RespawnDelay" = LEAST(b."RespawnDelay", make_interval(secs => COALESCE((SELECT value::int FROM mlr.settings WHERE key = 'respawn_seconds'), 3)))
+   SET "RespawnDelay" = LEAST(b."RespawnDelay", make_interval(secs => COALESCE((SELECT value::int FROM mlr.settings WHERE key = 'respawn_seconds'), 5)))
   FROM mlr.monster_respawn b
  WHERE b."Id" = m."Id"
    AND m."ObjectKind" = 0

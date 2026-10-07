@@ -574,6 +574,9 @@ export const SkillCastSystem: ISystemFactory = world => {
       // `SendRequestMagic(Skill, HeroKey)` with the selection ignored: Swell
       // Life, the elf summons, Infinity Arrow, Berserker and the Rage
       // Fighter party buffs go out on the caster even with a monster picked.
+      // Mu La Ronda: a buff or heal never lands on a monster (the server refuses it too,
+      // AttackableExtensions.CheckSkillTargetRestrictions): with one picked it is the caster's.
+      if (target && isSelfCastable(def) && !isPlayer(target)) target = null;
       if (castsOnSelfOnly(def)) target = hero;
       else if (!area && !target && isSelfCastable(def)) target = hero;
 
