@@ -26,6 +26,7 @@ import {
 import { placePair } from './placement';
 import { ItemLinkHover } from '../../../common/itemLinkHover';
 import { ItemsDatabase } from '../../../common/itemsDatabase';
+import { InventoryConstants } from '../../../common/inventoryConstants';
 import { ItemIcon } from '../itemIcon';
 
 /** One inventory square of the picture, as the grids draw it. */
@@ -268,10 +269,13 @@ export const ItemTooltip = observer(
     const itemStamp = JSON.stringify(item);
     const heroStamp = JSON.stringify(hero);
     const wornStamp = worn ? JSON.stringify(worn) : '';
+    // The worn pieces decide which of an ancient set's options are on.
+    const equipped = Store.playerData.items.slice(0, InventoryConstants.EquippableSlotsCount);
+    const equippedStamp = item.isAncient ? JSON.stringify(equipped) : '';
     const data = useMemo(
-      () => buildItemTooltip(item, hero, worn),
+      () => buildItemTooltip(item, hero, worn, equipped),
       // eslint-disable-next-line react-hooks/exhaustive-deps
-      [itemStamp, heroStamp, wornStamp]
+      [itemStamp, heroStamp, wornStamp, equippedStamp]
     );
 
     const wornLines = useMemo(() => {

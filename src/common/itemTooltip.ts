@@ -30,6 +30,7 @@ import { itemBaseName } from './itemsDatabase';
 import { itemLevelName } from './itemLevelLook';
 import { learnableSkill } from './skillItems';
 import { skillDisplayName } from './skillNames';
+import { ANCIENT_STAT_KEYS, ancientSetOf, setOptionActive, setOptionValue, wornPiecesOf } from './ancientSets';
 
 /**
  * `RenderItemInfo` (ZzzInventory.cpp:2091) as data: the tooltip is a list
@@ -152,6 +153,9 @@ export function itemNameColor(item: Item): TooltipColor {
 function nameLine(item: Item, def: ItemDef, level: number): string {
   let name = itemBaseName(def.group, def.index) || def.name;
   if (item.isExcellent) name = t('item.excellentPrefix', { name });
+  // Mu La Ronda: an ancient piece carries its set's name ("Anubis Legendary Gloves").
+  const set = item.isAncient ? ancientSetOf(def.group, def.index, item.ancientDiscriminator ?? 0)?.set : null;
+  if (set) name = t('ancient.setName', { set: set.name, name });
   return itemLevelName(def.group, def.index, level, name);
 }
 
@@ -450,7 +454,9 @@ function weaponOfArchangelLines(out: Lines, level: number, hero: HeroStats) {
 export function buildItemTooltip(
   item: Item,
   hero: HeroStats,
-  compareWith?: Item | null
+  compareWith?: Item | null,
+  /** The hero's equipped items, for which of an ancient set's options are on. */
+  equipped: readonly (Item | null)[] = []
 ): ItemTooltipData | null {
   const stats = itemStats(item);
   if (!stats) return null;
@@ -468,7 +474,7 @@ export function buildItemTooltip(
     return { lines: trimBlanks(out.list), usable: true };
   }
 
-  equipmentLines(out, item, stats, hero, worn);
+  equipmentLines(out, item, stats, hero, worn, equipped);
 
   const requirementsFail =
     hero.level < stats.reqLvl ||
@@ -489,7 +495,8 @@ function equipmentLines(
   item: Item,
   stats: ItemStats,
   hero: HeroStats,
-  worn: ItemStats | null = null
+  worn: ItemStats | null = null,
+  equipped: readonly (Item | null)[] = []
 ) {
   const { def, level, isExcellent } = stats;
 
@@ -641,16 +648,38 @@ function equipmentLines(
     excellentLines(out, def, excellentFlags, hero.level);
   }
 
-  if (item.isAncient) {
-    out.blank();
-    const bonus = item.ancientBonusLevel ?? 0;
-    out.add(
-      bonus > 0
-        ? t('item.ancientBonus', { value: bonus * 5 })
-        : t('item.ancient'),
-      'greenBlue'
-    );
+  if (item.isAncient) ancientLines(out, def, item, equipped);
+}
+
+/**
+ * Mu La Ronda: the ancient block - the piece's +5 / +10 bonus by its stat,
+ * then the set (`ancientSets.ts`) with how many pieces are worn and its
+ * options, the ones that apply right now lit, the rest grey - the original's
+ * `RenderSetOptionList` order.
+ */
+function ancientLines(out: Lines, def: ItemDef, item: Item, equipped: readonly (Item | null)[]) {
+  out.blank();
+  const bonus = item.ancientBonusLevel ?? 0;
+  const entry = ancientSetOf(def.group, def.index, item.ancientDiscriminator ?? 0);
+  if (!entry) {
+    out.add(bonus > 0 ? t('item.ancientBonus', { value: bonus * 5 }) : t('item.ancient'), 'greenBlue');
+    return;
   }
+
+  const { set, piece } = entry;
+  const bonusStat = piece[3];
+  if (bonus > 0) {
+    out.add(bonusStat ? t(ANCIENT_STAT_KEYS[bonusStat], { value: bonus * 5 }) : t('item.ancientBonus', { value: bonus * 5 }), 'greenBlue');
+  }
+
+  const pieces = wornPiecesOf(set, equipped);
+  out.blank();
+  out.add(t('ancient.setTitle', { set: set.name, worn: pieces, total: set.items.length }), 'yellow');
+  set.options.forEach((option, i) => {
+    const text = t(ANCIENT_STAT_KEYS[option[0]], { value: setOptionValue(option) });
+    const full = i >= set.items.length - 1;
+    out.add(full ? `${text} (${t('ancient.fullSet')})` : text, setOptionActive(set, i, pieces) ? 'blue' : 'gray');
+  });
 }
 
 function trimBlanks(lines: TooltipLine[]): TooltipLine[] {
