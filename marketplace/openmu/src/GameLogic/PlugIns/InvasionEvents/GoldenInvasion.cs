@@ -14,6 +14,9 @@ public static class GoldenInvasion
     /// <summary>Elbeland, which OpenMU's invasion maps do not list.</summary>
     public const ushort Elbeland = 51;
 
+    /// <summary>Lost Tower, which OpenMU's invasion maps do not list either.</summary>
+    public const ushort LostTower = 4;
+
     /// <summary>The Box of Kundun +N each map's golden monsters drop.</summary>
     private static readonly IReadOnlyDictionary<int, byte> BoxLevelByMap = new Dictionary<int, byte>
     {
@@ -21,6 +24,7 @@ public static class GoldenInvasion
         [InvasionMaps.Noria] = 1,
         [Elbeland] = 1,
         [InvasionMaps.Devias] = 2,
+        [LostTower] = 4,
         [InvasionMaps.Atlans] = 4,
         [InvasionMaps.Tarkan] = 5,
     };
@@ -52,7 +56,7 @@ public static class GoldenInvasion
         new(
             InvasionMonsters.GoldenDragon,
             5,
-            [InvasionMaps.Lorencia, InvasionMaps.Noria, Elbeland, InvasionMaps.Devias, InvasionMaps.Atlans, InvasionMaps.Tarkan],
+            [InvasionMaps.Lorencia, InvasionMaps.Noria, Elbeland, InvasionMaps.Devias, LostTower, InvasionMaps.Atlans, InvasionMaps.Tarkan],
             SpawnMapStrategy.AllMaps),
     ];
 
