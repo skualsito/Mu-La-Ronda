@@ -16,25 +16,27 @@
 -- Una version anterior de este archivo los hacia caer de cualquier monstruo
 -- (por eso en Devias caian todos): aca se restauran los valores originales de
 -- forma explicita. Lo unico distinto de MU original es la chance: 10% por kill
--- (el original es 0,1%, impracticable en este server). Solo cae para quien
--- tiene la quest activa.
+-- (el original es 0,1%, impracticable en este server), y los tres items de la
+-- 3ra quest de cambio de clase (quest 4, Evidence of Strength) caen siempre
+-- (100%) de su jefe, que tiene un unico spawn. Solo cae para quien tiene la
+-- quest activa.
 UPDATE config."DropItemGroup" g
    SET "MinimumMonsterLevel" = v.min_level,
        "MaximumMonsterLevel" = v.max_level,
        "MonsterId" = (SELECT m."Id" FROM config."MonsterDefinition" m WHERE m."Number" = v.monster LIMIT 1),
-       "Chance" = 0.10
+       "Chance" = v.chance
   FROM config."QuestItemRequirement" r
   JOIN config."QuestDefinition" q ON q."Id" = r."QuestDefinitionId"
   JOIN config."ItemDefinition" i ON i."Id" = r."ItemId",
        (VALUES
-         (0, NULL::smallint, 45::smallint, 60::smallint,  NULL::smallint),
-         (1, NULL,           62,           76,            NULL),
-         (2, NULL,           72,           108,           NULL),
-         (3, NULL,           78,           108,           NULL),
-         (4, 65,             NULL,         NULL,          63),
-         (4, 66,             NULL,         NULL,          309),
-         (4, 67,             NULL,         NULL,          77)
-       ) AS v(quest, item, min_level, max_level, monster)
+         (0, NULL::smallint, 45::smallint, 60::smallint,  NULL::smallint, 0.10::float8),
+         (1, NULL,           62,           76,            NULL,           0.10),
+         (2, NULL,           72,           108,           NULL,           0.10),
+         (3, NULL,           78,           108,           NULL,           0.10),
+         (4, 65,             NULL,         NULL,          63,             1.0),
+         (4, 66,             NULL,         NULL,          309,            1.0),
+         (4, 67,             NULL,         NULL,          77,             1.0)
+       ) AS v(quest, item, min_level, max_level, monster, chance)
  WHERE g."Id" = r."DropItemGroupId"
    AND q."Group" = 0
    AND q."Number" = v.quest
