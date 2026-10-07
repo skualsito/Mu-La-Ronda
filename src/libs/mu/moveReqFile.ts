@@ -54,6 +54,8 @@ export type MoveReqEntry = {
  */
 const EXTRA_ROWS: readonly (MoveReqEntry & { after: number })[] = [
   { after: 27, index: 24, name: 'Crywolf', alias: 'Crywolf', reqLevel: 10, reqMaxLevel: 400, zen: 15000, gate: 118 },
+  // Only VIP accounts get in (the server refuses the rest, VipStadium.cs).
+  { after: 1, index: 61, name: 'Stadium VIP', alias: 'StadiumVIP', reqLevel: 1, reqMaxLevel: 400, zen: 0, gate: 0 },
 ];
 
 function withExtraRows(entries: MoveReqEntry[]): MoveReqEntry[] {

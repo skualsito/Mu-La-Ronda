@@ -16,6 +16,8 @@ import {
 
 const WORLDS: readonly ENUM_WORLD[] = [
   ENUM_WORLD.WD_6STADIUM,
+  // Mu La Ronda: the VIP stadium is Arena again, with its own monster spots.
+  ENUM_WORLD.WD_100VIP_STADIUM,
 ];
 
 // World7 has no TileGround01: TileGround02 stands in for slot 2. Fetching the
@@ -48,6 +50,7 @@ const OUTDOOR = true;
 export const stadiumLayer: MapLayer = {
   name: 'stadium',
   worlds: WORLDS,
+  assetWorld: 7,
   tiles: TILES,
   spawn: SPAWN,
   outdoor: OUTDOOR,

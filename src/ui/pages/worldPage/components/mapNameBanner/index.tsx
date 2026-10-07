@@ -51,6 +51,7 @@ const MAP_IMAGES: Record<number, string> = {
   3: 'noria.OZT',
   4: 'losttower.OZT',
   6: 'stadium.OZT',
+  100: 'stadium.OZT',
   7: 'atlans.OZT',
   8: 'tarcan.OZT',
   9: 'devilsquare.OZT',

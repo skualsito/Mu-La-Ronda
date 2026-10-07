@@ -5,6 +5,7 @@
 namespace MUnique.OpenMU.GameLogic.VipSystem;
 
 using System.Runtime.InteropServices;
+using MUnique.OpenMU.GameLogic.PlayerActions;
 using MUnique.OpenMU.GameLogic.PlugIns;
 using MUnique.OpenMU.PlugIns;
 
@@ -30,6 +31,19 @@ public class VipEnterWorldPlugIn : IObjectAddedToMapPlugIn
         if (Vip.Apply(player))
         {
             await player.ShowBlueMessageAsync(Vip.StatusLine(player)).ConfigureAwait(false);
+        }
+
+        // The VIP ran out while the character was in the VIP stadium: off to Arena,
+        // once it has finished landing.
+        if (VipStadium.IsVipStadium(map.Definition) && Vip.Of(player).Tier.Number == 0
+            && player.GameContext.Configuration.Maps.FirstOrDefault(m => m.Number == VipStadium.ArenaMapNumber)?.GetSafezoneGate() is { } arena)
+        {
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(TimeSpan.FromSeconds(1)).ConfigureAwait(false);
+                await player.ShowBlueMessageAsync(VipStadium.OnlyVipMessage).ConfigureAwait(false);
+                await player.WarpToAsync(arena).ConfigureAwait(false);
+            });
         }
     }
 }

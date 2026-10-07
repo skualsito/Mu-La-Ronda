@@ -92,6 +92,7 @@ export const GM_MAPS: readonly GmMap[] = [
   { number: 72, name: 'Imperial Guardian 4', kind: 'event' },
 
   { number: 40, name: 'GM Area', kind: 'other' },
+  { number: 100, name: 'Stadium VIP', kind: 'other' },
 ];
 
 const BY_NUMBER = new Map(GM_MAPS.map(map => [map.number, map]));

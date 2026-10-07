@@ -64,6 +64,7 @@ const MAP_MUSIC: Partial<Record<ENUM_WORLD, Sounds | null>> = {
   [ENUM_WORLD.WD_10ICARUS]: 'Music/icarus',
   // No case in `ManageBackgroundMusic` and no ambient bed either.
   [ENUM_WORLD.WD_6STADIUM]: null,
+  [ENUM_WORLD.WD_100VIP_STADIUM]: null,
   // `MUSIC_LOGIN_THEME` (LoginScene.cpp:300): the login backdrop and the
   // character select are one scene under one theme - `libs/loginMusic.ts`
   // starts it before the world exists; this row keeps the map loop from

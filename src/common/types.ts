@@ -154,6 +154,8 @@ export enum ENUM_WORLD {
   WD_79UNITEDMARKETPLACE = 79,
   WD_80KARUTAN1 = 80,
   WD_81KARUTAN2 = 81,
+  /** Mu La Ronda: the VIP stadium, a copy of Arena on the server (deploy/config/20-vip-stadium.sql), drawn with World7. */
+  WD_100VIP_STADIUM = 100,
   NUM_WD,
 }
 

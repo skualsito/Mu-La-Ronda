@@ -24,6 +24,6 @@ export const ARENA_PEN_DOORS: readonly (readonly [x: number, y: number])[] = [
 
 /** Opens the pens' doors in Arena's attribute grid (`y * 256 + x`), in place. */
 export function openArenaPens(map: ENUM_WORLD, attributes: Uint16Array): void {
-  if (map !== ENUM_WORLD.WD_6STADIUM) return;
+  if (map !== ENUM_WORLD.WD_6STADIUM && map !== ENUM_WORLD.WD_100VIP_STADIUM) return;
   for (const [x, y] of ARENA_PEN_DOORS) attributes[y * TERRAIN_SIZE + x] = 0;
 }

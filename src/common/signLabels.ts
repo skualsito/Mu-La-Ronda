@@ -180,6 +180,8 @@ const SIGNS: Partial<Record<ENUM_WORLD, readonly Row[]>> = {
     [80, 90, 129, 'valleyOfLoren'],
   ],
 };
+// Mu La Ronda: the VIP stadium is Arena's map (World7).
+SIGNS[ENUM_WORLD.WD_100VIP_STADIUM] = SIGNS[ENUM_WORLD.WD_6STADIUM];
 
 const index = new Map<string, LabelKey>();
 

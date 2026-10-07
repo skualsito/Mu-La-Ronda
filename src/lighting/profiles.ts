@@ -419,6 +419,8 @@ const PROFILES: Partial<Record<ENUM_WORLD, LookProfile>> = {
     sun: sun(200, 40),
   },
 };
+// Mu La Ronda: the VIP stadium is Arena's map (World7).
+PROFILES[ENUM_WORLD.WD_100VIP_STADIUM] = PROFILES[ENUM_WORLD.WD_6STADIUM];
 
 export function profileFor(world: ENUM_WORLD): LookProfile {
   const own = PROFILES[world];
