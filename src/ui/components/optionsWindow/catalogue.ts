@@ -266,6 +266,7 @@ const WINDOW_KEYS: readonly KeyAction[] = [
 
 const ACTION_KEYS: readonly KeyAction[] = [
   'targetNearest',
+  'pickupNearest',
   'replyWhisper',
   'muHelper',
   'repair',

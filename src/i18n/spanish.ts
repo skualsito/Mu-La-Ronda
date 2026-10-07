@@ -1759,6 +1759,7 @@ export const spanishLayer: LanguageLayer = {
     'notify.arrowsReloaded': 'Flechas recargadas',
     'notify.noMoreArrows': 'No quedan flechas',
     'keys.targetNearest': 'Seleccionar el siguiente monstruo',
+    'keys.pickupNearest': "Agarrar items cercanos",
     'warp.favouriteHint': 'Clic derecho para marcar este mapa y mantenerlo arriba',
     'search.placeholder': 'Buscar...',
     'search.hint': 'Escribe para atenuar lo que no coincida. Esc borra.',

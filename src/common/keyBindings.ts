@@ -30,6 +30,7 @@ export type KeyAction =
   | 'sessionStats'
   | 'sortInventory'
   | 'targetNearest'
+  | 'pickupNearest'
   | 'replyWhisper'
   | 'performanceReadout';
 
@@ -57,6 +58,7 @@ export const KEY_ACTION_LABEL_KEYS: Record<KeyAction, TextKey> = {
   sessionStats: 'keys.sessionStats',
   sortInventory: 'keys.sortInventory',
   targetNearest: 'keys.targetNearest',
+  pickupNearest: 'keys.pickupNearest',
   replyWhisper: 'keys.replyWhisper',
   performanceReadout: 'keys.performanceReadout',
 };
@@ -90,6 +92,8 @@ const DEFAULTS: KeyBindings = {
   sessionStats: 'KeyU',
   sortInventory: 'KeyS',
   targetNearest: 'KeyN',
+  // Mu La Ronda: grabs the drops around the hero (pickupNearestSystem.ts).
+  pickupNearest: 'Space',
   replyWhisper: 'KeyY',
   // Unbound on purpose: a diagnostics readout should not claim a letter from
   // a fresh install. An empty code matches no key press.

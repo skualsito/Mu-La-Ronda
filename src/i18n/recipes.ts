@@ -721,6 +721,7 @@ export const EN_TEXT = {
   'keys.hideUi': 'Hide interface',
   'keys.sortInventory': 'Arrange inventory',
   'keys.targetNearest': 'Target next monster',
+  'keys.pickupNearest': "Pick up nearby items",
   'keys.replyWhisper': 'Reply to whisper',
   'keys.emoteMenu': 'Emote menu',
   'keys.inventory': 'Inventory',
