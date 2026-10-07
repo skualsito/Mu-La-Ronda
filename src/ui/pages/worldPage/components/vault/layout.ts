@@ -51,6 +51,10 @@ export const DEPOSIT_BUTTON_X = BUTTON_X0;
 export const WITHDRAW_BUTTON_X = BUTTON_X0 + BUTTON_PITCH;
 export const LOCK_BUTTON_X = BUTTON_X0 + BUTTON_PITCH * 2;
 
+/** Mu La Ronda: the VIP's extra vaults, right of the three buttons. */
+export const EXTRA_X = BUTTON_X0 + BUTTON_PITCH * 3 + 2;
+export const EXTRA_WIDTH = 180 - EXTRA_X;
+
 export const DEPOSIT_SPRITE = 'newui_Bt_money01.OZT';
 export const WITHDRAW_SPRITE = 'newui_Bt_money02.OZT';
 export const UNLOCKED_SPRITE = 'newui_Bt_lock02.OZT';

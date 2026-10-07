@@ -19,7 +19,8 @@ ON CONFLICT ("Id") DO NOTHING;
 -- Los plugins nuevos arrancan activos; esto es por si alguien los apago.
 UPDATE config."PlugInConfiguration" SET "IsActive" = true
  WHERE "TypeId" IN ('2c7d9e41-6a8b-4f3c-b1d5-0e9f8a7b6c24',   -- /vip
-                    '2c7d9e41-6a8b-4f3c-b1d5-0e9f8a7b6c25');  -- bonus al entrar
+                    '2c7d9e41-6a8b-4f3c-b1d5-0e9f8a7b6c25',   -- bonus al entrar
+                    '2c7d9e41-6a8b-4f3c-b1d5-0e9f8a7b6c26');  -- /baul (baules extra VIP)
 
 -- Codigos de descuento para comprar VIP (/vip oro 3 CODIGO, o el campo de la
 -- ventana VIP). Se crean, editan y borran desde el panel admin (Codigos VIP);

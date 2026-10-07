@@ -101,6 +101,8 @@ public class TalkNpcAction
                 var warehouseSize = player.Account.IsVaultExtended ? InventoryConstants.WarehouseSize * 2 : InventoryConstants.WarehouseSize;
                 player.Vault = new Storage(warehouseSize, player.Account.Vault);
                 await player.InvokeViewPlugInAsync<IShowVaultPlugIn>(p => p.ShowVaultAsync()).ConfigureAwait(false);
+                // Mu La Ronda: tells the client how many extra vaults (VIP) its window should offer.
+                await player.ShowBlueMessageAsync(VipSystem.ExtraVaultChatCommandPlugIn.StateLine(0, VipSystem.ExtraVaultChatCommandPlugIn.AllowedFor(player))).ConfigureAwait(false);
                 break;
             case NpcWindow.GuildMaster:
                 if (await this.IsPlayedAllowedToCreateGuildAsync(player).ConfigureAwait(false))

@@ -717,6 +717,7 @@ export const EN_TEXT = {
   'search.hint': 'Type to fade everything that does not match. Esc clears.',
   'vault.depositJewels': 'Jewels',
   'vault.depositJewelsHint': 'Move every jewel from the inventory into the vault',
+  'vault.extraHint': "VIP extra vaults: 0 is your own vault. Bronze 3, silver 6, gold 9.",
   // ---- key bindings ------------------------------------------------------
   'keys.hideUi': 'Hide interface',
   'keys.sortInventory': 'Arrange inventory',

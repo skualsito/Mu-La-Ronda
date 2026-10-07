@@ -86,3 +86,29 @@
     }
   }
 }
+
+// Mu La Ronda: the VIP's extra vaults.
+.vault .vault-extra {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #e8d9a8;
+  font-size: 11px;
+  user-select: none;
+
+  .arrow {
+    cursor: pointer;
+    padding: 0 3px;
+    color: #c8a24a;
+
+    &:hover {
+      color: #fff2c4;
+    }
+  }
+
+  &.disabled .arrow {
+    cursor: default;
+    opacity: 0.4;
+  }
+}

@@ -244,6 +244,7 @@ import {
 } from './common/itemStorage';
 import { NetStats } from './common/netStats';
 import { readVipLine } from './common/vip';
+import { readVaultLine } from './common/extraVaults';
 import { Notices } from './common/notices';
 import { SlideHelp } from './common/slideHelp';
 import { ChatLineType, classifyInboundChat, cleanName } from './common/chat';
@@ -3691,6 +3692,8 @@ EventBus.on('ServerMessage', packet => {
       // the server's English, so it has to run before the line is translated.
       Social.trackSelfDefense(text);
       readVipLine(text);
+      // Mu La Ronda: "Baul 2/9" is the extra vaults' state, not a line to show.
+      if (readVaultLine(text)) break;
       // Mu La Ronda: no "Congratulations, you are Level N now." per level-up.
       if (isHiddenServerLine(text)) break;
       Social.systemMessage(translateServerText(text));

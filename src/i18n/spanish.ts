@@ -1765,6 +1765,7 @@ export const spanishLayer: LanguageLayer = {
     'search.hint': 'Escribe para atenuar lo que no coincida. Esc borra.',
     'vault.depositJewels': 'Joyas',
     'vault.depositJewelsHint': 'Mover todas las joyas del inventario al almacén',
+    'vault.extraHint': "Baúles extra VIP: el 0 es tu baúl de siempre. Bronce 3, plata 6, oro 9.",
     'notify.itemsMoved': '{count} objetos movidos',
     'notify.itemsBought': 'Unidades compradas: {count}',
     'options.autoReconnect': 'Reconectar automáticamente',

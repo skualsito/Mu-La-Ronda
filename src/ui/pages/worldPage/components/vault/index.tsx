@@ -14,6 +14,8 @@ import { QuickItemActions } from '../../../../../common/quickItemActions';
 import { isJewel, itemDef } from '../../../../../common/itemStats';
 import { useEventBus } from '../../../../../hooks/useEventBus';
 import { goldColor } from '../../../../../common/goldColor';
+import { extraVaults, switchVault } from '../../../../../common/extraVaults';
+import { Social } from '../../../../../social';
 import {
   BUTTON_FRAMES,
   BUTTON_HEIGHT,
@@ -23,6 +25,8 @@ import {
   DEPOSIT_BUTTON_X,
   DEPOSIT_SPRITE,
   DEPOSIT_TOOLTIP,
+  EXTRA_WIDTH,
+  EXTRA_X,
   FEE_LABEL,
   FEE_LABEL_X,
   FEE_TEXT_Y,
@@ -246,6 +250,31 @@ export const Vault = observer(() => {
           <span className="button-tooltip">{t(LOCK_TOOLTIP)}</span>
         </MuButton>
       </div>
+
+      {/* Mu La Ronda: the VIP's extra vaults (common/extraVaults.ts). */}
+      {extraVaults.allowed > 0 && (
+        <ExtraVaultSelector busy={!!picked || !!Store.pendingItemMove} />
+      )}
     </MuItemWindow>
+  );
+});
+
+/** Mu La Ronda: steps through the account's vault (0) and the VIP's extra ones. */
+const ExtraVaultSelector = observer(({ busy }: { busy: boolean }) => {
+  const disabled = busy || extraVaults.switching;
+  const step = (by: number) => {
+    if (!disabled) switchVault(extraVaults.current + by, command => Social.sendChat(command));
+  };
+  return (
+    <div
+      className={`vault-extra${disabled ? ' disabled' : ''}`}
+      data-no-drag="true"
+      title={t('vault.extraHint')}
+      style={{ left: EXTRA_X, top: BUTTON_Y, width: EXTRA_WIDTH, height: BUTTON_HEIGHT }}
+    >
+      <span className="arrow" onClick={() => step(-1)}>{'◀'}</span>
+      <span className="number">{`${extraVaults.current}/${extraVaults.allowed}`}</span>
+      <span className="arrow" onClick={() => step(1)}>{'▶'}</span>
+    </div>
   );
 });

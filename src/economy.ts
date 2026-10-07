@@ -3,6 +3,7 @@ import { makeObservable, observable, action, runInAction } from 'mobx';
 import { prefetchItemIcons } from './common/itemIconPack';
 import { Store } from './store';
 import { Social } from './social';
+import { resetExtraVaults } from './common/extraVaults';
 import type { Item } from './ecs/world';
 import { playUiSound } from './libs/sfx';
 import { Notices } from './common/notices';
@@ -563,6 +564,7 @@ export const Economy = new (class _Economy {
       Store.sendToGS(VaultClosedPacket.createPacket().buffer);
     }
 
+    resetExtraVaults();
     runInAction(() => {
       this.vaultOpen = false;
       this.vaultItems = emptyGrid(VAULT_SLOTS);
