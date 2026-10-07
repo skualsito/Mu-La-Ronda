@@ -1,3 +1,4 @@
+import { MASTER_REPLACES, masterRoot } from './skillAliases';
 /**
  * Skill definitions as configured by the OpenMU server we play against
  * (src/Persistence/Initialization/VersionSeasonSix/SkillsInitializer.cs).
@@ -427,6 +428,25 @@ export const SKILL_DEFINITIONS: readonly SkillDefinition[] = [
 ];
 
 const byNumber = new Map(SKILL_DEFINITIONS.map(s => [s.num, s]));
+
+// Mu La Ronda: an active master skill behaves as the skill it replaces - OpenMU
+// copies the replaced skill's type, target, damage type and area onto it
+// (`AddMasterSkillDefinition`). The table above lists them all as DirectHit,
+// so Twisting Slash Strengthener went out as a single-target hit the server
+// did nothing with.
+for (const [master, replaced] of Object.entries(MASTER_REPLACES)) {
+  const def = byNumber.get(Number(master));
+  const base = byNumber.get(masterRoot(replaced));
+  if (!def || !base || def.type === 'PassiveBoost') continue;
+  byNumber.set(def.num, {
+    ...def,
+    type: base.type,
+    target: base.target,
+    damageType: base.damageType,
+    range: base.range,
+    distance: def.distance || base.distance,
+  });
+}
 
 export function skillDefinition(num: number): SkillDefinition | undefined {
   return byNumber.get(num);

@@ -22,3 +22,29 @@ export const MAGIC_GLADIATOR_MASTER_ALIASES: Readonly<Record<number, number>> = 
 export function masterBase(skill: number): number {
   return DARK_LORD_MASTER_ALIASES[skill] ?? MAGIC_GLADIATOR_MASTER_ALIASES[skill] ?? skill;
 }
+
+/**
+ * Mu La Ronda: the skill each active master skill replaces when its first
+ * point goes in - OpenMU's `MasterSkillDefinition.ReplacedSkill`
+ * (VersionSeasonSix/SkillsInitializer.cs, the `regularSkill` argument of
+ * every `AddMasterSkillDefinition`). A Mastery replaces its Strengthener,
+ * which replaces the base skill. The server gives the master skill the
+ * replaced skill's type, target and area settings, so the client casts it
+ * the same way (`skillsDatabase`), and the tree asks for exactly this skill
+ * before the first point (`masterTree.masterBaseSkillMet`).
+ */
+export const MASTER_REPLACES: Readonly<Record<number, number>> = {
+  326: 22, 327: 23, 328: 19, 329: 20, 330: 41, 331: 42, 332: 330, 333: 331, 336: 43, 337: 232, 356: 48, 360: 356,
+  378: 5, 379: 3, 380: 233, 381: 14, 382: 13, 383: 380, 384: 1, 385: 9, 387: 38, 388: 10, 389: 7, 403: 16,
+  404: 403, 413: 26, 414: 24, 416: 52, 417: 27, 418: 414, 420: 28, 422: 420, 423: 417, 424: 51, 441: 77, 454: 219,
+  455: 215, 456: 230, 458: 214, 469: 218, 470: 469, 479: 22, 480: 3, 481: 41, 482: 56, 483: 5, 484: 13, 486: 14,
+  487: 9, 489: 7, 490: 55, 508: 61, 509: 66, 511: 64, 512: 62, 514: 508, 515: 511, 516: 512, 517: 515, 518: 78,
+  551: 260, 552: 261, 554: 551, 555: 552, 558: 262, 559: 263, 560: 264, 569: 268, 572: 569, 573: 267,
+};
+
+/** The base skill at the end of the replacement chain (332 -> 330 -> 41), else the skill itself. */
+export function masterRoot(skill: number): number {
+  let n = skill;
+  for (let i = 0; i < 4 && MASTER_REPLACES[n] !== undefined; i++) n = MASTER_REPLACES[n];
+  return n;
+}

@@ -40,6 +40,7 @@ import { downloadDataFile } from '../libs/mu/dataFolder';
 import { decodeLocalText, downloadLocalDataFile } from '../libs/mu/localData';
 import { convertBux } from '../common/terrain/mapFileEncryption';
 import { skillDefinition } from '../common/skillsDatabase';
+import { MASTER_REPLACES, masterRoot } from '../common/skillAliases';
 import { Store } from '../store';
 import type { SkillLayer } from './layer';
 import { isWeaponSkill, skillRequirementsMet } from './usability';
@@ -69,8 +70,6 @@ const SKILL_RECORD_SIZE = 80;
 const SKILL_USE_TYPE_OFFSET = 55;
 const SKILL_BRAND_OFFSET = 56;
 const SKILL_ICON_OFFSET = 68;
-/** `SkillUseType == 4`: a base skill that needs no learning (`CheckBeforeSkill`). */
-const SKILL_USE_TYPE_INNATE = 4;
 
 /** `MAX_MASTER_SKILL_CATEGORY`: the three columns of the window. */
 export const MASTER_GROUPS = 3;
@@ -472,10 +471,12 @@ export function masterRankMet(entry: MasterTreeEntry): boolean {
  */
 export function masterBaseSkillMet(entry: MasterTreeEntry): boolean {
   if (masterSkillInfo(entry).level > 0) return true;
-  const brand = skillAttributes[entry.skill]?.brand ?? 0;
-  if (!brand) return true;
-  if (skillAttributes[brand]?.useType === SKILL_USE_TYPE_INNATE) return true;
-  return Store.skills.some(s => s.number === brand);
+  // Mu La Ronda: the skill OpenMU replaces (`MASTER_REPLACES`), not Skill.bmd's
+  // brand byte - that file numbers the master skills its own way, and a Dark
+  // Lord with Fire Burst learned was told to learn Fire Burst first.
+  const replaced = MASTER_REPLACES[entry.skill];
+  if (replaced === undefined) return true;
+  return Store.skills.some(s => s.number === replaced || masterRoot(s.number) === replaced);
 }
 
 /**
@@ -483,7 +484,8 @@ export function masterBaseSkillMet(entry: MasterTreeEntry): boolean {
  * needs that weapon in hand.
  */
 export function masterEquipmentMet(entry: MasterTreeEntry): boolean {
-  const brand = skillAttributes[entry.skill]?.brand ?? 0;
+  const replaced = MASTER_REPLACES[entry.skill];
+  const brand = replaced === undefined ? 0 : masterRoot(replaced);
   if (!brand || !isWeaponSkill(brand)) return true;
   return skillRequirementsMet(brand);
 }
