@@ -14,10 +14,10 @@
 
 /** The hero draws at most ~6 casts a second. */
 export const HERO_MIN_GAP_MS = 166;
-/** Anyone else at most ~3 a second each. */
-export const OTHER_MIN_GAP_MS = 333;
+/** Anyone else at most 2 a second each. */
+export const OTHER_MIN_GAP_MS = 500;
 /** And all of them together at most this many a second. */
-export const OTHERS_PER_SECOND = 30;
+export const OTHERS_PER_SECOND = 16;
 
 export class SkillVisualBudget {
   private readonly lastDrawn = new WeakMap<object, number>();
