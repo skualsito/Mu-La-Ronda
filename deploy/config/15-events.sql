@@ -57,4 +57,18 @@ BEGIN
   PERFORM mlr.set_timetable('a8f3c2d1-9e74-4ecb-8963-08a3697278c4', ARRAY['22:45:00']); -- Kanturu
 END $$;
 
+
+-- Kanturu (Refinery Tower: Maya, Nightmare) activo. Los datos del evento (el
+-- mapa, los monstruos, la definicion del minijuego) los trae una actualizacion
+-- de OpenMU que se instala a mano desde su panel (openmu.<dominio> -> Updates,
+-- "Add Kanturu data"); si falta, se avisa en el log del deploy.
+UPDATE config."PlugInConfiguration" SET "IsActive" = true
+ WHERE "TypeId" = 'a8f3c2d1-9e74-4ecb-8963-08a3697278c4';
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM config."MiniGameDefinition" WHERE "Type" = 6) THEN
+    RAISE NOTICE 'Kanturu: falta la definicion del evento - instalar las actualizaciones pendientes en el panel de OpenMU (Updates)';
+  END IF;
+END $$;
 COMMIT;
