@@ -71,8 +71,13 @@ export const CATEGORY_TEXT_X = [92, 302, 513] as const;
 export const CATEGORY_TEXT_Y = 40;
 export const CATEGORY_TEXT_COLOR = 'rgb(255,155,0)';
 
-/** Tooltip anchor below the icon; nodes past y 300 tip upwards instead. */
-export const TIP_OFFSET = { x: ICON_INSET_X, y: 33 };
+/**
+ * Mu La Ronda: the tip sits beside the hovered icon (the cursor is on it) - to its right, or to
+ * its left past x `TIP_FLIP_X` - and grows upwards from nodes past y `TIP_FLIP_Y`. It used to add
+ * the node's position twice and land far from it.
+ */
+export const TIP_GAP = 6;
+export const TIP_FLIP_X = 420;
 export const TIP_FLIP_Y = 300;
 
 /** `TextListColor` → colour, as `RenderTipTextList` paints them. */

@@ -66,7 +66,8 @@ import {
   SHEET_WIDTH,
   TIP_COLORS,
   TIP_FLIP_Y,
-  TIP_OFFSET,
+  TIP_FLIP_X,
+  TIP_GAP,
 } from './layout';
 
 /**
@@ -156,12 +157,18 @@ const Text = ({
 );
 
 const NodeTip = observer(({ entry }: { entry: MasterTreeEntry }) => {
+  // Inside the node, so relative to it.
   const { x, y } = nodeOrigin(entry);
   const up = y > TIP_FLIP_Y;
+  const left = x > TIP_FLIP_X;
   return (
     <div
-      className={`master-tip${up ? ' master-tip-up' : ''}`}
-      style={{ left: x + TIP_OFFSET.x, top: up ? y : y + TIP_OFFSET.y }}
+      className="master-tip"
+      style={{
+        left: left ? ICON_INSET_X - TIP_GAP : ICON_INSET_X + MASTER_ICON_WIDTH + TIP_GAP,
+        top: up ? ICON_INSET_Y + MASTER_ICON_HEIGHT : ICON_INSET_Y,
+        transform: `translate(${left ? '-100%' : '0'}, ${up ? '-100%' : '0'})`,
+      }}
     >
       {skills.masterSkillTooltip(entry).map((line, i) => (
         <div
