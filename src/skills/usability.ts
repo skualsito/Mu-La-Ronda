@@ -158,7 +158,8 @@ export function skillUsability(num: number): SkillUsability {
   // already passed this; the rule matters for lists of skills not yet held.
   const learned = Store.skills.some(s => s.number === num);
   if (!learned && !skillClasses(def).has(pd.charClass)) blocks.push('class');
-  if (def.level > 0 && pd.level < def.level) blocks.push('level');
+  // Mu La Ronda: no level requirement - deploy/config/13-skills.sql drops it on the server, so a
+  // reset (level back to 1) keeps every skill learned before it usable.
   if (def.energy > 0 && pd.eng < def.energy) blocks.push('energy');
   if (
     isWeaponSkill(num) &&
