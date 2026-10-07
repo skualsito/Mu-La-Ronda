@@ -8,15 +8,6 @@ map $http_upgrade $mu_connection_upgrade {
     ''      close;
 }
 
-# play.<DOMAIN> es el nombre que usa la convencion del cliente; el juego vive
-# en el dominio principal, asi que redirige ahi.
-server {
-    listen 80;
-    listen [::]:80;
-    server_name play.${DOMAIN};
-    return 301 https://${DOMAIN}$request_uri;
-}
-
 # Cliente web, en el dominio principal. SPA (/online, /offline): rutas
 # desconocidas -> index.html.
 server {
@@ -77,7 +68,7 @@ server {
 }
 
 # Pagina de registro (dist-register/) y su API. El cliente tambien postea aca
-# desde play.<DOMAIN> (CORS_ORIGIN del servicio).
+# desde el dominio principal (CORS_ORIGIN del servicio).
 server {
     listen 80;
     listen [::]:80;

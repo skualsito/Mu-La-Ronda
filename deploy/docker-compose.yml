@@ -1,6 +1,6 @@
 # Mu La Ronda - stack en el mismo VPS que Pterodactyl.
 #
-#   Internet ──443──> nginx del host (el del panel) ──┬── <DOMAIN>        dist/ (estatico; play.<DOMAIN> redirige)
+#   Internet ──443──> nginx del host (el del panel) ──┬── <DOMAIN>        dist/ (estatico)
 #                                                     ├── ws.<DOMAIN>     127.0.0.1:PROXY_PORT
 #                                                     └── admin.<DOMAIN>  127.0.0.1:ADMIN_PORT
 #
@@ -102,7 +102,7 @@ services:
       DATABASE_URL: postgres://postgres:${DB_PASSWORD}@127.0.0.1:${DB_PORT:-5432}/openmu
       RATE_DB_PATH: /data/signups.sqlite
       RATE_LIMIT: ${REGISTER_RATE_LIMIT:-3}
-      CORS_ORIGIN: https://${DOMAIN:?falta DOMAIN en deploy/.env},https://play.${DOMAIN}
+      CORS_ORIGIN: https://${DOMAIN:?falta DOMAIN en deploy/.env}
     volumes:
       - ..:/app:ro
       - registerdata:/data
@@ -124,7 +124,7 @@ services:
       MARKETPLACE_API_PORT: ${MARKETPLACE_PORT:-3300}
       MARKETPLACE_ESCROW_SECRET: ${MARKETPLACE_ESCROW_SECRET}
       MARKETPLACE_TICKET_SECRET: ${MARKETPLACE_TICKET_SECRET:?falta MARKETPLACE_TICKET_SECRET en deploy/.env}
-      MARKETPLACE_CORS_ORIGIN: https://${DOMAIN},https://play.${DOMAIN}
+      MARKETPLACE_CORS_ORIGIN: https://${DOMAIN}
       MARKETPLACE_DB: /data/market.sqlite
       DATABASE_URL: postgres://postgres:${DB_PASSWORD}@127.0.0.1:${DB_PORT:-5432}/openmu
       PRESENCE_URL: http://127.0.0.1:${PRESENCE_PORT:-3001}
