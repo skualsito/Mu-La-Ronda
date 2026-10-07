@@ -2,6 +2,7 @@ import { ENUM_WORLD } from '../types';
 import { ArrayCopy, castToByte } from '../binaryUtils';
 import { SIZE_OF_WORD, TERRAIN_SIZE } from './consts';
 import { convertBux, decryptMapFile } from './mapFileEncryption';
+import { openArenaPens } from './arenaPenDoors';
 
 export async function parseTerrainAttribute(
   file_data: Uint8Array,
@@ -115,6 +116,8 @@ export async function parseTerrainAttribute(
   if (hasError) {
     throw new Error(`Another error!`);
   }
+
+  openArenaPens(map, result);
 
   return result;
 }
