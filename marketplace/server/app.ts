@@ -115,7 +115,7 @@ function authenticate(
 ): { account: string } | { error: Response } {
   const verified = verifyTicket(body.ticket ?? url.searchParams.get('ticket'));
   if (!verified.ok) {
-    return { error: json({ error: 'Your session expired.', retry: true }, 401, cors) };
+    return { error: json({ error: 'Tu sesión venció.', retry: true }, 401, cors) };
   }
   return { account: verified.account };
 }
@@ -312,12 +312,12 @@ export function createApp(deps: AppDeps): App {
         // a token for a character the account is not playing.
         const character = body.character;
         if (typeof character !== 'string' || !NAME_RE.test(character)) {
-          return json({ error: 'Log in to a character first.' }, 400, cors);
+          return json({ error: 'Primero entrá con un personaje.' }, 400, cors);
         }
 
         const slot = Number(body.slot);
         if (!Number.isInteger(slot) || slot < FIRST_BAG_SLOT || slot > LAST_BAG_SLOT) {
-          return json({ error: 'That item is not in your bag.' }, 400, cors);
+          return json({ error: 'Ese item no está en tu inventario.' }, 400, cors);
         }
 
         const item = body.item as store.Item | undefined;
@@ -325,10 +325,10 @@ export function createApp(deps: AppDeps): App {
         const category = typeof body.category === 'string' ? body.category : 'misc';
 
         if (!item || typeof item.group !== 'number' || typeof item.num !== 'number') {
-          return json({ error: 'That item is not one the marketplace can read.' }, 400, cors);
+          return json({ error: 'El mercado no puede leer ese item.' }, 400, cors);
         }
         if (!Number.isInteger(price) || price < 1 || price > store.MAX_PRICE) {
-          return json({ error: 'Price must be between 1 and 2,000,000,000 Zen.' }, 400, cors);
+          return json({ error: 'El precio tiene que estar entre 1 y 2.000.000.000 de Zen.' }, 400, cors);
         }
 
         let listing: store.Listing;
@@ -384,18 +384,18 @@ export function createApp(deps: AppDeps): App {
 
         const character = body.character;
         if (typeof character !== 'string' || !NAME_RE.test(character)) {
-          return json({ error: 'Log in to a character first.' }, 400, cors);
+          return json({ error: 'Primero entrá con un personaje.' }, 400, cors);
         }
         const slot = Number(body.slot);
         if (!Number.isInteger(slot) || slot < FIRST_BAG_SLOT || slot > LAST_BAG_SLOT) {
-          return json({ error: 'That item is not in your bag.' }, 400, cors);
+          return json({ error: 'Ese item no está en tu inventario.' }, 400, cors);
         }
         const item = body.item as store.Item | undefined;
         if (!item || typeof item.group !== 'number' || typeof item.num !== 'number') {
-          return json({ error: 'That item is not one the marketplace can read.' }, 400, cors);
+          return json({ error: 'El mercado no puede leer ese item.' }, 400, cors);
         }
         if (JSON.stringify(item).length > 4000) {
-          return json({ error: 'That item is not one the marketplace can read.' }, 400, cors);
+          return json({ error: 'El mercado no puede leer ese item.' }, 400, cors);
         }
         const category = typeof body.category === 'string' ? body.category.slice(0, 32) : 'misc';
 
@@ -419,7 +419,7 @@ export function createApp(deps: AppDeps): App {
         if ('error' in auth) return auth.error;
 
         if (!offers.remove(offerAction[1], auth.account)) {
-          return json({ error: 'That advert is not yours, or it is already gone.' }, 404, cors);
+          return json({ error: 'Ese aviso no es tuyo, o ya no está.' }, 404, cors);
         }
         return json({ removed: true }, 200, cors);
       }
@@ -432,7 +432,7 @@ export function createApp(deps: AppDeps): App {
         if ('error' in auth) return auth.error;
 
         const listing = store.byId(id);
-        if (!listing) return json({ error: 'That listing is gone.' }, 404, cors);
+        if (!listing) return json({ error: 'Esa publicación ya no está.' }, 404, cors);
 
         // ---- settle: anyone may ask; it only reads the box -------------
         if (verb === 'settle') {
@@ -461,15 +461,15 @@ export function createApp(deps: AppDeps): App {
 
         // ---- claim: active -> claimed, one winner ----------------------
         if (verb === 'claim') {
-          if (!named) return json({ error: 'Log in to a character first.' }, 400, cors);
+          if (!named) return json({ error: 'Primero entrá con un personaje.' }, 400, cors);
           if (listing.seller === auth.account) {
-            return json({ error: 'That is your own listing.' }, 400, cors);
+            return json({ error: 'Esa publicación es tuya.' }, 400, cors);
           }
           if (!listing.itemId) {
-            return json({ error: 'That listing is not on sale.' }, 409, cors);
+            return json({ error: 'Esa publicación no está a la venta.' }, 409, cors);
           }
           if (!store.claim(id, auth.account, character)) {
-            return json({ error: 'Somebody else got there first.' }, 409, cors);
+            return json({ error: 'Otro lo compró antes.' }, 409, cors);
           }
           const token = mint({
             op: 'buy',
@@ -487,23 +487,23 @@ export function createApp(deps: AppDeps): App {
         // ---- release: claimed -> active, by the claimant ---------------
         if (verb === 'release') {
           if (listing.state !== 'claimed' || listing.buyer !== auth.account) {
-            return json({ error: 'That listing is not yours to release.' }, 409, cors);
+            return json({ error: 'Esa publicación no es tuya para liberarla.' }, 409, cors);
           }
           const box = await boxOf(listing);
           if (!box.item || box.item.id !== listing.itemId) {
             // The box no longer holds the item: the purchase went through,
             // or something else did. The box says which.
             const after = await reconcileWith(listing, box);
-            return json({ error: 'That purchase already went through.', listing: after }, 409, cors);
+            return json({ error: 'Esa compra ya se hizo.', listing: after }, 409, cors);
           }
           store.release(id, auth.account, 'the buyer let it go');
           return json({ listing: store.byId(id) }, 200, cors);
         }
 
         // ---- cancel: pending -> cancelled, active -> returning ---------
-        if (!named) return json({ error: 'Log in to a character first.' }, 400, cors);
+        if (!named) return json({ error: 'Primero entrá con un personaje.' }, 400, cors);
         if (listing.seller !== auth.account) {
-          return json({ error: 'That is not your listing.' }, 403, cors);
+          return json({ error: 'Esa publicación no es tuya.' }, 403, cors);
         }
 
         let current = listing;
@@ -518,17 +518,17 @@ export function createApp(deps: AppDeps): App {
         }
 
         if (current.state === 'claimed') {
-          return json({ error: 'Somebody is buying that right now.' }, 409, cors);
+          return json({ error: 'Alguien lo está comprando en este momento.' }, 409, cors);
         }
         if (current.state === 'active') {
           if (!store.startReturn(id, auth.account)) {
-            return json({ error: 'That listing cannot be cancelled now.' }, 409, cors);
+            return json({ error: 'Esa publicación no se puede cancelar ahora.' }, 409, cors);
           }
         } else if (current.state === 'returning') {
           // A second cancel token, for a bag that was full the first time.
           store.touchReturn(id, auth.account);
         } else {
-          return json({ error: 'That listing cannot be cancelled now.', listing: current }, 409, cors);
+          return json({ error: 'Esa publicación no se puede cancelar ahora.', listing: current }, 409, cors);
         }
 
         const token = mint({
@@ -557,7 +557,7 @@ export function createApp(deps: AppDeps): App {
 
         const character = body.character;
         if (typeof character !== 'string' || !NAME_RE.test(character)) {
-          return json({ error: 'Log in to a character first.' }, 400, cors);
+          return json({ error: 'Primero entrá con un personaje.' }, 400, cors);
         }
 
         const payouts = store.soldBy(auth.account).map(listing => ({
@@ -598,10 +598,10 @@ export function createApp(deps: AppDeps): App {
         return json({ paid, paidTotal, remaining, remainingTotal: store.owed(auth.account) }, 200, cors);
       }
 
-      return json({ error: 'No such route.' }, 404, cors);
+      return json({ error: 'Esa ruta no existe.' }, 404, cors);
     } catch (error) {
       console.error('marketplace: unhandled error', error);
-      return json({ error: 'Something went wrong.' }, 500, cors);
+      return json({ error: 'Algo salió mal.' }, 500, cors);
     }
   }
 

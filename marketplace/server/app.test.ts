@@ -419,7 +419,7 @@ describe('a commit body without the page session', () => {
     confirmLive: async (nonce, account) =>
       typeof nonce === 'string' && /^[0-9a-f]{32}$/.test(nonce) && live.has(account)
         ? { ok: true }
-        : { ok: false, reason: 'malformed', message: 'That session is not one the marketplace recognises.' },
+        : { ok: false, reason: 'malformed', message: 'El mercado no reconoce esa sesión.' },
     now: () => clock,
   });
 
@@ -441,7 +441,7 @@ describe('a commit body without the page session', () => {
     const item = { ...anItem };
     const without = await post('/listings', { ...ticketOnly('alice'), slot: 20, price: 1000, category: 'jewels', item });
     expect(without.status).toBe(403);
-    expect(without.body.error).toContain('session');
+    expect(without.body.error).toContain('sesión');
 
     const with_ = await post('/listings', { ...withSession('alice'), slot: 20, price: 1000, category: 'jewels', item });
     expect(with_.status).toBe(201);

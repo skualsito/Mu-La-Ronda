@@ -124,7 +124,7 @@ export function verifyTicket(ticket: unknown, now = Date.now()): Verification {
  */
 async function whoIsOn(nonce: unknown): Promise<Named> {
   if (typeof nonce !== 'string' || !SESSION_NONCE_RE.test(nonce)) {
-    return { ok: false, reason: 'malformed', message: 'That session is not one the marketplace recognises.' };
+    return { ok: false, reason: 'malformed', message: 'El mercado no reconoce esa sesión.' };
   }
 
   let answer: { account?: unknown };
@@ -136,24 +136,24 @@ async function whoIsOn(nonce: unknown): Promise<Named> {
     if (response.status === 404) {
       // Bound but not yet named: the account is known only once the game
       // server has accepted the login.
-      return { ok: false, reason: 'unknown', message: 'Log in to the game first.' };
+      return { ok: false, reason: 'unknown', message: 'Primero entrá al juego.' };
     }
     if (!response.ok) {
       console.error(`marketplace: presence answered HTTP ${response.status}`);
-      return { ok: false, reason: 'unreachable', message: 'Cannot confirm who you are right now.' };
+      return { ok: false, reason: 'unreachable', message: 'Ahora no se puede confirmar quién sos.' };
     }
     answer = (await response.json()) as { account?: unknown };
   } catch (error) {
     // `PRESENCE=off` on the proxy lands here as a refused connection, and the
     // marketplace then serves nobody, which is the intended failure.
     console.error('marketplace: presence unreachable:', error instanceof Error ? error.message : error);
-    return { ok: false, reason: 'unreachable', message: 'Cannot confirm who you are right now.' };
+    return { ok: false, reason: 'unreachable', message: 'Ahora no se puede confirmar quién sos.' };
   }
 
   const account = answer.account;
   if (typeof account !== 'string' || !ACCOUNT_RE.test(account)) {
     console.error('marketplace: presence named an account this refuses to sign for');
-    return { ok: false, reason: 'unreachable', message: 'Cannot confirm who you are right now.' };
+    return { ok: false, reason: 'unreachable', message: 'Ahora no se puede confirmar quién sos.' };
   }
 
   return { ok: true, account };
@@ -180,11 +180,11 @@ export async function confirmLive(nonce: unknown, account: string): Promise<Live
 
   if (!named.ok) {
     return named.reason === 'unknown'
-      ? { ok: false, reason: 'unknown', message: 'Your game session has ended. Log in again.' }
+      ? { ok: false, reason: 'unknown', message: 'Tu sesión de juego terminó. Volvé a entrar.' }
       : named;
   }
   if (named.account.toLowerCase() !== account.toLowerCase()) {
-    return { ok: false, reason: 'someoneElse', message: 'Your game session has ended. Log in again.' };
+    return { ok: false, reason: 'someoneElse', message: 'Tu sesión de juego terminó. Volvé a entrar.' };
   }
 
   return { ok: true };
