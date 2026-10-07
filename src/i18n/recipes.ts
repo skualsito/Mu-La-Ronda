@@ -1464,6 +1464,7 @@ export const EN_TEXT = {
   // ---- misc world UI -----------------------------------------------------
   'minimap.close': 'Close',
   'minimap.center': 'Center',
+  'camera.reset': 'Reset camera',
   'moveList.title': 'Move list',
   'warp.title': 'Warp Command Window',
   'warp.map': 'Map',

@@ -24,6 +24,7 @@ import { EventsTab } from './tabs/events';
 import { MacrosTab } from './tabs/macros';
 import { GmLibrary, type Favourite, type MacroVars } from '../../../admin/gmLibrary';
 import { ConsoleTab } from './tabs/console';
+import { minimapCornerReach } from '../../pages/worldPage/components/minimap/corner';
 
 /**
  * The game master panel (documentation/admin_console/ARCHITECTURE.md): one
@@ -207,10 +208,14 @@ const Favourites = observer(({ view }: { view: WorldView }) => {
 const GmTab = observer(() => {
   if (!GmPanel.available) return null;
 
+  // Left of the corner minimap, not on top of it.
+  const reach = minimapCornerReach();
+
   return (
     <button
       type="button"
       className={`gm-tab-plate${GmPanel.open ? ' is-active' : ''}`}
+      style={reach ? { right: Math.round(reach + 8) } : undefined}
       title={t('gm.tabHint', { key: TOGGLE_KEY })}
       onClick={uiClick(() => GmPanel.toggle())}
     >

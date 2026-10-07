@@ -1876,6 +1876,7 @@ export const frenchLayer: LanguageLayer = {
     'options.eventTimers': 'Minuteurs des événements',
     'options.questTracker': 'Suivi des quêtes',
     'minimap.center': 'Centrer',
+    'camera.reset': 'Réinitialiser la caméra',
     'login.id': 'ID',
     'login.password': 'Mot de passe',
     'party.invite': 'Inviter',

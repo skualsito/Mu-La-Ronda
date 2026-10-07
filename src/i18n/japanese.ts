@@ -1831,6 +1831,7 @@ export const japaneseLayer: LanguageLayer = {
     'options.eventTimers': 'イベントタイマー',
     'options.questTracker': 'クエスト追跡',
     'minimap.center': '中央に戻す',
+    'camera.reset': 'カメラをリセット',
     'login.id': 'ID',
     'login.password': 'パスワード',
     'party.invite': '招待',

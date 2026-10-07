@@ -1874,6 +1874,7 @@ export const portugueseLayer: LanguageLayer = {
     'options.eventTimers': 'Temporizadores de eventos',
     'options.questTracker': 'Rastreador de missões',
     'minimap.center': 'Centrar',
+    'camera.reset': 'Reiniciar câmera',
     'login.id': 'ID',
     'login.password': 'Senha',
     'party.invite': 'Convidar',

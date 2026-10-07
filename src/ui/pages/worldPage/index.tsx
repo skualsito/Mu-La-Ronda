@@ -47,6 +47,8 @@ import { FriendWindow } from './components/friends';
 import { ChatRoomWindow } from './components/chatRoom';
 import { SocialPrompts } from './components/socialPrompts';
 import { Minimap } from './components/minimap';
+import { CameraResetButton } from './components/cameraReset';
+import { PartyList } from './components/partyList';
 import { loadVersionUi } from '../../../version';
 import { SkillListWindow } from './components/skills';
 import { EventWindows } from './components/events';
@@ -122,6 +124,8 @@ const HUD = observer(() => {
       <DuelWindows />
       <SessionStatsWindow />
       <Minimap />
+      <CameraResetButton />
+      <PartyList />
       <QuestTracker />
       {/* Offline only: renders null online (F9). */}
       <DebugMenuWindow />

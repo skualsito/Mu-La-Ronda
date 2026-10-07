@@ -1841,6 +1841,7 @@ export const thaiLayer: LanguageLayer = {
     'options.eventTimers': 'ตัวจับเวลากิจกรรม',
     'options.questTracker': 'ติดตามเควสต์',
     'minimap.center': 'กลับไปตรงกลาง',
+    'camera.reset': 'รีเซ็ตกล้อง',
     'login.id': 'ไอดี',
     'login.password': 'รหัสผ่าน',
     'party.invite': 'เชิญ',

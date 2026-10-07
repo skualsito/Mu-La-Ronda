@@ -1869,6 +1869,7 @@ export const romanianLayer: LanguageLayer = {
     'options.eventTimers': 'Cronometre pentru evenimente',
     'options.questTracker': 'Urmărirea misiunilor',
     'minimap.center': 'Centrează',
+    'camera.reset': 'Resetează camera',
     'login.id': 'ID',
     'login.password': 'Parolă',
     'party.invite': 'Invită',

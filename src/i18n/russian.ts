@@ -1855,6 +1855,7 @@ export const russianLayer: LanguageLayer = {
     'options.eventTimers': 'Таймеры событий',
     'options.questTracker': 'Отслеживание заданий',
     'minimap.center': 'Центрировать',
+    'camera.reset': 'Сбросить камеру',
     'login.id': 'ID',
     'login.password': 'Пароль',
     'party.invite': 'Пригласить',

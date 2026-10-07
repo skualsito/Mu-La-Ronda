@@ -1,0 +1,56 @@
+@import (reference) '../../../../components/muText/style.less';
+
+// The original's party list (`CNewUIPartyListWindow`): a column of members at
+// the top left, under the money.
+.party-list {
+  position: absolute;
+  top: 64px;
+  left: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  pointer-events: auto;
+  user-select: none;
+  z-index: 10;
+
+  .party-list-row {
+    width: 118px;
+    padding: 3px 5px 4px;
+    background: rgba(0, 0, 0, 0.62);
+    border: 1px solid rgba(160, 130, 80, 0.55);
+    border-radius: 2px;
+    cursor: pointer;
+
+    &.is-away {
+      opacity: 0.55;
+    }
+  }
+
+  .party-list-name {
+    display: block;
+    .mu-font();
+    font-size: 11px;
+    color: #e6e6e6;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    &.is-leader {
+      color: #f0c95a;
+    }
+  }
+
+  .party-list-bar {
+    display: block;
+    height: 4px;
+    margin-top: 3px;
+    background: rgba(60, 10, 10, 0.9);
+
+    .party-list-fill {
+      display: block;
+      height: 100%;
+      background: linear-gradient(#ff5a4a, #b01818);
+      transition: width 200ms linear;
+    }
+  }
+}

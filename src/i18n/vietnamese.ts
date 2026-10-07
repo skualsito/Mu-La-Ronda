@@ -1335,6 +1335,7 @@ export const vietnameseLayer: LanguageLayer = {
     'chat.latest': 'Về tin nhắn mới nhất',
     'minimap.close': 'Đóng',
     'minimap.center': 'Căn giữa',
+    'camera.reset': 'Đặt lại camera',
     'moveList.title': 'Danh sách điểm đến',
     'warp.title': 'Cửa sổ dịch chuyển',
     'warp.map': 'Bản đồ',

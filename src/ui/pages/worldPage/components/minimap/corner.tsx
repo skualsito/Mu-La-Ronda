@@ -48,6 +48,18 @@ import {
 const PANEL = 240;
 /** Art units to CSS pixels at interface size 100%. */
 const PANEL_SCALE = 0.75;
+/** `.minimap-corner-panel`'s `right` (style.less). */
+const PANEL_RIGHT = 10;
+
+/**
+ * Mu La Ronda: how far from the right edge the corner minimap reaches, in CSS
+ * pixels (0 when it is not drawn), for what sits beside it - the GM plate.
+ * Observes the same options the panel does.
+ */
+export function minimapCornerReach(): number {
+  if (!GameOptions.minimapCorner || Store.minimapEnabled || Store.hudHidden) return 0;
+  return PANEL_RIGHT + PANEL * PANEL_SCALE * uiScaleFactor(GameOptions.uiScale);
+}
 
 /** Map edge length per zoom step, in art units; the sheet draws 800. */
 const ZOOM_LEVELS = [512, 640, 768, 1024, 1280];

@@ -1876,6 +1876,7 @@ export const italianLayer: LanguageLayer = {
     'options.eventTimers': 'Timer degli eventi',
     'options.questTracker': 'Tracciamento missioni',
     'minimap.center': 'Centra',
+    'camera.reset': 'Reimposta telecamera',
     'login.id': 'ID',
     'login.password': 'Password',
     'party.invite': 'Invita',

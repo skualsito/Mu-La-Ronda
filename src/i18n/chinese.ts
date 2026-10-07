@@ -1823,6 +1823,7 @@ export const chineseLayer: LanguageLayer = {
     'options.eventTimers': '活动计时',
     'options.questTracker': '任务追踪',
     'minimap.center': '居中',
+    'camera.reset': '重置镜头',
     'login.id': '账号',
     'login.password': '密码',
     'party.invite': '邀请',

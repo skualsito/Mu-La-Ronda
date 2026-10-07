@@ -1347,6 +1347,7 @@ export const polishLayer: LanguageLayer = {
     'chat.latest': 'Wróć do najnowszych wiadomości',
     'minimap.close': 'Zamknij',
     'minimap.center': 'Wyśrodkuj',
+    'camera.reset': 'Resetuj kamerę',
     'moveList.title': 'Lista celów',
     'warp.title': 'Okno teleportacji',
     'warp.map': 'Mapa',

@@ -1829,6 +1829,7 @@ export const koreanLayer: LanguageLayer = {
     'options.eventTimers': '이벤트 타이머',
     'options.questTracker': '퀘스트 추적',
     'minimap.center': '가운데로',
+    'camera.reset': '카메라 초기화',
     'login.id': 'ID',
     'login.password': '비밀번호',
     'party.invite': '초대',

@@ -1861,6 +1861,7 @@ export const bulgarianLayer: LanguageLayer = {
     'options.eventTimers': 'Таймери за събития',
     'options.questTracker': 'Проследяване на задачи',
     'minimap.center': 'Центрирай',
+    'camera.reset': 'Нулирай камерата',
     'login.id': 'ID',
     'login.password': 'Парола',
     'party.invite': 'Покани',

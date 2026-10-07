@@ -29,6 +29,7 @@ import type { ENUM_WORLD } from '../common/types';
 import type { ArcRotateCamera, TransformNode } from '../libs/babylon/exports';
 import { GameOptions } from '../common/gameOptions';
 import { EventBus } from '../libs/eventBus';
+import { observable, runInAction } from 'mobx';
 import type { CameraLayer } from './layer';
 import { CAMERA_LAYERS } from './layers';
 import { hideHeroBody, showHeroBody } from './heroBody';
@@ -94,6 +95,28 @@ let pitchOffsetDeg = 0;
 
 /** `CameraDistance`, original units, eased toward the level's target. */
 let distance = DISTANCE_BY_LEVEL[DEFAULT_CAMERA_LEVEL];
+
+/** The level the current map opened on, which a reset goes back to. */
+let openingLevel = DEFAULT_CAMERA_LEVEL;
+
+/**
+ * Mu La Ronda: whether the player turned, tilted or zoomed the camera away
+ * from the map's own frame - the HUD shows a "reset camera" button then.
+ */
+export const cameraView = observable({ moved: false });
+
+/** Back to the map's own frame: the heading, the tilt and the zoom it opened on. */
+export function resetCamera(): void {
+  level = openingLevel;
+  headingDeg = DEFAULT_HEADING_DEG;
+  pitchOffsetDeg = 0;
+}
+
+function syncMoved(): void {
+  const turn = Math.abs(((headingDeg - DEFAULT_HEADING_DEG) % 360 + 540) % 360 - 180);
+  const moved = level !== openingLevel || Math.abs(pitchOffsetDeg) > 0.5 || turn > 0.5;
+  if (moved !== cameraView.moved) runInAction(() => (cameraView.moved = moved));
+}
 
 let wroteCamera = false;
 
@@ -298,6 +321,7 @@ export function installCameraControl(
   // distance snap with it so the new map opens on its own default frame.
   EventBus.on('warpCompleted', ({ map }) => {
     level = openingLevelFor(map);
+    openingLevel = level;
     headingDeg = DEFAULT_HEADING_DEG;
     pitchOffsetDeg = 0;
     distance = DISTANCE_BY_LEVEL[level];
@@ -397,6 +421,7 @@ export function updateGameCamera(
   if (pressedKeys.has('Insert')) headingDeg += step;
   if (pressedKeys.has('Delete')) headingDeg -= step;
   headingDeg = ((headingDeg % 360) + 360) % 360 - 360;
+  syncMoved();
 
   const layer = byWorld.get(world);
   const target = DISTANCE_BY_LEVEL[level];

@@ -1882,6 +1882,7 @@ export const germanLayer: LanguageLayer = {
     'options.eventTimers': 'Event-Timer',
     'options.questTracker': 'Quest-Verfolgung',
     'minimap.center': 'Zentrieren',
+    'camera.reset': 'Kamera zurücksetzen',
     'login.id': 'ID',
     'login.password': 'Passwort',
     'party.invite': 'Einladen',
