@@ -204,6 +204,8 @@ export type Entity = Partial<{
      * Absent until the first swing.
      */
     swordCount?: number;
+    /** Mu La Ronda: the most a basic attack clip may play at, so it fills the time between swings (attackSystem). */
+    swingSpeedCap?: { action: number; speed: number };
   };
   monsterAnimation: {
     action: MonsterActionType;

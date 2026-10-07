@@ -502,14 +502,17 @@ export const AnimationSystem: ISystemFactory = world => {
         );
         const isRageFighter = baseClass === BaseClass.RageFighter;
 
-        const speed =
+        const cap = playerAnimation.swingSpeedCap;
+        const speed = Math.min(
           playerObject.actionPlaySpeed(action) ??
-          playerPlaySpeed(
-            action,
-            attrs?.getValue('attackSpeed') ?? 0,
-            attrs?.getValue('magicSpeed') ?? 0,
-            isRageFighter
-          );
+            playerPlaySpeed(
+              action,
+              attrs?.getValue('attackSpeed') ?? 0,
+              attrs?.getValue('magicSpeed') ?? 0,
+              isRageFighter
+            ),
+          cap?.action === action ? cap.speed : Infinity
+        );
         // A clip already playing takes its per-frame slowdown straight into the running group; a Freeze or
         // Cold slows the walk and run, so it bites mid-run.
         const slow = debuffSlowsClip(action) ? debuffSlow(entity.buffs) : 1;

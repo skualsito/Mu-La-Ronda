@@ -327,7 +327,22 @@ export const AttackSystem: ISystemFactory = world => {
       alternateSwing = !alternateSwing;
 
       const model = playerEntity.modelObject;
-      if (model) applyPlayerActionSpeed(model, action, playerEntity.attributeSystem);
+      const swingInterval = Math.max(
+        MOUSE_UPDATE_SECONDS_MAX,
+        serverMinAttackInterval(playerEntity.attributeSystem?.getValue('attackSpeed') ?? 0)
+      );
+      if (model) {
+        applyPlayerActionSpeed(model, action, playerEntity.attributeSystem);
+        // Mu La Ronda: a swing never plays shorter than the time between swings.
+        // With a lot of agility the clip was over in a flash and the hero stood
+        // still until the next one, so less agility looked like faster hitting.
+        const clip = model.getActionDuration(action);
+        anim.swingSpeedCap =
+          clip > 0 && clip < swingInterval
+            ? { action, speed: model.AnimationSpeed * (clip / swingInterval) }
+            : undefined;
+        if (anim.swingSpeedCap) model.AnimationSpeed = anim.swingSpeedCap.speed;
+      }
       if (model && anim.action === action) {
         // Same clip twice in a row: AnimationSystem would see no change, so
         // restart it explicitly.
@@ -353,11 +368,7 @@ export const AttackSystem: ISystemFactory = world => {
 
       // MouseUpdateTimeMax (0.24 s), the hit key of this swing, and the
       // server's anti-speedhack interval - whichever is the latest.
-      attackCooldown = Math.max(
-        MOUSE_UPDATE_SECONDS_MAX,
-        hitDelay,
-        serverMinAttackInterval(playerEntity.attributeSystem?.getValue('attackSpeed') ?? 0)
-      );
+      attackCooldown = Math.max(swingInterval, hitDelay);
     },
   };
 };
