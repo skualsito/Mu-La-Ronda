@@ -1,4 +1,4 @@
-// <copyright file="DefaultDropGenerator.cs" company="MUnique">
+﻿// <copyright file="DefaultDropGenerator.cs" company="MUnique">
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 // </copyright>
 
@@ -18,6 +18,9 @@ public class DefaultDropGenerator : IDropGenerator
     /// </summary>
     private const int BaseMoneyDrop = 7;
     private const int DropLevelMaxGap = 12;
+
+    /// <summary>Mu La Ronda: the highest level (+N) of an item a monster drops at random.</summary>
+    private const int MaximumRandomDropLevel = 4;
     private const int SkillDropChancePercent = 50;
 
     private const byte DefaultMaxItemOptionLevelDrop = 3;
@@ -220,7 +223,11 @@ public class DefaultDropGenerator : IDropGenerator
 
     private static byte GetItemLevelByMonsterLevel(ItemDefinition itemDefinition, int monsterLevel)
     {
-        return Math.Min((byte)((monsterLevel - itemDefinition.DropLevel) / 3), itemDefinition.MaximumItemLevel);
+        // Mu La Ronda: never above MaximumRandomDropLevel - the monsters of Swamp of Calmness and
+        // La Cleon stand far above most drop levels (the level 380 items' wider window above all),
+        // and the third of the gap dropped them at +13 to +15.
+        var level = Math.Clamp((monsterLevel - itemDefinition.DropLevel) / 3, 0, MaximumRandomDropLevel);
+        return Math.Min((byte)level, itemDefinition.MaximumItemLevel);
     }
 
     private static async ValueTask<IEnumerable<DropItemGroup>> GetQuestItemGroupsAsync(Player player)
