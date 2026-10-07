@@ -644,6 +644,16 @@ type CharacterInformationView = Pick<
  */
 const GAME_MASTER_STATUS = 0x20;
 
+/**
+ * Mu La Ronda: health, mana, shield and ability come in the 32 bit packets
+ * (CurrentStatsExtended / MaximumStatsExtended, server UpdateStatsPlugIn).
+ * The 16 bit fields of the other packets (level up, respawn, stat increase,
+ * the old 0x26/0x27) wrap past 65535 - about 32767 vitality or energy showed
+ * 100-300 of life - so once a 32 bit one arrived those fields are left alone.
+ * Cleared with each character's information; the 32 bit values follow it.
+ */
+let wideStats = false;
+
 function applyCharacterInformation(p: CharacterInformationView) {
   const playerData = Store.playerData;
 
@@ -654,6 +664,7 @@ function applyCharacterInformation(p: CharacterInformationView) {
   Messenger.reset();
   Economy.reset();
   GmPanel.reset();
+  wideStats = false;
 
   runInAction(() => {
     playerData.money = p.Money;
@@ -826,6 +837,7 @@ EventBus.on('CharacterInventory', packet => {
 
 EventBus.on('CurrentHealthAndShield', packet => {
   const p = new CurrentHealthAndShieldPacket(packet);
+  if (wideStats) return;
 
   const playerEntity = Store.world?.playerEntity;
   if (!playerEntity) return;
@@ -838,6 +850,7 @@ EventBus.on('CurrentHealthAndShield', packet => {
 
 EventBus.on('CurrentStatsExtended', packet => {
   const p = new CurrentStatsExtendedPacket(packet);
+  wideStats = true;
   const playerEntity = Store.world?.playerEntity;
   playerEntity?.attributeSystem.setValue('currentHealth', p.Health);
   playerEntity?.attributeSystem.setValue('currentMana', p.Mana);
@@ -854,6 +867,7 @@ EventBus.on('CurrentStatsExtended', packet => {
 
 EventBus.on('MaximumStatsExtended', packet => {
   const p = new MaximumStatsExtendedPacket(packet);
+  wideStats = true;
   runInAction(() => {
     const pd = Store.playerData;
     pd.maxHP = p.Health;
@@ -865,6 +879,7 @@ EventBus.on('MaximumStatsExtended', packet => {
 
 EventBus.on('MaximumHealthAndShield', packet => {
   const p = new MaximumHealthAndShieldPacket(packet);
+  if (wideStats) return;
   runInAction(() => {
     Store.playerData.maxHP = p.Health;
     Store.playerData.maxSD = p.Shield;
@@ -873,6 +888,7 @@ EventBus.on('MaximumHealthAndShield', packet => {
 
 EventBus.on('MaximumManaAndAbility', packet => {
   const p = new MaximumManaAndAbilityPacket(packet);
+  if (wideStats) return;
   runInAction(() => {
     Store.playerData.maxMP = p.Mana;
     Store.playerData.maxAG = p.Ability;
@@ -881,6 +897,7 @@ EventBus.on('MaximumManaAndAbility', packet => {
 
 EventBus.on('CurrentManaAndAbility', packet => {
   const p = new CurrentManaAndAbilityPacket(packet);
+  if (wideStats) return;
 
   const playerEntity = Store.world?.playerEntity;
   if (!playerEntity) return;
@@ -3362,14 +3379,18 @@ function handleRespawnAfterDeath(packet: DataView) {
 
   const pos = { x: p.PositionX, y: p.PositionY };
 
+  // The extended packet's fields are 32 bit; the others yield to wideStats.
+  const statsHere = isExtended || !wideStats;
   runInAction(() => {
-    Store.playerData.currentHP = p.CurrentHealth;
-    Store.playerData.currentMP = p.CurrentMana;
-    if (!(p instanceof RespawnAfterDeath075Packet)) {
-      Store.playerData.currentAG = p.CurrentAbility;
-    }
-    if (!(p instanceof RespawnAfterDeath075Packet) && !(p instanceof RespawnAfterDeath095Packet)) {
-      Store.playerData.currentSD = p.CurrentShield;
+    if (statsHere) {
+      Store.playerData.currentHP = p.CurrentHealth;
+      Store.playerData.currentMP = p.CurrentMana;
+      if (!(p instanceof RespawnAfterDeath075Packet)) {
+        Store.playerData.currentAG = p.CurrentAbility;
+      }
+      if (!(p instanceof RespawnAfterDeath075Packet) && !(p instanceof RespawnAfterDeath095Packet)) {
+        Store.playerData.currentSD = p.CurrentShield;
+      }
     }
     Store.playerData.money = p.Money;
     // The generated reader hands back a BigInt (S6 / Extended: 8 bytes big-endian at offset 16,
@@ -3389,8 +3410,10 @@ function handleRespawnAfterDeath(packet: DataView) {
   const world = Store.world;
   const playerEntity = world?.playerEntity;
   if (playerEntity) {
-    playerEntity.attributeSystem.setValue('currentHealth', p.CurrentHealth);
-    playerEntity.attributeSystem.setValue('currentMana', p.CurrentMana);
+    if (statsHere) {
+      playerEntity.attributeSystem.setValue('currentHealth', p.CurrentHealth);
+      playerEntity.attributeSystem.setValue('currentMana', p.CurrentMana);
+    }
     playerEntity.playerAnimation.action = PlayerAction.PLAYER_STOP_MALE;
     if (playerEntity.dying) {
       world!.removeComponent(playerEntity, 'dying');
@@ -4190,19 +4213,21 @@ EventBus.on('CharacterStatIncreaseResponse', packet => {
         break;
       case StatType.Vitality:
         playerData.sta++;
-        playerData.maxHP = p.UpdatedDependentMaximumStat;
+        if (!wideStats) playerData.maxHP = p.UpdatedDependentMaximumStat;
         break;
       case StatType.Energy:
         playerData.eng++;
-        playerData.maxMP = p.UpdatedDependentMaximumStat;
+        if (!wideStats) playerData.maxMP = p.UpdatedDependentMaximumStat;
         break;
       case StatType.Leadership:
         playerData.leadership++;
         break;
     }
 
-    playerData.maxSD = p.UpdatedMaximumShield;
-    playerData.maxAG = p.UpdatedMaximumAbility;
+    if (!wideStats) {
+      playerData.maxSD = p.UpdatedMaximumShield;
+      playerData.maxAG = p.UpdatedMaximumAbility;
+    }
 
     if (playerData.points > 0) playerData.points--;
   });
@@ -4224,16 +4249,18 @@ type LevelUpdateView = Pick<
   | 'MaximumNegativeFruitPoints'
 >;
 
-function applyLevelUpdate(p: LevelUpdateView) {
+function applyLevelUpdate(p: LevelUpdateView, wide: boolean) {
   const playerData = Store.playerData;
 
   runInAction(() => {
     playerData.level = p.Level;
     playerData.points = p.LevelUpPoints;
-    playerData.maxHP = p.MaximumHealth;
-    playerData.maxMP = p.MaximumMana;
-    playerData.maxSD = p.MaximumShield;
-    playerData.maxAG = p.MaximumAbility;
+    if (wide || !wideStats) {
+      playerData.maxHP = p.MaximumHealth;
+      playerData.maxMP = p.MaximumMana;
+      playerData.maxSD = p.MaximumShield;
+      playerData.maxAG = p.MaximumAbility;
+    }
     playerData.usedFruitPoints = p.FruitPoints;
     playerData.maxFruitPoints = p.MaximumFruitPoints;
     playerData.usedNegativeFruitPoints = p.NegativeFruitPoints;
@@ -4253,10 +4280,10 @@ function applyLevelUpdate(p: LevelUpdateView) {
 }
 
 EventBus.on('CharacterLevelUpdate', packet =>
-  applyLevelUpdate(new CharacterLevelUpdatePacket(packet))
+  applyLevelUpdate(new CharacterLevelUpdatePacket(packet), false)
 );
 EventBus.on('CharacterLevelUpdateExtended', packet =>
-  applyLevelUpdate(new CharacterLevelUpdateExtendedPacket(packet))
+  applyLevelUpdate(new CharacterLevelUpdateExtendedPacket(packet), true)
 );
 
 EventBus.on('MasterCharacterLevelUpdate', packet => {
