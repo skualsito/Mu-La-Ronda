@@ -254,7 +254,13 @@ export function ItemEditor({
                 hint={durability === null ? 'Vacío = al máximo según nivel y opciones' : 'Borrala para dejarla al máximo'}
               />
             </div>
-            {definition.canSkill && <Toggle label="Con skill" checked={hasSkill} onChange={setHasSkill} />}
+            <Toggle
+              label="Con skill"
+              checked={hasSkill && definition.canSkill}
+              disabled={!definition.canSkill}
+              hint={definition.canSkill ? undefined : 'Este item no tiene skill en MU (solo algunas armas y escudos lo tienen).'}
+              onChange={setHasSkill}
+            />
 
             {options.data && !options.data.length && <p className="muted small">Este item no admite opciones.</p>}
             {[...groups.entries()].map(([type, list]) => {
