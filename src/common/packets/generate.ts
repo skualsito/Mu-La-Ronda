@@ -427,16 +427,7 @@ ${packetEnum.values.map(v => {
 
         writer.write(`
   private _readString (from :number, to: number): string {
-    let val = "";
-    for(let i = from; i < to; i++){
-      const ch = String.fromCharCode(this.buffer.getUint8(i));
-
-      if (ch === "\0")break;
-
-      val += ch;
-    }
-              
-    return val;
+    return readWireString(this.buffer, from, to);
   }
 `);
 
@@ -1033,7 +1024,7 @@ for (const name of files) {
 
   writer.write(`
 import { CharacterClassNumber } from '../types';
-import { SetByteValue, GetByteValue, GetBoolean, SetBoolean } from '../binaryUtils';
+import { SetByteValue, GetByteValue, GetBoolean, SetBoolean, readWireString } from '../binaryUtils';
 
 `);
 

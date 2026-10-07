@@ -72,3 +72,32 @@ export function SetBoolean(
 
   return oldValue;
 }
+
+const UTF8_STRICT = new TextDecoder('utf-8', { fatal: true });
+
+/**
+ * A string field of a packet, up to its first NUL. OpenMU writes them as
+ * UTF-8 (`ExtractString(..., Encoding.UTF8)`), so "ñ" arrives as two bytes;
+ * read one character per byte it showed as "Ã±". Bytes that are not valid
+ * UTF-8 (a field from somewhere else) still come back one per byte.
+ */
+export function readWireString(view: DataView, from: number, to: number): string {
+  const end = Math.min(to, view.byteLength);
+  let stop = from;
+  let ascii = true;
+  while (stop < end) {
+    const byte = view.getUint8(stop);
+    if (byte === 0) break;
+    if (byte >= 0x80) ascii = false;
+    stop++;
+  }
+
+  let val = '';
+  for (let i = from; i < stop; i++) val += String.fromCharCode(view.getUint8(i));
+  if (ascii) return val;
+  try {
+    return UTF8_STRICT.decode(new Uint8Array(view.buffer, view.byteOffset + from, stop - from));
+  } catch {
+    return val;
+  }
+}
