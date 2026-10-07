@@ -47,6 +47,7 @@ import { Girl } from './npcs/girl';
 import { GoldenArcher } from './npcs/goldenArcher';
 import { Hanzo } from './npcs/hanzo';
 import { HiddenNpc } from './npcs/hiddenNpc';
+import { KalimaGate } from './npcs/kalimaGate';
 import { Leo } from './npcs/leo';
 import { Lumen } from './npcs/lumen';
 import { Alex, Harold, Martin } from './npcs/man';
@@ -143,6 +144,14 @@ export const ModelFactoryPerId: Record<number, typeof ModelObject> = {
   [207]: HiddenNpc,
   [208]: HiddenNpc,
   [209]: HiddenNpc,
+  // The Kalima gates open once and stay open (npcs/kalimaGate).
+  [152]: KalimaGate,
+  [153]: KalimaGate,
+  [154]: KalimaGate,
+  [155]: KalimaGate,
+  [156]: KalimaGate,
+  [157]: KalimaGate,
+  [158]: KalimaGate,
 };
 
 export function resolveModelFactory(typeNumber: number): typeof ModelObject {
