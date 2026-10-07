@@ -2,6 +2,7 @@ import type { Entity, World } from '../../ecs/world';
 import { loadGLTF } from '../modelLoader';
 import { ModelObject } from '../modelObject';
 import { assetWorldNum } from '../worldAssets';
+import { Mesh, type Skeleton } from '../../libs/babylon/exports';
 
 /**
  * Traps (`MONSTER_LANCE_TRAP` .. `MONSTER_LASER_TRAP`, 100-106) are the one
@@ -55,7 +56,19 @@ export function trapFactoryFor(npcType: number): typeof ModelObject {
         .toString()
         .padStart(2, '0')}.glb`;
 
-      this.load(await loadGLTF(file, world));
+      try {
+        this.load(await loadGLTF(file, world));
+      } catch (error) {
+        // Mu La Ronda: a map without the object the trap borrows - Kanturu Relics has no
+        // Object52 for its laser traps, in the original either, which draws only the beam -
+        // stands an invisible trap there instead of the missing-model magenta box.
+        console.warn(`[trap ${npcType}] no ${file}, drawn invisible:`, error);
+        this.load({
+          mesh: new Mesh(`trap${npcType}`, world.scene),
+          skeleton: null as unknown as Skeleton,
+          animationGroups: [],
+        });
+      }
     }
   }
 
