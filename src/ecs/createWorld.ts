@@ -45,6 +45,7 @@ import { SceneReadySystem } from './systems/sceneReadySystem';
 import { AttackSystem } from './systems/attackSystem';
 import { TargetCycleSystem } from './systems/targetCycleSystem';
 import { PickupNearestSystem } from './systems/pickupNearestSystem';
+import { AnimationToggleSystem } from './systems/animationToggleSystem';
 import { MuHelperSystem } from './systems/muHelperSystem';
 import { SkillCastSystem } from './systems/skillCastSystem';
 import { SkillSystem } from './systems/skillSystem';
@@ -82,6 +83,7 @@ const factories: ISystemFactory[] = [
   // loop then works on, exactly as a click would have.
   TargetCycleSystem,
   PickupNearestSystem,
+  AnimationToggleSystem,
   // Before AttackSystem/SkillCastSystem: the helper's cast and pickup
   // requests are consumed the same frame; player input always wins.
   MuHelperSystem,

@@ -519,6 +519,9 @@ export const CATEGORIES: Category[] = [
               toggle('shadows'),
               toggle('dynamicLights'),
               toggle('monsterEffects'),
+              toggle('otherSkillEffects'),
+              toggle('otherEquipmentEffects'),
+              toggle('otherPets'),
               choice(
                 'itemEffects',
                 ITEM_EFFECT_MODE_MAX,
@@ -532,7 +535,7 @@ export const CATEGORIES: Category[] = [
           },
           {
             titleKey: 'options.section.performance',
-            rows: [toggle('propBatching')],
+            rows: [toggle('propBatching'), toggle('otherPlayerAnimations'), toggle('npcAnimations')],
           },
         ],
       },

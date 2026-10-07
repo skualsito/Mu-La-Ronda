@@ -25,6 +25,7 @@ import { bonePos, entityGone, entityPos, entityYaw, followEntity, tmpA } from '.
 import type { Vector3 } from '../../libs/babylon/exports';
 import { requestGlowProbe } from '../../scenes/sceneLook';
 import { EventBus } from '../../libs/eventBus';
+import { GameOptions } from '../../common/gameOptions';
 import { itemSelfLight, lightItem, type ItemLampKind } from '../../lighting/items';
 import type { LightSource } from '../../lighting/lightSource';
 
@@ -326,6 +327,8 @@ export const ItemGlowSystem: ISystemFactory = world => {
         const state = stateOf(e);
         const { charAppearance, modelObject, transform } = e;
         const app = shownGear(e, world.mapIndex) ?? charAppearance;
+        // Mu La Ronda: Options can leave out the glow of other players' gear.
+        const gearEffects = !!e.localPlayer || GameOptions.otherEquipmentEffects;
 
         // The apply counter leads: the lamp belongs to this character's
         // items, so it is re-examined whenever those items are put on the
@@ -333,6 +336,7 @@ export const ItemGlowSystem: ISystemFactory = world => {
         // gear is exactly what a warp does.
         const signature =
           options +
+          (gearEffects ? '|on' : '|off') +
           '|' +
           (charAppearance.applied ?? 0) +
           '|' +
@@ -352,7 +356,7 @@ export const ItemGlowSystem: ISystemFactory = world => {
 
         if (signature !== state.signature) {
           state.signature = signature;
-          state.sparkleWanted = anyExcellent(app);
+          state.sparkleWanted = gearEffects && anyExcellent(app);
 
           // This list is in AURA_SLOTS order: the winner's index names the
           // piece the aura comes off.
@@ -395,7 +399,7 @@ export const ItemGlowSystem: ISystemFactory = world => {
               stampPlayer(modelObject as PlayerObject, app);
             }
 
-            if (lampsOn && wantsLamp(tier)) {
+            if (lampsOn && gearEffects && wantsLamp(tier)) {
               state.lamp = lightLamp(
                 tier,
                 transform.pos.x,

@@ -14,14 +14,14 @@ Format version: **1**
 | Offset | Bytes | What |
 |---|---|---|
 | 0 | 1 | Format version. Anything else means a different table. |
-| 1 | 1 | Number of flag bytes that follow (currently 7). |
-| 2 | 7 | The on/off settings, one bit each, first in bit 0 of the first byte. |
-| 9 | 1 | Number of value bytes that follow (currently 54). |
-| 10 | 54 | The numeric settings, one byte each, each stored as value + 128. |
-| 64 | 2 | Language, two ASCII letters (`65 73` is `es`). |
-| 66 | 2 | Texture pack digest, `0000` when the original textures are in use. |
+| 1 | 1 | Number of flag bytes that follow (currently 8). |
+| 2 | 8 | The on/off settings, one bit each, first in bit 0 of the first byte. |
+| 10 | 1 | Number of value bytes that follow (currently 54). |
+| 11 | 54 | The numeric settings, one byte each, each stored as value + 128. |
+| 65 | 2 | Language, two ASCII letters (`65 73` is `es`). |
+| 67 | 2 | Texture pack digest, `0000` when the original textures are in use. |
 
-Total: **68 bytes**, 136 hex characters.
+Total: **69 bytes**, 138 hex characters.
 
 ## On/off settings
 
@@ -70,19 +70,24 @@ Bit `n` counts from the first flag byte: byte `n / 8`, bit `n % 8`, lowest bit f
 | 38 | 4.6 | `minimapCorner` |
 | 39 | 4.7 | `monsterEffects` |
 | 40 | 5.0 | `muteInBackground` |
-| 41 | 5.1 | `performanceReadout` |
-| 42 | 5.2 | `postProcessing` |
-| 43 | 5.3 | `propBatching` |
-| 44 | 5.4 | `questTracker` |
-| 45 | 5.5 | `quickItemActions` |
-| 46 | 5.6 | `shadows` |
-| 47 | 5.7 | `slideHelp` |
-| 48 | 6.0 | `statPointAmounts` |
-| 49 | 6.1 | `stateWarnings` |
-| 50 | 6.2 | `thirdPersonMouseLook` |
-| 51 | 6.3 | `weatherEffects` |
-| 52 | 6.4 | `whisperBeep` |
-| 53 | 6.5 | `wsadMovement` |
+| 41 | 5.1 | `npcAnimations` |
+| 42 | 5.2 | `otherEquipmentEffects` |
+| 43 | 5.3 | `otherPets` |
+| 44 | 5.4 | `otherPlayerAnimations` |
+| 45 | 5.5 | `otherSkillEffects` |
+| 46 | 5.6 | `performanceReadout` |
+| 47 | 5.7 | `postProcessing` |
+| 48 | 6.0 | `propBatching` |
+| 49 | 6.1 | `questTracker` |
+| 50 | 6.2 | `quickItemActions` |
+| 51 | 6.3 | `shadows` |
+| 52 | 6.4 | `slideHelp` |
+| 53 | 6.5 | `statPointAmounts` |
+| 54 | 6.6 | `stateWarnings` |
+| 55 | 6.7 | `thirdPersonMouseLook` |
+| 56 | 7.0 | `weatherEffects` |
+| 57 | 7.1 | `whisperBeep` |
+| 58 | 7.2 | `wsadMovement` |
 
 ## Value settings
 

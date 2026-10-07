@@ -571,6 +571,12 @@ export class ModelObject {
    * `CalculateVisibilitySystem`'s 32-tile radius is behind the camera.
    */
   OutOfView = false;
+
+  /**
+   * Mu La Ronda: an Options toggle holds this model's looping clips still (other players' or the
+   * NPCs' animations off, `animationToggleSystem.ts`). Paused the way an off-screen model is.
+   */
+  AnimationsSuppressed = false;
   Visible = true;
   /** o->Alpha: per-mesh visibility of this model and its bone-linked children. */
   Alpha = 1;
@@ -871,7 +877,7 @@ export class ModelObject {
       this.startGroup(animationGroup, actionIndex, loop);
       // A clip started while off screen must not run; one-shots are exempt
       // (see applyAnimationPause).
-      if (loop && this.OutOfView) animationGroup.pause();
+      if (loop && (this.OutOfView || this.AnimationsSuppressed)) animationGroup.pause();
     }
   }
 
@@ -1008,6 +1014,18 @@ export class ModelObject {
     }
   }
 
+  /**
+   * Mu La Ronda: holds (or frees) this model's and its parts' looping clips. Called every frame,
+   * so a part put on later (new gear, wings) follows its body too.
+   */
+  setAnimationsSuppressed(on: boolean): void {
+    if (on !== this.AnimationsSuppressed) {
+      this.AnimationsSuppressed = on;
+      this.applyAnimationPause(on || this.OutOfView);
+    }
+    for (const child of this.Children) child.setAnimationsSuppressed(on);
+  }
+
   /** Frames outside the frustum before the clips are actually paused. */
   private static readonly OUT_OF_VIEW_GRACE = 3;
 
@@ -1061,7 +1079,7 @@ export class ModelObject {
     if (out === this.OutOfView) return;
 
     this.OutOfView = out;
-    this.applyAnimationPause(out);
+    this.applyAnimationPause(out || this.AnimationsSuppressed);
     this.syncShadowEnabled();
 
     for (const child of this.Children) child.setOutOfView(out);

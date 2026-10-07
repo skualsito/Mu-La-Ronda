@@ -260,6 +260,16 @@ export type GameOptions = {
    * and nothing more.
    */
   monsterEffects: boolean;
+  /** Mu La Ronda: the visuals of skills other players cast (yours always show). */
+  otherSkillEffects: boolean;
+  /** Mu La Ronda: the glow, sparkle and light of other players' gear. */
+  otherEquipmentEffects: boolean;
+  /** Mu La Ronda: other players' guardian pets and Dark Raven (a ridden mount stays). */
+  otherPets: boolean;
+  /** Mu La Ronda: other players' looping clips (standing, walking); off they hold still. */
+  otherPlayerAnimations: boolean;
+  /** Mu La Ronda: the NPCs' looping clips; off they hold still. */
+  npcAnimations: boolean;
   autoAttack: boolean;
   /**
    * An amount box in front of every `+` in the character info window, so a
@@ -579,6 +589,11 @@ const DEFAULTS: GameOptions = {
   // apart after a map change (Chaos Castle and out, Lorencia's statue).
   propBatching: false,
   monsterEffects: true,
+  otherSkillEffects: true,
+  otherEquipmentEffects: true,
+  otherPets: true,
+  otherPlayerAnimations: true,
+  npcAnimations: true,
   autoAttack: false,
   statPointAmounts: true,
   whisperBeep: true,

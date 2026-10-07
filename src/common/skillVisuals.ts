@@ -1,6 +1,7 @@
 import { Matrix, Quaternion, Vector3 } from '../libs/babylon/exports';
 import type { Scene } from '../libs/babylon/exports';
 import type { Entity } from '../ecs/world';
+import { GameOptions } from './gameOptions';
 import { lighting } from '../lighting';
 import { effectLight } from '../lighting/recipes';
 import type { LightRecipe, LightSource } from '../lighting/lightSource';
@@ -11872,7 +11873,10 @@ function runTravel(row: SkillVisual, ctx: SkillContext, target: Entity): void {
 
 /** Mu La Ronda: whether this cast is drawn at all (common/skillVisualBudget.ts). */
 function castIsDrawn(caster: Entity): boolean {
-  return skillVisualBudget.allow(caster, caster === storeRef().world?.playerEntity, performance.now());
+  const own = caster === storeRef().world?.playerEntity;
+  // Mu La Ronda: Options can leave out the skills of other players (monsters' still show).
+  if (!own && caster.playerAnimation && !GameOptions.otherSkillEffects) return false;
+  return skillVisualBudget.allow(caster, own, performance.now());
 }
 
 export function playTargetedSkillVisual(

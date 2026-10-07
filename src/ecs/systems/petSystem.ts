@@ -29,6 +29,7 @@ import {
 } from '../../effects/core';
 import { FOOT_THUNDER_FRAMES, MODEL, RGBS, TEX } from '../../effects/recipes';
 import { Store } from '../../store';
+import { GameOptions } from '../../common/gameOptions';
 import { PlayerAction } from '../../common/objects/enum';
 import { RIDER_FLY_WORLDS } from '../../combat/recipes';
 import { playUiSound } from '../../sound/ui';
@@ -1116,10 +1117,13 @@ export const PetSystem: ISystemFactory = world => {
 
       for (const owner of owners) {
         const map = owner.worldIndex ?? world.mapIndex;
+        // Mu La Ronda: Options can hide other players' pets - not a mount being ridden.
+        const hideOthers = !GameOptions.otherPets && !owner.localPlayer;
         const wanted = chaosCastle ? null : owner.charAppearance.pet;
         const spec = petSpec(wanted);
         // The Imp is not a world object - PlayerObject.Pet carries it.
-        const wantsActor = spec && spec.kind !== 'imp' ? wanted : null;
+        const wantsActor =
+          spec && spec.kind !== 'imp' && !(hideOthers && spec.kind !== 'mount') ? wanted : null;
 
         if (stale(spawned.get(owner), wantsActor, map)) {
           despawn(owner, false);
@@ -1127,7 +1131,7 @@ export const PetSystem: ISystemFactory = world => {
         }
 
         // The raven rides the left-hand slot, beside whatever the pet slot holds.
-        const raven = chaosCastle
+        const raven = chaosCastle || hideOthers
           ? null
           : ravenOf(owner.charAppearance.leftHand);
         if (stale(spawnedRaven.get(owner), raven, map)) {
