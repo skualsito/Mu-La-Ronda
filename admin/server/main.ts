@@ -8,6 +8,7 @@ import * as inventory from './inventory';
 import * as vip from './vip';
 import * as skills from './skills';
 import * as messages from './messages';
+import * as vipCodes from './vipCodes';
 import * as shops from './shops';
 import { hasTerrain, terrainOf } from './terrain';
 import { openmuLogs, openmuStatus, restartOpenmu } from './docker';
@@ -341,6 +342,20 @@ async function route(req: Request, url: URL, ip: string): Promise<Response> {
     else if (what === 'items' && itemId && method === 'DELETE') await shops.deleteShopItem(sql, monsterId, itemId);
     else if (method !== 'GET' || what !== 'items' || itemId) throw new HttpError(405, 'Metodo no permitido');
     return json(await shops.shopItems(sql, monsterId));
+  }
+
+  // ---- VIP discount codes -------------------------------------------------------
+  if (path === '/api/vip-codes') {
+    if (method === 'POST') await vipCodes.createCode(sql, (await body(req)) as vipCodes.VipCodeInput);
+    else if (method !== 'GET') throw new HttpError(405, 'Metodo no permitido');
+    return json(await vipCodes.listCodes(sql));
+  }
+  const vipCode = path.match(/^\/api\/vip-codes\/([0-9a-f-]{36})$/i);
+  if (vipCode) {
+    if (method === 'PATCH') await vipCodes.updateCode(sql, vipCode[1], (await body(req)) as vipCodes.VipCodeInput);
+    else if (method === 'DELETE') await vipCodes.deleteCode(sql, vipCode[1]);
+    else throw new HttpError(405, 'Metodo no permitido');
+    return json(await vipCodes.listCodes(sql));
   }
 
   // ---- automatic messages -------------------------------------------------------

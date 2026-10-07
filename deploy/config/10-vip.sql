@@ -20,3 +20,29 @@ ON CONFLICT ("Id") DO NOTHING;
 UPDATE config."PlugInConfiguration" SET "IsActive" = true
  WHERE "TypeId" IN ('2c7d9e41-6a8b-4f3c-b1d5-0e9f8a7b6c24',   -- /vip
                     '2c7d9e41-6a8b-4f3c-b1d5-0e9f8a7b6c25');  -- bonus al entrar
+
+-- Codigos de descuento para comprar VIP (/vip oro 3 CODIGO, o el campo de la
+-- ventana VIP). Se crean, editan y borran desde el panel admin (Codigos VIP);
+-- el plugin los lee de aca en cada compra (VipDiscountCodes.cs), asi que un
+-- codigo nuevo anda al instante. once_per_account: cada cuenta lo usa una vez.
+CREATE SCHEMA IF NOT EXISTS mlr;
+CREATE TABLE IF NOT EXISTS mlr.vip_codes (
+  id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  code             text NOT NULL,
+  percent          integer NOT NULL CHECK (percent BETWEEN 1 AND 100),
+  max_uses         integer CHECK (max_uses IS NULL OR max_uses > 0),
+  uses             integer NOT NULL DEFAULT 0,
+  once_per_account boolean NOT NULL DEFAULT true,
+  active           boolean NOT NULL DEFAULT true,
+  expires_at       timestamptz,
+  note             text,
+  created_at       timestamptz NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS vip_codes_code ON mlr.vip_codes (lower(code));
+CREATE TABLE IF NOT EXISTS mlr.vip_code_uses (
+  code_id    uuid NOT NULL REFERENCES mlr.vip_codes(id) ON DELETE CASCADE,
+  account_id uuid NOT NULL,
+  price      bigint NOT NULL,
+  used_at    timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS vip_code_uses_code ON mlr.vip_code_uses (code_id, account_id);

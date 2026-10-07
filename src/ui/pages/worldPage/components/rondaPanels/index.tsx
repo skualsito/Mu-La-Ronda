@@ -340,10 +340,16 @@ const RankingsWindow = observer(() => {
 
 const zen = (n: number) => n.toLocaleString('es-AR');
 
+/** The most months one purchase takes (the server's MaximumMonths). */
+const VIP_MAX_MONTHS = 12;
+
 const VipWindow = observer(() => {
   const [confirm, setConfirm] = useState<VipTierInfo | null>(null);
+  const [months, setMonths] = useState(1);
+  const [code, setCode] = useState('');
   const money = Store.playerData.money;
   const current = vipState.name;
+  const cleanCode = code.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
 
   // What the account has comes from the server's answer to /vip.
   useEffect(() => {
@@ -355,7 +361,7 @@ const VipWindow = observer(() => {
       id="ronda-vip"
       title="VIP"
       width={620}
-      height={450}
+      height={490}
       headerHeight={44}
       noScroll
       contentKey={`${current}-${vipState.until}-${vipState.buying}`}
@@ -364,21 +370,38 @@ const VipWindow = observer(() => {
           {!vipState.known
             ? 'Consultando tu VIP…'
             : current
-              ? <>Tenés <b className="ronda-vip-name">VIP {current}</b> hasta el {vipState.until}. Comprar el mismo nivel le suma 30 días.</>
-              : 'No tenés VIP. Es de la cuenta: vale para todos tus personajes durante 30 días.'}
+              ? <>Tenés <b className="ronda-vip-name">VIP {current}</b> hasta el {vipState.until}. Lo que compres se suma: los días que te quedan no se pierden.</>
+              : 'No tenés VIP. Es de la cuenta: vale para todos tus personajes, 30 días por mes que compres.'}
         </p>
       }
     >
+      <div className="ronda-vip-options">
+        <span>Meses</span>
+        <OptionsButton label="-" width={28} disabled={months <= 1} onClick={() => setMonths(m => Math.max(1, m - 1))} />
+        <b className="ronda-vip-months">{months}</b>
+        <OptionsButton label="+" width={28} disabled={months >= VIP_MAX_MONTHS} onClick={() => setMonths(m => Math.min(VIP_MAX_MONTHS, m + 1))} />
+        <span className="ronda-vip-code-label">Código de descuento</span>
+        <input
+          className="ronda-vip-code"
+          value={code}
+          maxLength={24}
+          placeholder="opcional"
+          onChange={e => setCode(e.target.value)}
+          onKeyDown={e => e.stopPropagation()}
+        />
+      </div>
       <div className="ronda-vip-tiers">
         {VIP_TIERS.map(tier => {
-          const short = money < tier.price;
+          const total = tier.price * months;
+          // With a code the server works out the discount, so the price only stops the button without one.
+          const short = !cleanCode && money < total;
           return (
             <div key={tier.tier} className={`ronda-vip-tier tier-${tier.tier} ${current === tier.name ? 'is-current' : ''}`}>
               <h3>{tier.name}</h3>
               <p className="ronda-vip-bonus">+{tier.bonus}% experiencia</p>
               <p className="ronda-vip-bonus">+{tier.bonus}% zen</p>
-              <p className="ronda-vip-price">{zen(tier.price)} zen</p>
-              <p className="ronda-vip-days">30 días</p>
+              <p className="ronda-vip-price">{zen(total)} zen</p>
+              <p className="ronda-vip-days">{months * 30} días{cleanCode ? ' · menos el descuento' : ''}</p>
               <OptionsButton
                 label={vipState.buying ? '…' : current === tier.name ? 'Renovar' : 'Comprar'}
                 width={110}
@@ -389,7 +412,7 @@ const VipWindow = observer(() => {
                 }}
                 style={{ position: 'relative', marginTop: 6 }}
               />
-              {short && <p className="ronda-vip-short">Te faltan {zen(tier.price - money)} zen</p>}
+              {short && <p className="ronda-vip-short">Te faltan {zen(total - money)} zen</p>}
             </div>
           );
         })}
@@ -400,12 +423,17 @@ const VipWindow = observer(() => {
 
       {confirm && (
         <ConfirmBox
-          text={`¿Comprar VIP ${confirm.name} por ${zen(confirm.price)} zen?`}
+          text={
+            cleanCode
+              ? `¿Comprar ${months} mes(es) de VIP ${confirm.name} con el código ${cleanCode}? Sin descuento son ${zen(confirm.price * months)} zen.`
+              : `¿Comprar ${months} mes(es) de VIP ${confirm.name} por ${zen(confirm.price * months)} zen?`
+          }
           onAnswer={yes => {
             const tier = confirm;
             setConfirm(null);
             if (!yes) return;
-            if (Social.sendChat(`/vip ${tier.name.toLowerCase()}`)) markVipBuying();
+            const command = `/vip ${tier.name.toLowerCase()} ${months}${cleanCode ? ` ${cleanCode}` : ''}`;
+            if (Social.sendChat(command)) markVipBuying();
           }}
         />
       )}

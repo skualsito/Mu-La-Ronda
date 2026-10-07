@@ -203,7 +203,20 @@ export type AutoMessage = { id: number; text: string; intervalMinutes: number; e
 export type ShopRow = { id: string; number: number; name: string; storeId: string | null; items: number; maps: string[] };
 export type ShopList = { shops: ShopRow[]; candidates: { id: string; number: number; name: string }[] };
 
-export type SectionKey = 'inicio' | 'personajes' | 'cuentas' | 'spots' | 'shops' | 'mensajes' | 'config' | 'servidor';
+export type SectionKey = 'inicio' | 'personajes' | 'cuentas' | 'spots' | 'shops' | 'mensajes' | 'vip' | 'config' | 'servidor';
+
+export type VipCode = {
+  id: string;
+  code: string;
+  percent: number;
+  maxUses: number | null;
+  uses: number;
+  oncePerAccount: boolean;
+  active: boolean;
+  expiresAt: string | null;
+  note: string | null;
+  createdAt: string;
+};
 export type Me = { user: string; superuser: boolean; permissions: SectionKey[]; sections: { key: SectionKey; label: string }[] };
 export type PanelUser = { id: number; username: string; permissions: SectionKey[]; enabled: boolean; createdAt: string; lastLoginAt: string | null };
 
