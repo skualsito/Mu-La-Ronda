@@ -27,7 +27,7 @@ const CURRENT_HEALTH = '20686ffd-7a96-4be2-9889-2a4dd9ff5a25';
 const CURRENT_MANA = 'b3299ee6-3815-4e48-b620-95db78f8a142';
 const FULL_POOL = 100_000_000;
 
-export const MAX_STAT = 32767;
+export const MAX_STAT = 65534;
 
 /** CharacterStatus: 0 Normal, 1 Banned, 32 Game Master. */
 export const CHARACTER_STATUS = [0, 1, 32] as const;

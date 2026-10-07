@@ -6,10 +6,10 @@
 
 /**
  * Ceiling on one run, and on what the amount box accepts. Mu La Ronda: a
- * stat's own maximum (32767) rather than 9999 - with 500 points a reset,
+ * stat's own maximum (65534) rather than 9999 - with 500 points a reset,
  * a few resets in a player has more than that to spend.
  */
-export const MAX_AMOUNT = 32767;
+export const MAX_AMOUNT = 65534;
 
 /**
  * From this many points on, the run is confirmed before it starts. Points are

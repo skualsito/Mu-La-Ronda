@@ -29,7 +29,7 @@ const STEP_TIMEOUT = 5000;
 const IN_FLIGHT = 1000;
 
 /** Mu La Ronda: OpenMU's cap on every base stat (deploy/config/03-stats.sql). */
-export const MAX_STAT = 32767;
+export const MAX_STAT = 65534;
 
 function currentStat(stat: StatType): number {
   const p = Store.playerData;

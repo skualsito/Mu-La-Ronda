@@ -21,7 +21,7 @@ import {
   useToast,
 } from '../ui';
 
-const MAX_STAT = 32767;
+const MAX_STAT = 65534;
 /** OpenMU CharacterStatus.GameMaster. */
 const GM_STATUS = 32;
 
@@ -223,7 +223,7 @@ export function CharacterPage({ id }: { id: string }) {
 
       <Card title="Acciones rápidas">
         <div className="quick-actions">
-          <button className="btn" disabled={locked || saving} onClick={() => ask('Full stats', `Deja a ${data.name} en nivel 400, ML 200 y 32767 en cada stat.`, quick.fullStats)}>
+          <button className="btn" disabled={locked || saving} onClick={() => ask('Full stats', `Deja a ${data.name} en nivel 400, ML 200 y ${MAX_STAT} en cada stat.`, quick.fullStats)}>
             ⚡ Full stats
           </button>
           <button className="btn" disabled={locked || saving} onClick={quick.money}>
