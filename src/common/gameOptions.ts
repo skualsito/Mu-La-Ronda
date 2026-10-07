@@ -575,7 +575,9 @@ const DEFAULTS: GameOptions = {
   grassDensity: 5,
   advancedEffects: true,
   renderDistance: 0,
-  propBatching: true,
+  // Mu La Ronda: off - with it on, some maps came back with their scenery torn
+  // apart after a map change (Chaos Castle and out, Lorencia's statue).
+  propBatching: false,
   monsterEffects: true,
   autoAttack: false,
   statPointAmounts: true,
@@ -672,6 +674,9 @@ export function migrate(stored: Record<string, unknown>): boolean {
   return true;
 }
 
+/** Set once the one-time switch-off of `propBatching` has run on this browser. */
+const PROP_BATCHING_RESET_KEY = 'mu-prop-batching-off-v1';
+
 function load(): GameOptions {
   const stored = LocalStorage.load(OPTIONS_KEY);
 
@@ -701,7 +706,16 @@ function load(): GameOptions {
       }
     }
 
-    if (migrated) LocalStorage.save(OPTIONS_KEY, JSON.stringify(loaded));
+    // Mu La Ronda: everyone's scenery batching goes off once, as the new
+    // default; switching it back on afterwards sticks.
+    let batchingReset = false;
+    if (!LocalStorage.load(PROP_BATCHING_RESET_KEY)) {
+      loaded.propBatching = false;
+      LocalStorage.save(PROP_BATCHING_RESET_KEY, '1');
+      batchingReset = true;
+    }
+
+    if (migrated || batchingReset) LocalStorage.save(OPTIONS_KEY, JSON.stringify(loaded));
 
     return loaded;
   } catch {
