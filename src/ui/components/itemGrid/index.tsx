@@ -269,6 +269,11 @@ export type ItemGridProps = {
   className?: string;
   /** Greys the grid out and swallows clicks (`LockInventory`). */
   disabled?: boolean;
+  /**
+   * Look, don't touch: clicks are swallowed but the hover (and so the item's
+   * tooltip) still works - the trade partner's side.
+   */
+  viewOnly?: boolean;
   /** Tint under a carried item: blue when it may land here, red when banned. */
   dropTint?: 'none' | 'ok' | 'ban';
   /** Left click on an occupied square with an empty cursor. */
@@ -310,6 +315,7 @@ export const ItemGrid = observer(
     offset = 0,
     className,
     disabled = false,
+    viewOnly = false,
     dropTint = 'none',
     onPick,
     onPlace,
@@ -341,6 +347,29 @@ export const ItemGrid = observer(
     // The handlers read the latest occupancy without being recreated.
     const latest = useRef({ squares, pickedSize });
     latest.current = { squares, pickedSize };
+
+    // A tooltip must never outlive the pointer. Turning `busy` on under the
+    // pointer (pointer-events: none) swallows the pointerleave, which left an
+    // item description stuck on the cursor for good: drop the hover then, and
+    // whenever the pointer moves anywhere outside this grid.
+    useEffect(() => {
+      if (disabled) setHover(null);
+    }, [disabled]);
+    const hovering = hover !== null;
+    useEffect(() => {
+      if (!hovering) return;
+      const onMove = (event: PointerEvent) => {
+        const grid = gridRef.current;
+        if (!grid || !(event.target instanceof Node) || !grid.contains(event.target)) setHover(null);
+      };
+      const onHide = () => setHover(null);
+      window.addEventListener('pointermove', onMove, true);
+      window.addEventListener('blur', onHide);
+      return () => {
+        window.removeEventListener('pointermove', onMove, true);
+        window.removeEventListener('blur', onHide);
+      };
+    }, [hovering]);
 
     const squareAt = (clientX: number, clientY: number) => {
       const point = gridPointOf(gridRef.current, columns, clientX, clientY);
@@ -418,7 +447,7 @@ export const ItemGrid = observer(
       );
 
     const onPointerDown = (event: React.PointerEvent) => {
-      if (event.button !== 0 || disabled) return;
+      if (event.button !== 0 || disabled || viewOnly) return;
       const { squares, pickedSize } = latest.current;
 
       if (picked && pickedSize) {
@@ -457,7 +486,7 @@ export const ItemGrid = observer(
 
     const onContextMenu = (event: React.MouseEvent) => {
       event.preventDefault();
-      if (disabled) return;
+      if (disabled || viewOnly) return;
 
       if (picked) {
         Store.cancelPickedItem();

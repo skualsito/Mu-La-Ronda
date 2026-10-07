@@ -262,6 +262,31 @@ export const Inventory = observer(() => {
   const [target, setTarget] = useState<{ column: number; row: number } | null>(null);
   const [hover, setHover] = useState<HoverInfo | null>(null);
 
+  // A tooltip must never outlive the pointer (as in itemGrid): `busy` under
+  // the pointer swallows the pointerleave, so drop the hover then, and when
+  // the pointer moves off the bag and the equipment squares.
+  const busy = !!Store.pendingItemMove;
+  useEffect(() => {
+    if (busy) setHover(null);
+  }, [busy]);
+  const hovering = hover !== null;
+  useEffect(() => {
+    if (!hovering) return;
+    const onMove = (event: PointerEvent) => {
+      const target = event.target instanceof Element ? event.target : null;
+      const inside =
+        !!target && (!!gridRef.current?.contains(target) || !!target.closest('.equipment-slot'));
+      if (!inside) setHover(null);
+    };
+    const onHide = () => setHover(null);
+    window.addEventListener('pointermove', onMove, true);
+    window.addEventListener('blur', onHide);
+    return () => {
+      window.removeEventListener('pointermove', onMove, true);
+      window.removeEventListener('blur', onHide);
+    };
+  }, [hovering]);
+
   const picked = Store.pickedItem;
   const pickedSize = picked ? itemSize(picked.item) : null;
 

@@ -819,6 +819,11 @@ EventBus.on('CharacterInventory', packet => {
 
   runInAction(() => {
     const items = Store.playerData.items;
+    // The whole bag comes in this packet: a slot it leaves out is empty. Without
+    // clearing first, switching characters kept the last one's items in every
+    // square the new one has free (the wizard's set showed in the knight's bag).
+    items.fill(null);
+    Economy.myShopItems.fill(null);
     for (const { slot, item } of entries) {
       // The personal store lives behind `FirstStoreItemSlotIndex` in the
       // same storage (OpenMU) - those squares belong to the stall grid.

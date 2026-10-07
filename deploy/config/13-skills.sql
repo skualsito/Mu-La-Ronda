@@ -1,13 +1,12 @@
--- Mu La Ronda - skills que no dependen del nivel.
+-- Mu La Ronda - los skills no piden nivel.
 --
--- Infinity Arrow (77) e Infinity Arrow Str (441) piden nivel 220 en OpenMU
--- (SkillsInitializer). Se aprenden con la quest Gain Hero Status, asi que una
--- elfa que la hizo y despues resetea queda en nivel 1 con el skill aprendido
--- pero el servidor se lo rechaza (Player.cs: skill.Requirements) hasta volver
--- a 220. Aca se saca ese requisito: si lo tenes aprendido, lo podes usar.
--- Idempotente.
+-- En OpenMU muchos skills piden un nivel minimo para usarse (SkillsInitializer:
+-- Infinity Arrow 220, Recovery 100, Nova 100, Swell Life 120, Fire Breath 110,
+-- Plasma Storm 110, etc.). En un server con resets el personaje vuelve a nivel 1
+-- con esos skills ya aprendidos, y el servidor se los rechazaba (Player.cs:
+-- skill.Requirements) hasta volver a ese nivel. Aca se saca el requisito de
+-- nivel de todos los skills: si lo tenes aprendido, lo podes usar. Los demas
+-- requisitos (energia, etc.) quedan. Idempotente.
 DELETE FROM config."AttributeRequirement" r
- USING config."Skill" s
- WHERE r."SkillId1" = s."Id"
-   AND s."Number" IN (77, 441)
+ WHERE r."SkillId1" IS NOT NULL
    AND r."AttributeId" = '560931ad-0901-4342-b7f4-fd2e2fcc0563';  -- Stats.Level
