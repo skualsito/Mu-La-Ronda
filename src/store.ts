@@ -892,11 +892,30 @@ export const Store = new (class _Store {
       .filter(s => s.number !== skill.number)
       .concat(skill)
       .sort((a, b) => a.index - b.index);
+    this.lastAddedSkill = { number: skill.number, at: performance.now() };
     this.refreshSkillSelection();
   }
 
+  /**
+   * Mu La Ronda: the skill OpenMU just added and when. A master skill that
+   * replaces a base one (Twisting Slash -> its Strengthener) arrives as
+   * SkillAdded for the new number right followed by SkillRemoved for the old.
+   */
+  private lastAddedSkill: { number: number; at: number } | null = null;
+
   removeSkill(number: number) {
     this.skills = this.skills.filter(s => s.number !== number);
+    // The replacement takes the key (and the selection) the replaced skill had.
+    const added = this.lastAddedSkill;
+    if (added && added.number !== number && performance.now() - added.at < 2000 && isHotbarSkill(added.number)) {
+      const swap = (keys: number[]) => keys.map(n => (n === number ? added.number : n === added.number ? -1 : n));
+      if (this.skillHotkeys.includes(number)) {
+        this.skillHotkeys = swap(this.skillHotkeys);
+        this.savedSkillHotkeys = swap(this.savedSkillHotkeys);
+        this.saveKeyConfiguration();
+      }
+      if (this.currentSkill === number) this.currentSkill = added.number;
+    }
     this.refreshSkillSelection();
   }
 

@@ -236,11 +236,19 @@ export function skillIconCell(
 
 /**
  * `CNewUISkillList::Render`'s filter on the learned-skill fan: the castle
- * siege commands and every master-tree entry are learned skills the hero can
- * never put on a bar slot, so they are kept out of the fan and out of the
- * default hot-key layout.
+ * siege commands and the passive master-tree entries are learned skills the
+ * hero can never put on a bar slot, so they are kept out of the fan and out
+ * of the default hot-key layout.
+ *
+ * Mu La Ronda: the active ones (Strengthener / Mastery, Blood Storm...) are
+ * cast like any skill - OpenMU replaces the base skill with them when the
+ * first point goes in, so keeping them off the bar made the skill vanish.
  */
 export function isHotbarSkill(num: number): boolean {
-  if (num < 1 || num >= MASTER_SKILL_FIRST) return false;
+  if (num < 1) return false;
+  if (num >= MASTER_SKILL_FIRST) {
+    const def = skillDefinition(num);
+    return !!def && def.type !== 'PassiveBoost';
+  }
   return num < SIEGE_FIRST || num > SIEGE_LAST;
 }
