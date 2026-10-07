@@ -54,9 +54,18 @@ export type MoveReqEntry = {
  */
 const EXTRA_ROWS: readonly (MoveReqEntry & { after: number })[] = [
   { after: 27, index: 24, name: 'Crywolf', alias: 'Crywolf', reqLevel: 10, reqMaxLevel: 400, zen: 15000, gate: 118 },
+  // Mu La Ronda: Arena lands in the leveling zone now, which doesn't connect to the stadium
+  // (deploy/config/11-warps.sql).
+  { after: 1, index: 60, name: 'Estadio', alias: 'Estadio', reqLevel: 1, reqMaxLevel: 400, zen: 0, gate: 50 },
 ];
 
+/** Mu La Ronda: rows whose level / zen the server changed (Arena: deploy/config/06-leveling.sql). */
+const ROW_OVERRIDES: Partial<Record<number, Partial<MoveReqEntry>>> = {
+  1: { reqLevel: 1, zen: 0 },
+};
+
 function withExtraRows(entries: MoveReqEntry[]): MoveReqEntry[] {
+  for (const entry of entries) Object.assign(entry, ROW_OVERRIDES[entry.index]);
   for (const { after, ...row } of EXTRA_ROWS) {
     if (entries.some(entry => entry.index === row.index)) continue;
     const position = entries.findIndex(entry => entry.index === after);

@@ -105,7 +105,7 @@ BEGIN
   -- Llegada (/move arena) y reaparicion: las tres puertas de Arena.
   UPDATE config."ExitGate"
      SET "X1" = 53, "Y1" = 113, "X2" = 57, "Y2" = 116
-   WHERE "MapId" = arena;
+   WHERE "MapId" = arena AND "IsSpawnGate"; -- no la del estadio (11-warps.sql)
 
   -- Que se pueda entrar desde nivel 1.
   UPDATE config."WarpInfo" SET "LevelRequirement" = 1, "Costs" = 0
