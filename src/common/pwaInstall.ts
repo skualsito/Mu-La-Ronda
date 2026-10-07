@@ -140,4 +140,17 @@ export function watchInstallState(): void {
   window.addEventListener('appinstalled', () => {
     runInAction(() => PwaInstall.markInstalled());
   });
+
+  // Mu La Ronda: the asset cache worker (`public/sw.js`, the same registration
+  // `ensureCacheWorker` makes) from the start, not only once the download
+  // screen ran - browsers that still want a worker before offering the install
+  // never offered it otherwise. A miss in it goes to the network as before.
+  window.addEventListener('load', () => {
+    try {
+      if (!('serviceWorker' in navigator) || new URLSearchParams(location.search).has('nosw')) return;
+      void navigator.serviceWorker.register('./sw.js').catch(() => undefined);
+    } catch {
+      /* best effort */
+    }
+  });
 }

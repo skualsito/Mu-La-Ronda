@@ -1723,6 +1723,8 @@ export const spanishLayer: LanguageLayer = {
     'options.fullscreen': 'Pantalla completa',
     'options.installApp': 'Instalar aplicación',
     'options.appInstalled': 'Aplicación instalada',
+    'options.page.app': "Aplicación",
+    'options.help.appIdle': "Instalado, el juego abre en su propia ventana con un icono en el escritorio o la pantalla de inicio. iPhone/iPad: Safari > Compartir > Agregar a inicio.",
     'options.installHint': 'Este navegador aún no ofrece la instalación. Abre su menú y elige Instalar.',
     'keys.replyWhisper': 'Responder al susurro',
     'options.uiScale': 'Tamaño',

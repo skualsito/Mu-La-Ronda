@@ -762,6 +762,18 @@ export const CATEGORIES: Category[] = [
                 labelKey: 'options.fullscreen',
                 helpKey: 'options.help.fullscreen',
               },
+            ],
+          },
+        ],
+      },
+      // Mu La Ronda: installing as an app (PWA) gets a page of its own, so it is found.
+      {
+        id: 'app',
+        labelKey: 'options.page.app',
+        hintKey: 'options.help.appIdle',
+        sections: [
+          {
+            rows: [
               {
                 kind: 'button',
                 id: 'install',

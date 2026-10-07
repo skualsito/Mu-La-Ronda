@@ -278,7 +278,9 @@ export const vietnameseLayer: LanguageLayer = {
     'options.blockBrowserKeys': 'Chặn phím tắt trình duyệt',
     'options.fullscreen': 'Toàn màn hình',
     'options.installApp': 'Cài ứng dụng',
-    'options.appInstalled': 'Đã cài ứng dụng',
+    'options.appInstalled': 'Đã cài ứng dụng',
+    'options.page.app': "Ứng dụng",
+    'options.help.appIdle': "Khi cài đặt, trò chơi mở trong cửa sổ riêng với biểu tượng trên màn hình nền hoặc màn hình chính. iPhone/iPad: Safari > Chia sẻ > Thêm vào MH chính.",
     'options.installHint':
       'Trình duyệt này chưa đề nghị cài đặt. Hãy mở menu của trình duyệt và chọn Cài đặt hoặc Thêm vào màn hình.',
     'options.uiScale': 'Cỡ giao diện',

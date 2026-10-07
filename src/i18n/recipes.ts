@@ -314,6 +314,8 @@ export const EN_TEXT = {
   'options.fullscreen': 'Fullscreen',
   'options.installApp': 'Install app',
   'options.appInstalled': 'App installed',
+  'options.page.app': "App",
+  'options.help.appIdle': "Installed, the game opens in its own window with an icon on the desktop or home screen. iPhone/iPad: Safari > Share > Add to Home Screen.",
   'options.installHint': 'No install offer from this browser yet. Open its menu and pick Install or Add to desktop.',
   'options.uiScale': 'Interface size',
   'options.lockWindows': 'Lock windows',

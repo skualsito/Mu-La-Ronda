@@ -278,7 +278,9 @@ export const polishLayer: LanguageLayer = {
     'options.blockBrowserKeys': 'Blokuj skróty przeglądarki',
     'options.fullscreen': 'Pełny ekran',
     'options.installApp': 'Zainstaluj aplikację',
-    'options.appInstalled': 'Aplikacja zainstalowana',
+    'options.appInstalled': 'Aplikacja zainstalowana',
+    'options.page.app': "Aplikacja",
+    'options.help.appIdle': "Po instalacji gra otwiera się we własnym oknie z ikoną na pulpicie lub ekranie głównym. iPhone/iPad: Safari > Udostępnij > Do ekranu początkowego.",
     'options.installHint':
       'Ta przeglądarka nie proponuje jeszcze instalacji. Otwórz jej menu i wybierz Zainstaluj lub Dodaj do pulpitu.',
     'options.uiScale': 'Rozmiar interfejsu',
