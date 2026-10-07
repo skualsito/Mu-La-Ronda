@@ -1,10 +1,12 @@
 /**
  * Mu La Ronda: the frame-rate cap (`GameOptions.fpsLimit` is an index into
- * these). 0 is uncapped - the browser's own vsync, as before. A cap only
- * skips whole animation frames, so it lands on what the monitor allows:
- * 60 on a 144 Hz screen is a steady 60, 90 on a 60 Hz screen stays 60.
+ * these). 60 is the most - and the default, index 0: more only costs the
+ * player's machine (and a 144 Hz screen drew 144 frames of the same game).
+ * A cap only skips whole animation frames, so 60 on a 144 Hz screen is a
+ * steady 60. Older settings (uncapped, 90, 120, 144) load as 60
+ * (gameOptions.ts).
  */
-export const FPS_LIMIT_STEPS = [0, 30, 45, 60, 90, 120, 144] as const;
+export const FPS_LIMIT_STEPS = [60, 30, 45] as const;
 
 export const FPS_LIMIT_MAX = FPS_LIMIT_STEPS.length - 1;
 

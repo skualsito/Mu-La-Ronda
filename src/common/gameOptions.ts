@@ -64,7 +64,7 @@ export type GameOptions = {
    * to native (libs/renderScale.ts).
    */
   renderScale: number;
-  /** Frame-rate cap, an index into FPS_LIMIT_STEPS (0 uncapped; common/fpsLimit.ts). */
+  /** Frame-rate cap, an index into FPS_LIMIT_STEPS (0 = 60, the most; common/fpsLimit.ts). */
   fpsLimit: number;
   /**
    * How a reduced `renderScale` is presented: 0 hands the small drawing
@@ -685,6 +685,10 @@ function load(): GameOptions {
       ...DEFAULTS,
       ...(parsed as Partial<GameOptions>),
     };
+
+    // The FPS steps were [uncapped, 30, 45, 60, 90, 120, 144]; now [60, 30, 45]
+    // (common/fpsLimit.ts): what was 60 or more, or uncapped, is 60.
+    if (typeof loaded.fpsLimit === 'number' && loaded.fpsLimit > FPS_LIMIT_MAX) loaded.fpsLimit = 0;
 
     for (const [key, [min, max]] of Object.entries(RANGES)) {
       const value = loaded[key as keyof GameOptions];

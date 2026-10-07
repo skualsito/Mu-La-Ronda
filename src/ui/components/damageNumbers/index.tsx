@@ -144,6 +144,8 @@ export const DamageNumbers = () => {
   const font = useMuSprite(FONT_FILE);
 
   useEventBus('objectDamaged', event => {
+    // A hidden tab draws nothing: the numbers of that time would all pop up together on return.
+    if (document.hidden) return;
     const onSelf = event.entity.localPlayer === true;
 
     const spawned = spawnsFor(event, onSelf).map(spawn => ({

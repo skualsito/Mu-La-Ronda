@@ -1916,12 +1916,9 @@ EventBus.on('PartyList', packet => {
       healthStep: -1,
     }))
   );
-  if (!wasInParty && Social.inParty) {
-    Social.systemMessage(t('party.joined'));
-    runInAction(() => {
-      Social.partyWindowEnabled = true;
-    });
-  }
+  // Mu La Ronda: joining no longer pops the party window open (it covered the
+  // minimap); the members show in the party list at the top left instead.
+  if (!wasInParty && Social.inParty) Social.systemMessage(t('party.joined'));
 });
 
 EventBus.on('RemovePartyMember', packet => {

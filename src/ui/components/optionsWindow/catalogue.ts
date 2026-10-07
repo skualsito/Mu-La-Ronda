@@ -472,9 +472,7 @@ export const CATEGORIES: Category[] = [
           {
             titleKey: 'options.section.resolution',
             rows: [
-              choice('fpsLimit', FPS_LIMIT_MAX, v =>
-                v > 0 ? `${fpsLimitForStep(v)} FPS` : tOptions('options.fpsUnlimited')
-              ),
+              choice('fpsLimit', FPS_LIMIT_MAX, v => `${fpsLimitForStep(v)} FPS`),
               slider('renderScale', RENDER_SCALE_STEP_MAX, v =>
                 `${Math.round(renderScaleForStep(v) * 100)}%`
               ),

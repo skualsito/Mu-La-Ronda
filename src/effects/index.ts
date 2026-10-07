@@ -1,6 +1,6 @@
 import type { ENUM_WORLD } from '../common/types';
 import type { Scene, Vector3 } from '../libs/babylon/exports';
-import type { EffectHandle, EffectLayer } from './layer';
+import { DEAD_HANDLE, type EffectHandle, type EffectLayer } from './layer';
 import { EFFECT_LAYERS } from './layers';
 import { clearTimers, disposePools, stepClock } from './core';
 
@@ -79,6 +79,10 @@ class Effects {
   ): EffectHandle {
     const layer = this.byName.get(name);
     if (!layer) throw new Error(`[effects] no entry named ${name}`);
+    // Mu La Ronda: a hidden tab draws no frames, so effects spawned from the packets of that
+    // time piled up un-stepped and all played at once on coming back. Not spawned then; the
+    // lasting ones (auras, monster looks) are re-made by their systems once frames run again.
+    if (typeof document !== 'undefined' && document.hidden) return DEAD_HANDLE;
     return layer.spawn(scene, at, opts);
   }
 }
