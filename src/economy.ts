@@ -784,8 +784,13 @@ export const Economy = new (class _Economy {
   ): void {
     const E = ItemCraftingResultCraftingResultEnum;
 
+    // Mu La Ronda: only a mix that was tried empties the tray. A refusal (wrong
+    // items, zen, level...) leaves every item in the machine on the server, and
+    // emptying it here made them look lost.
+    const tried = result === E.Success || result === E.Failed;
     runInAction(() => {
       this.mixPending = false;
+      if (!tried) return;
       this.mixItems = emptyGrid(MIX_SLOTS);
       this.mixResult = result === E.Success ? 'success' : 'failed';
       if (result === E.Success && item) this.mixItems[0] = item;
