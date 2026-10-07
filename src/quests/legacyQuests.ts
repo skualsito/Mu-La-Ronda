@@ -627,7 +627,10 @@ function processNextProgress(): boolean {
   const quest = questDefinition(state.currentIndex);
   if (!quest) return true;
 
-  const error = checkRequests(quest, true);
+  // Mu La Ronda: the level / zen rows gate taking the quest; one already running (taken before a
+  // reset put the level back to 1) is handed in whatever the level is now.
+  const running = legacyQuestState(state.currentIndex) === LegacyQuestState.InProgress;
+  const error = running ? -1 : checkRequests(quest, true);
   if (error >= 0) {
     showDialogText(error);
     return true;
