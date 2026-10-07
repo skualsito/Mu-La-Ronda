@@ -29,6 +29,47 @@
     cursor: pointer;
   }
 
+  // Mu La Ronda: the recipe the tray is heading for (recipePanel.tsx).
+  .chaos-recipe-panel {
+    position: absolute;
+    padding: 4px 5px;
+    font-size: 10px;
+    line-height: 13px;
+    color: #dcdcdc;
+    background-color: #28282880;
+    text-shadow: 1px 1px 0 #000;
+    overflow: hidden;
+
+    .title {
+      margin-bottom: 3px;
+      color: #ffd25a;
+      font-weight: bold;
+    }
+
+    .ok {
+      color: #8cff8c;
+    }
+
+    .missing {
+      color: #ff7a6a;
+    }
+
+    .count {
+      display: inline-block;
+      min-width: 26px;
+    }
+
+    .info {
+      margin-top: 3px;
+      color: #d2e6ff;
+    }
+
+    .ready {
+      margin-top: 3px;
+      color: #ffff30;
+    }
+  }
+
   .chaos-recipe {
     position: absolute;
     padding: 3px 4px;

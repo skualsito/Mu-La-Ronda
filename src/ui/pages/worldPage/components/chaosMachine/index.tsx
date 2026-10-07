@@ -9,6 +9,7 @@ import { MuItemWindow } from '../../../../components/muWindow';
 import { ItemGrid } from '../../../../components/itemGrid';
 import { QuickItemActions } from '../../../../../common/quickItemActions';
 import { useEventBus } from '../../../../../hooks/useEventBus';
+import { RecipePanel } from './recipePanel';
 import {
   COLUMNS,
   GRID_X,
@@ -123,6 +124,8 @@ export const ChaosMachine = observer(() => {
           QuickItemActions.toInventory(StorageKind.ChaosMachine, square)
         }
       />
+
+      <RecipePanel />
 
 
       <div
