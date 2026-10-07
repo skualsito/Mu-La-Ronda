@@ -106,12 +106,14 @@ export const PlayerControllerSystem: ISystemFactory = world => {
     world.talkTarget = null;
     // The MU Helper yields to a walk of the player's own (muHelper/loop.ts).
     EventBus.emit('heroManualMove', { x, y: z });
-    // Touch only: a skill fired from the mobile pad leaves a cast standing
-    // while the hero walks into range, the way a held right button does. With
-    // no button to let go of, a tap on the ground is how it is called off. On
-    // a mouse the right-drag repeat re-arms `castRequest` on every move event,
-    // so clearing it there would fight the desktop repeat cast.
-    if (isMobileDevice()) world.castRequest = null;
+    // A skill fired at a monster out of range (the right button, the mobile
+    // pad, the MU Helper) leaves a cast standing while the hero walks into
+    // range; a click on the ground is how it is called off. Mu La Ronda: on a
+    // mouse too - only while the right button is held does the right-drag
+    // repeat re-arm `castRequest` on every move, and then it is left alone.
+    // It used to be touch only, so a marked monster could not be let go of
+    // until it died.
+    if (isMobileDevice() || !world.rightPointerPressed) world.castRequest = null;
   }
 
   /** The tile step the walk is currently aimed along; 0,0 when idle. */

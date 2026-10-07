@@ -562,6 +562,11 @@ export function updateMuHelperLoop(world: World, dt: number): void {
     if (wasActive) {
       resetRuntime();
       wasActive = false;
+      // Mu La Ronda: switching the helper off lets go of what it was on - the
+      // monster it was walking to or swinging at, the skill it had asked for.
+      world.castRequest = null;
+      world.attackTarget = null;
+      world.pickupTarget = null;
     }
     return;
   }
