@@ -3633,7 +3633,21 @@ function dropName(
     return String(itemBaseName(group, num));
   }
   const name = String(baseName);
-  return item ? itemLevelName(item.group, item.num, item.lvl, name) : name;
+  return item ? itemLevelName(item.group, item.num, item.lvl, name) + dropExtras(item) : name;
+}
+
+/**
+ * Mu La Ronda: skill, luck and option right on the ground name ("Kris +9 +Skill
+ * +Luck +Opt 16") so the drop says what it is without hovering it. The option
+ * is damage / defense in steps of 4, except on rings and pendants (% life).
+ */
+function dropExtras(item: Item): string {
+  let extras = '';
+  if (item.hasSkill) extras += ' +Skill';
+  if (item.luck) extras += ' +Luck';
+  const option = item.optionLevel ?? 0;
+  if (option > 0) extras += item.group === ItemGroup.Helper ? ` +Opt ${option}%` : ` +Opt ${option * 4}`;
+  return extras;
 }
 
 EventBus.on('ItemsDropped', packet => {
