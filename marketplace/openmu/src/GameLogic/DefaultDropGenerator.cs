@@ -37,6 +37,9 @@ public class DefaultDropGenerator : IDropGenerator
     private readonly IRandomizer _randomizer;
     private readonly IList<ItemDefinition> _ancientItems;
     private readonly IList<ItemDefinition> _droppableItems;
+
+    /// <summary>Mu La Ronda: what golden invasion monsters drop, at their map's level.</summary>
+    private readonly ItemDefinition? _boxOfKundun;
     private readonly IList<ItemDefinition>?[] _droppableItemsPerMonsterLevel = new IList<ItemDefinition>?[byte.MaxValue + 1];
     private readonly IList<ItemDefinition>?[] _droppableSocketItemsPerMonsterLevel = new IList<ItemDefinition>?[byte.MaxValue + 1];
     private readonly IList<ItemDefinition>?[] _droppableExcellentItemsPerMonsterLevel = new IList<ItemDefinition>?[byte.MaxValue + 1];
@@ -57,6 +60,7 @@ public class DefaultDropGenerator : IDropGenerator
             ? config.MaximumItemOptionLevelDrop
             : DefaultMaxItemOptionLevelDrop;
         this._droppableItems = config.Items.Where(i => i.DropsFromMonsters).ToList();
+        this._boxOfKundun = config.Items.FirstOrDefault(i => i.Group == 14 && i.Number == 11);
         this._ancientItems = this._droppableItems.Where(
             i => i.PossibleItemSetGroups.Any(
                 g => g.Options?.PossibleOptions.Any(
@@ -92,6 +96,17 @@ public class DefaultDropGenerator : IDropGenerator
 
         uint money = 0;
         var (droppedItems, moneyResult) = this.GenerateDrops(monster, gainedExperience);
+
+        // Mu La Ronda: a golden invasion monster drops one Box of Kundun of its map's level
+        // (PlugIns/InvasionEvents/GoldenInvasion.cs), instead of the box of its own definition.
+        if (this._boxOfKundun is { } box && PlugIns.InvasionEvents.GoldenInvasion.BoxLevelFor(monster.Number, map.Number) is { } boxLevel)
+        {
+            var items = (droppedItems ?? []).Where(i => i.Definition != box).ToList();
+            var boxItem = new TemporaryItem { Definition = box, Level = (byte)(7 + boxLevel) };
+            boxItem.Durability = boxItem.GetMaximumDurabilityOfOnePiece();
+            items.Add(boxItem);
+            droppedItems = items;
+        }
         if (moneyResult > 0)
         {
             money = moneyResult;
