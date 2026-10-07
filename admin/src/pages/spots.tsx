@@ -88,7 +88,7 @@ export function SpotsPage({ map: mapParam }: { map?: string }) {
   if (!maps.data) return <Loading />;
 
   const monsterOptions = (monsters.data ?? []).filter(m => m.kind === 0 || m.id === draft?.monsterId);
-  const readOnly = !!selectedSpawn?.leveling;
+  const leveling = !!selectedSpawn?.leveling;
 
   return (
     <>
@@ -124,7 +124,6 @@ export function SpotsPage({ map: mapParam }: { map?: string }) {
             onHover={setHover}
             onPick={s => select(s)}
             onDraw={r => {
-              if (readOnly) return;
               setDraft(d =>
                 d
                   ? { ...d, ...r }
@@ -159,14 +158,14 @@ export function SpotsPage({ map: mapParam }: { map?: string }) {
             {!draft && <p className="muted">Elegí un spot de la lista o del mapa, o arrastrá sobre el mapa para crear uno.</p>}
             {draft && (
               <>
-                {readOnly && (
+                {leveling && (
                   <div className="notice notice-info">
-                    Spot de la zona de leveleo: se define en <code>06-leveling.sql</code>.
+                    Spot de la zona de leveleo: server fast no lo multiplica, la cantidad es la que pongas.
                   </div>
                 )}
                 <label className="field">
                   <span className="field-label">Monstruo</span>
-                  <select value={draft.monsterId} disabled={readOnly} onChange={e => setDraft({ ...draft, monsterId: e.target.value })}>
+                  <select value={draft.monsterId} onChange={e => setDraft({ ...draft, monsterId: e.target.value })}>
                     {monsterOptions.map(m => (
                       <option key={m.id} value={m.id}>
                         {m.number} · {m.name}
@@ -180,31 +179,29 @@ export function SpotsPage({ map: mapParam }: { map?: string }) {
                     value={draft.quantity}
                     min={1}
                     max={500}
-                    disabled={readOnly}
+                   
                     onChange={v => setDraft({ ...draft, quantity: v ?? 1 })}
-                    hint={selectedSpawn && selectedSpawn.quantity !== selectedSpawn.baseQuantity ? `con server fast: ${selectedSpawn.quantity}` : 'base (server fast la multiplica)'}
+                    hint={leveling ? 'cantidad exacta' : selectedSpawn && selectedSpawn.quantity !== selectedSpawn.baseQuantity ? `con server fast: ${selectedSpawn.quantity}` : 'base (server fast la multiplica)'}
                   />
-                  <NumberField label="X1" value={draft.x1} min={0} max={255} disabled={readOnly} onChange={v => setDraft({ ...draft, x1: v ?? 0 })} />
-                  <NumberField label="Y1" value={draft.y1} min={0} max={255} disabled={readOnly} onChange={v => setDraft({ ...draft, y1: v ?? 0 })} />
-                  <NumberField label="X2" value={draft.x2} min={0} max={255} disabled={readOnly} onChange={v => setDraft({ ...draft, x2: v ?? 0 })} />
-                  <NumberField label="Y2" value={draft.y2} min={0} max={255} disabled={readOnly} onChange={v => setDraft({ ...draft, y2: v ?? 0 })} />
+                  <NumberField label="X1" value={draft.x1} min={0} max={255} onChange={v => setDraft({ ...draft, x1: v ?? 0 })} />
+                  <NumberField label="Y1" value={draft.y1} min={0} max={255} onChange={v => setDraft({ ...draft, y1: v ?? 0 })} />
+                  <NumberField label="X2" value={draft.x2} min={0} max={255} onChange={v => setDraft({ ...draft, x2: v ?? 0 })} />
+                  <NumberField label="Y2" value={draft.y2} min={0} max={255} onChange={v => setDraft({ ...draft, y2: v ?? 0 })} />
                 </div>
                 <p className="muted small">Tip: con el spot elegido, arrastrá sobre el mapa para moverlo.</p>
-                {!readOnly && (
-                  <div className="row-actions">
-                    <button className="btn btn-primary" disabled={busy || !draft.monsterId} onClick={save}>
-                      {draft.id ? 'Guardar' : 'Crear spot'}
+                <div className="row-actions">
+                  <button className="btn btn-primary" disabled={busy || !draft.monsterId} onClick={save}>
+                    {draft.id ? 'Guardar' : 'Crear spot'}
+                  </button>
+                  {draft.id && (
+                    <button className="btn btn-danger" disabled={busy} onClick={() => setConfirmDelete(true)}>
+                      Borrar
                     </button>
-                    {draft.id && (
-                      <button className="btn btn-danger" disabled={busy} onClick={() => setConfirmDelete(true)}>
-                        Borrar
-                      </button>
-                    )}
-                    <button className="btn btn-ghost" onClick={() => select(null)}>
-                      Cancelar
-                    </button>
-                  </div>
-                )}
+                  )}
+                  <button className="btn btn-ghost" onClick={() => select(null)}>
+                    Cancelar
+                  </button>
+                </div>
               </>
             )}
           </Card>

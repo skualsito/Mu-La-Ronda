@@ -6,8 +6,9 @@ import type { Sql } from 'postgres';
  * The panel edits the *base* quantity. Server fast (02-fast.sql) keeps every
  * spot's base in mlr.spawn_quantity and multiplies the plain monster spots by
  * the configured factor; the panel keeps the same books, so the effective
- * number stays right across deploys. The Arena levelling spots belong to
- * 06-leveling.sql (re-created on every apply) and are shown read-only.
+ * number stays right across deploys. The Arena levelling spots are seeded
+ * once by 06-leveling.sql (listed in mlr.leveling_spawns, never multiplied)
+ * and from then on edited here like any other spot: no deploy touches them.
  *
  * Like every configuration edit, spots take effect when OpenMU restarts.
  */
@@ -111,7 +112,6 @@ export async function updateSpawn(sql: Sql, id: string, input: SpawnInput) {
       LEFT JOIN mlr.leveling_spawns l ON l."Id" = s."Id"
      WHERE s."Id" = ${id}::uuid`;
   if (!current) throw new Error('Spot inexistente');
-  if (current.leveling) throw new Error('Este spot es de la zona de leveleo (06-leveling.sql): se cambia en ese archivo.');
 
   const monsterId = input.monsterId ?? current.monsterId;
   const [monster] = await sql`SELECT "Id", "ObjectKind" AS kind FROM config."MonsterDefinition" WHERE "Id" = ${monsterId}::uuid`;
@@ -119,7 +119,8 @@ export async function updateSpawn(sql: Sql, id: string, input: SpawnInput) {
 
   const base = input.quantity !== undefined ? Math.min(500, Math.max(1, Math.trunc(Number(input.quantity)))) : current.base;
   const area = rect(input, current as unknown as { x1: number; y1: number; x2: number; y2: number });
-  const factor = await spawnFactor(sql);
+  // Levelling spots are not multiplied by server fast (02-fast.sql skips them).
+  const factor = current.leveling ? 1 : await spawnFactor(sql);
 
   await sql.begin(async tx => {
     await tx`
@@ -135,10 +136,9 @@ export async function updateSpawn(sql: Sql, id: string, input: SpawnInput) {
 
 export async function deleteSpawn(sql: Sql, id: string) {
   await ensureBooks(sql);
-  const [leveling] = await sql`SELECT 1 FROM mlr.leveling_spawns WHERE "Id" = ${id}::uuid`;
-  if (leveling) throw new Error('Este spot es de la zona de leveleo (06-leveling.sql): se cambia en ese archivo.');
   await sql.begin(async tx => {
     await tx`DELETE FROM config."MonsterSpawnArea" WHERE "Id" = ${id}::uuid`;
     await tx`DELETE FROM mlr.spawn_quantity WHERE "Id" = ${id}::uuid`;
+    await tx`DELETE FROM mlr.leveling_spawns WHERE "Id" = ${id}::uuid`;
   });
 }

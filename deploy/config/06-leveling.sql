@@ -23,13 +23,17 @@
 -- cliente (Data/World7, celdas caminables). El norte de Arena no conecta con
 -- el estadio, asi que no molesta a nada.
 --
--- Idempotente: los spawns propios quedan anotados en mlr.leveling_spawns y se
--- reemplazan en cada aplicacion; 02-fast.sql no los multiplica.
+-- Los spots se cargan UNA sola vez (marca 'leveling_spots_seeded' en
+-- mlr.settings); despues se editan unicamente desde el panel admin (Spots) y
+-- un deploy no los toca. Quedan anotados en mlr.leveling_spawns (el panel los
+-- marca como "leveleo" y 02-fast.sql no los multiplica). Para volver a este
+-- armado: DELETE FROM mlr.settings WHERE key = 'leveling_spots_seeded'.
 
 BEGIN;
 
 CREATE SCHEMA IF NOT EXISTS mlr;
 CREATE TABLE IF NOT EXISTS mlr.leveling_spawns ("Id" uuid PRIMARY KEY);
+CREATE TABLE IF NOT EXISTS mlr.settings (key text PRIMARY KEY, value text NOT NULL);
 
 DO $$
 DECLARE
@@ -48,6 +52,8 @@ BEGIN
   -- que hace falta para llegar a 400 de a un nivel por kill.
   UPDATE config."GameMapDefinition" SET "ExpMultiplier" = 2 WHERE "Id" = arena;
 
+  -- Los spots: solo la primera vez, despues son del panel admin.
+  IF NOT EXISTS (SELECT 1 FROM mlr.settings WHERE key = 'leveling_spots_seeded') THEN
   -- Spawns anteriores de esta zona, fuera.
   DELETE FROM config."MonsterSpawnArea"
    WHERE "Id" IN (SELECT "Id" FROM mlr.leveling_spawns);
@@ -93,6 +99,8 @@ BEGIN
       (new_id, 0, arena, monster, spot.qty, 0, 0, spot.x1, spot.x2, spot.y1, spot.y2);
     INSERT INTO mlr.leveling_spawns ("Id") VALUES (new_id);
   END LOOP;
+  INSERT INTO mlr.settings (key, value) VALUES ('leveling_spots_seeded', now()::text);
+  END IF;
 
   -- Llegada (/move arena) y reaparicion: las tres puertas de Arena.
   UPDATE config."ExitGate"

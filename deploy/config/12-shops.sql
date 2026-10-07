@@ -3,7 +3,8 @@
 -- 1. Pociones de a 255 en todas las tiendas de NPC. 08-stacks.sql ya subio el
 --    tope de la pila a 255; aca las tiendas las venden con la pila completa.
 --    OpenMU cobra por unidad (ItemPriceCalculator multiplica por la cantidad),
---    asi que el precio por pocion no cambia. Corre en cada deploy.
+--    asi que el precio por pocion no cambia. Corre UNA vez (marca
+--    'potion_stacks_seeded'): despues las tiendas son solo del panel admin.
 --
 -- 2. Pasi the Mage (Lorencia) vende todos los poderes de todas las clases:
 --    orbes (grupo 12) y pergaminos (grupo 15) que ensenian un skill. Se carga
@@ -12,15 +13,25 @@
 
 BEGIN;
 
-UPDATE data."Item" i
-   SET "Durability" = d."Durability"
-  FROM config."ItemDefinition" d
- WHERE i."DefinitionId" = d."Id"
-   AND d."Group" = 14
-   AND d."Number" IN (0, 1, 2, 3, 4, 5, 6, 8, 9, 35, 36, 37, 38, 39, 40, 70, 71)
-   AND d."Durability" > 1
-   AND i."Durability" <> d."Durability"
-   AND i."ItemStorageId" IN (SELECT "MerchantStoreId" FROM config."MonsterDefinition" WHERE "MerchantStoreId" IS NOT NULL);
+CREATE SCHEMA IF NOT EXISTS mlr;
+CREATE TABLE IF NOT EXISTS mlr.settings (key text PRIMARY KEY, value text NOT NULL);
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM mlr.settings WHERE key = 'potion_stacks_seeded') THEN
+    RETURN;
+  END IF;
+  UPDATE data."Item" i
+     SET "Durability" = d."Durability"
+    FROM config."ItemDefinition" d
+   WHERE i."DefinitionId" = d."Id"
+     AND d."Group" = 14
+     AND d."Number" IN (0, 1, 2, 3, 4, 5, 6, 8, 9, 35, 36, 37, 38, 39, 40, 70, 71)
+     AND d."Durability" > 1
+     AND i."Durability" <> d."Durability"
+     AND i."ItemStorageId" IN (SELECT "MerchantStoreId" FROM config."MonsterDefinition" WHERE "MerchantStoreId" IS NOT NULL);
+  INSERT INTO mlr.settings (key, value) VALUES ('potion_stacks_seeded', now()::text);
+END $$;
 
 DO $$
 DECLARE

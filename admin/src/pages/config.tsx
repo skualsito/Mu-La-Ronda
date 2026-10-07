@@ -230,7 +230,7 @@ function FastTab({ config, onSave }: { config: Config; onSave: (body: unknown) =
           <li><span>Spot 3 · este</span><span className="muted">niveles 300–385 · Dark Phoenix Shield</span></li>
           <li><span>Spot 4 · sureste</span><span className="muted">niveles 385–400 · Dark Elf, Soram</span></li>
         </ul>
-        <p className="muted small">Definido en deploy/config/06-leveling.sql.</p>
+        <p className="muted small">Los spots se editan en la pestaña Spots (mapa Arena); un deploy no los toca.</p>
       </Card>
     </div>
   );

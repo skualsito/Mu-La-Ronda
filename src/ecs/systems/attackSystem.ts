@@ -1,4 +1,4 @@
-import type { Entity, ISystemFactory } from '../world';
+import type { Entity, ISystemFactory, Item } from '../world';
 import { Store } from '../../store';
 import { applyPlayerActionSpeed, serverMinAttackInterval } from '../../common/playSpeed';
 import { HitRequestPacket } from '../../common/packets/ClientToServerPackets';
@@ -58,7 +58,7 @@ let lastReload = { from: -1, at: 0 };
  * `ReloadArrow()`: move the next quiver from the bag into the empty hand, the
  * same move a drag sends. True while the swing should wait for it.
  */
-function reloadAmmo(hands: Hands): boolean {
+export function reloadAmmo(hands: Hands): boolean {
   if (Store.pendingItemMove) return true;
   if (Store.pickedItem) return false;
 
@@ -180,10 +180,25 @@ function directionCode(dx: number, dy: number): number {
   return (((3 + octant) % 8) + 8) % 8;
 }
 
+/** The ammunition in the hand opposite the launcher, if any. */
+function equippedAmmo(hands: Hands): Item | null {
+  const launcher = combat.equippedLauncher(hands);
+  if (!launcher || !hands) return null;
+  return launcher === hands.leftHand ? hands.rightHand : hands.leftHand;
+}
+
 export const AttackSystem: ISystemFactory = world => {
   let attackCooldown = 0;
   let approachDelay = 0;
   let alternateSwing = false;
+  /**
+   * Mu La Ronda: the quiver seen last frame. When it runs out the server
+   * deletes it; the next one goes in at once - also while only skills are
+   * being cast (the elf's shots, the MU Helper), which never reach the swing's
+   * `CheckArrow()` below. A quiver the player drags out is in `pickedItem`
+   * when it leaves the hand, so that one is not put back.
+   */
+  let lastAmmo: Item | null = null;
 
   return {
     update: dt => {
@@ -199,6 +214,12 @@ export const AttackSystem: ISystemFactory = world => {
         combat.cancelAttack(); // Hero->Dead > 0: a swing in flight never lands
         return;
       }
+
+      const ammo = equippedAmmo(playerEntity.charAppearance);
+      if (lastAmmo && !ammo && !Store.pickedItem && combat.equippedLauncher(playerEntity.charAppearance)) {
+        reloadAmmo(playerEntity.charAppearance);
+      }
+      lastAmmo = ammo;
 
       const target = world.attackTarget;
       if (!target) return;

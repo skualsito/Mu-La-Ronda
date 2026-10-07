@@ -28,6 +28,7 @@ import {
   TELEPORT_PREVENTING_EFFECTS,
 } from '../../common/teleportRules';
 import { beginTeleport, endTeleport, teleportBusy } from './teleportSystem';
+import { reloadAmmo } from './attackSystem';
 import { Social } from '../../social';
 import {
   isAttackableEntity,
@@ -522,6 +523,11 @@ export const SkillCastSystem: ISystemFactory = world => {
       }
 
       if (cooldown > 0) return;
+
+      // Mu La Ronda: `ReloadArrow()` before a shot too - a bow skill with an
+      // empty quiver hand waits for the next quiver from the bag instead of
+      // going out (and being refused) without arrows.
+      if (!combat.hasAmmo(hero.charAppearance) && reloadAmmo(hero.charAppearance)) return;
 
       // ---- Teleport: a one-shot at the square under the cursor.
       if (isTeleportSkill(def.num)) {

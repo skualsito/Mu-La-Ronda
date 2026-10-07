@@ -158,8 +158,9 @@ BEGIN
 
   -- Wandering Merchant Zyro: joyas, materiales y pets.
   -- Mercenary Guild Felicia: alas de 1ra, 2da y 3ra (lo que no entre, a Zyro).
-  -- Se cargan UNA vez (marca en mlr.settings): despues se editan desde el
-  -- panel admin (Shops) y un deploy no las pisa. Para volver a este surtido,
+  -- Se cargan UNA vez (marca en mlr.settings), junto con que Zyro y Felicia
+  -- sean tiendas y sus spawns: despues todo eso se edita unicamente desde el
+  -- panel admin (Shops / Spots) y un deploy no lo pisa. Para volver a este surtido,
   -- borrar la marca: DELETE FROM mlr.settings WHERE key = 'fast_stores_seeded'.
   IF NOT EXISTS (SELECT 1 FROM mlr.settings WHERE key = 'fast_stores_seeded') THEN
   PERFORM mlr.fill_stores(ARRAY[jewels_store, wings_store], '[
@@ -175,8 +176,6 @@ BEGIN
       [12,36,0], [12,37,0], [12,38,0], [12,39,0], [12,40,0], [12,43,0], [12,50,0]
     ]
   ]');
-  INSERT INTO mlr.settings (key, value) VALUES ('fast_stores_seeded', now()::text);
-  END IF;
 
   -- En OpenMU los dos solo tenian un dialogo vacio; ahora son tiendas.
   UPDATE config."MonsterDefinition"
@@ -199,6 +198,9 @@ BEGIN
        "WaveNumber", "X1", "X2", "Y1", "Y2")
     VALUES
       (gen_random_uuid(), 3, lorencia, felicia, 1, 0, 0, 135, 135, 139, 139);
+  END IF;
+
+  INSERT INTO mlr.settings (key, value) VALUES ('fast_stores_seeded', now()::text);
   END IF;
 END $$;
 
