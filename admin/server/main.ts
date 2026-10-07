@@ -12,7 +12,7 @@ import * as vipCodes from './vipCodes';
 import * as shops from './shops';
 import { hasTerrain, terrainOf } from './terrain';
 import { openmuLogs, openmuStatus, restartOpenmu } from './docker';
-import { vaultInGame, type VaultOperation } from './openmuApi';
+import { disconnectAccount, vaultInGame, type VaultOperation } from './openmuApi';
 
 /**
  * Mu La Ronda's admin panel API (admin.<DOMAIN>/api). nginx serves the page
@@ -214,6 +214,20 @@ async function route(req: Request, url: URL, ip: string): Promise<Response> {
 
   // ---- characters --------------------------------------------------------
   if (path === '/api/classes' && method === 'GET') return json(await game.listClasses(sql));
+  // Disconnect from the account page, or from one of its characters' pages.
+  const kick = path.match(/^\/api\/(accounts|characters)\/([0-9a-f-]{36})\/disconnect$/i);
+  if (kick && method === 'POST') {
+    let accountId = kick[2];
+    if (kick[1].toLowerCase() === 'characters') {
+      const [row] = await sql`SELECT "AccountId" AS id FROM data."Character" WHERE "Id" = ${kick[2]}::uuid`;
+      if (!row) throw new HttpError(404, 'No existe');
+      accountId = String(row.id);
+    }
+    const result = await disconnectAccount(sql, accountId).catch(err => {
+      throw new HttpError(502, err instanceof Error ? err.message : String(err));
+    });
+    return json({ disconnected: result === 'applied' });
+  }
   if (path === '/api/characters' && method === 'GET') {
     const q = (url.searchParams.get('q') ?? '').slice(0, 20);
     return json(await game.listCharacters(sql, q, await onlineAccounts()));

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { api, type Character, type CharacterClassRow, type CharacterRow, type MapRow, type Stats } from '../api';
 import { InventoryCard } from './inventory';
 import { SkillsCard } from './skills';
-import { VaultCard } from './accounts';
+import { DisconnectButton, VaultCard } from './accounts';
 import {
   Badge,
   Boundary,
@@ -217,6 +217,7 @@ export function CharacterPage({ id }: { id: string }) {
           <button className="btn btn-ghost btn-small" onClick={reload}>
             Actualizar
           </button>
+          <DisconnectButton path={`/characters/${id}`} onDone={reload} />
         </div>
       )}
 

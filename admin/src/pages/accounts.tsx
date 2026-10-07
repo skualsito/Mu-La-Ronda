@@ -173,7 +173,8 @@ export function AccountPage({ id }: { id: string }) {
 
       {data.online && (
         <div className="notice notice-info">
-          La cuenta está conectada. Los cambios de estado (baneo, GM) se aplican la próxima vez que entre.
+          La cuenta está conectada. Los cambios de estado (baneo, GM) se aplican la próxima vez que entre.{' '}
+          <DisconnectButton path={`/accounts/${id}`} onDone={reload} />
         </div>
       )}
 
@@ -308,6 +309,46 @@ export function AccountPage({ id }: { id: string }) {
 type Vault = { money: number; items: InventoryItem[] };
 
 /** The account's baúl: 8x15 like the game's, items and zen. Only while the account is offline. */
+/**
+ * Disconnects the player of an online account (OpenMU saves it on the way
+ * out, as on a normal log out); `path` is the account's or a character's.
+ */
+export function DisconnectButton({ path, onDone }: { path: string; onDone: () => void }) {
+  const toast = useToast();
+  const [asking, setAsking] = useState(false);
+  const [busy, setBusy] = useState(false);
+  return (
+    <>
+      <button className="btn btn-danger btn-small" disabled={busy} onClick={() => setAsking(true)}>
+        Desconectar
+      </button>
+      {asking && (
+        <Confirm
+          title="Desconectar"
+          text="El jugador sale del juego ahora (se guarda como al salir normalmente). Puede volver a entrar."
+          confirmLabel="Desconectar"
+          danger
+          onAnswer={async yes => {
+            setAsking(false);
+            if (!yes) return;
+            setBusy(true);
+            try {
+              const r = await api<{ disconnected: boolean }>(`${path}/disconnect`, { method: 'POST' });
+              toast(r.disconnected ? 'Desconectado' : 'Ya no estaba conectado');
+              // OpenMU saves on the way out: give it a moment before reading again.
+              setTimeout(onDone, 1500);
+            } catch (err) {
+              toast(err instanceof Error ? err.message : String(err), 'error');
+            } finally {
+              setBusy(false);
+            }
+          }}
+        />
+      )}
+    </>
+  );
+}
+
 export function VaultCard({ accountId, online }: { accountId: string; online: boolean }) {
   const toast = useToast();
   const { data, error, reload, setData } = useLoad(() => api<Vault>(`/accounts/${accountId}/vault`), [accountId]);

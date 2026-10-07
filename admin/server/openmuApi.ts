@@ -66,11 +66,20 @@ export type VaultOperation =
  * caller then writes the database. Throws with OpenMU's reason when the change was refused.
  */
 export async function vaultInGame(sql: Sql, accountId: string, operation: VaultOperation): Promise<'applied' | 'offline'> {
+  return post(sql, `/api/mlr/vault/${accountId}`, operation, 'cambiar el baúl');
+}
+
+/** Disconnects the account's player (OpenMU saves it on the way out). 'offline' when it was not in the game. */
+export async function disconnectAccount(sql: Sql, accountId: string): Promise<'applied' | 'offline'> {
+  return post(sql, `/api/mlr/players/${accountId}/disconnect`, {}, 'desconectar al jugador');
+}
+
+async function post(sql: Sql, path: string, payload: unknown, what: string): Promise<'applied' | 'offline'> {
   const send = async () =>
-    fetch(`${OPENMU_API_URL}/api/mlr/vault/${accountId}`, {
+    fetch(`${OPENMU_API_URL}${path}`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'X-Api-Key': await apiKey(sql) },
-      body: JSON.stringify(operation),
+      body: JSON.stringify(payload),
       signal: AbortSignal.timeout(8000),
     });
 
@@ -84,12 +93,12 @@ export async function vaultInGame(sql: Sql, accountId: string, operation: VaultO
       res = await send();
     }
   } catch (err) {
-    throw new Error(`No se pudo hablar con OpenMU para cambiar el baúl en el juego: ${err instanceof Error ? err.message : String(err)}`);
+    throw new Error(`No se pudo hablar con OpenMU para ${what}: ${err instanceof Error ? err.message : String(err)}`);
   }
 
   if (res.ok) return 'applied';
   const body = (await res.json().catch(() => null)) as { error?: string; online?: boolean } | null;
   // Only the endpoint's own answer: a plain 404 is an OpenMU without it (not deployed yet).
   if (res.status === 404 && body?.online === false) return 'offline';
-  throw new Error(body?.error ?? `OpenMU respondió ${res.status} al cambiar el baúl`);
+  throw new Error(body?.error ?? `OpenMU respondió ${res.status} al ${what}`);
 }
