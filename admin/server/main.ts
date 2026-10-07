@@ -11,6 +11,7 @@ import * as messages from './messages';
 import * as shops from './shops';
 import { hasTerrain, terrainOf } from './terrain';
 import { openmuLogs, openmuStatus, restartOpenmu } from './docker';
+import { vaultInGame, type VaultOperation } from './openmuApi';
 
 /**
  * Mu La Ronda's admin panel API (admin.<DOMAIN>/api). nginx serves the page
@@ -64,6 +65,19 @@ async function body(req: Request): Promise<Record<string, unknown>> {
   } catch {
     throw new HttpError(400, 'JSON invalido');
   }
+}
+
+/** A panel item edit as the in-game vault endpoint takes it (null durability = back to the maximum). */
+function vaultItemFields(input: inventory.ItemInput) {
+  return {
+    definitionId: input.definitionId,
+    level: input.level === undefined ? undefined : Number(input.level),
+    durability: input.durability == null ? undefined : Number(input.durability),
+    resetDurability: input.durability === null,
+    hasSkill: input.hasSkill,
+    options: input.options?.map(o => ({ optionId: o.optionId, level: o.level })),
+    slot: input.slot === undefined ? undefined : Number(input.slot),
+  };
 }
 
 function idFrom(path: string, prefix: string): string {
@@ -226,18 +240,31 @@ async function route(req: Request, url: URL, ip: string): Promise<Response> {
   const vault = path.match(/^\/api\/accounts\/([0-9a-f-]{36})\/vault(?:\/(money|items\/([0-9a-f-]{36})))?$/i);
   if (vault) {
     const [, accountId, sub, itemId] = vault;
+    const account = await game.getAccount(sql, accountId, await onlineAccounts());
+    if (!account) throw new HttpError(404, 'No existe');
     if (method !== 'GET') {
-      const account = await game.getAccount(sql, accountId, await onlineAccounts());
-      if (!account) throw new HttpError(404, 'No existe');
-      if (account.online) {
-        throw new HttpError(409, 'La cuenta esta conectada: OpenMU pisaria el baul al salir. Que salga primero.');
-      }
       const input = (method === 'DELETE' ? {} : await body(req)) as inventory.ItemInput & { money?: number };
-      if (sub === 'money' && method === 'PATCH') await inventory.setVaultMoney(sql, accountId, Number(input.money));
-      else if (!sub && method === 'POST') await inventory.addVaultItem(sql, accountId, input);
-      else if (itemId && method === 'PATCH') await inventory.updateVaultItem(sql, accountId, itemId, input);
-      else if (itemId && method === 'DELETE') await inventory.deleteVaultItem(sql, accountId, itemId);
-      else throw new HttpError(405, 'Metodo no permitido');
+      const operation: VaultOperation | null =
+        sub === 'money' && method === 'PATCH' ? { op: 'money', money: Number(input.money) || 0 }
+        : !sub && method === 'POST' ? { op: 'add', ...vaultItemFields(input) }
+        : itemId && method === 'PATCH' ? { op: 'update', itemId, ...vaultItemFields(input) }
+        : itemId && method === 'DELETE' ? { op: 'delete', itemId }
+        : null;
+      if (!operation) throw new HttpError(405, 'Metodo no permitido');
+
+      // In the game, OpenMU holds the vault in memory: the change is made there (openmuApi.ts).
+      const inGame = account.online ? await vaultInGame(sql, accountId, operation).catch(err => {
+        throw new HttpError(409, err instanceof Error ? err.message : String(err));
+      }) : 'offline';
+      if (inGame === 'offline') {
+        if (sub === 'money') await inventory.setVaultMoney(sql, accountId, Number(input.money));
+        else if (!sub) await inventory.addVaultItem(sql, accountId, input);
+        else if (method === 'PATCH') await inventory.updateVaultItem(sql, accountId, itemId!, input);
+        else await inventory.deleteVaultItem(sql, accountId, itemId!);
+      }
+    } else if (account.online) {
+      // What the game holds right now, written to the database before it is read.
+      await vaultInGame(sql, accountId, { op: 'save' }).catch(() => undefined);
     }
     return json(await inventory.getVault(sql, accountId));
   }

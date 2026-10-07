@@ -253,7 +253,7 @@ export function AccountPage({ id }: { id: string }) {
 
       <VipCard accountId={id} locked={data.online} />
 
-      <VaultCard accountId={id} locked={data.online} />
+      <VaultCard accountId={id} online={data.online} />
 
       <Card title={`Personajes (${data.characters.length})`}>
         <table className="table table-hover">
@@ -308,7 +308,7 @@ export function AccountPage({ id }: { id: string }) {
 type Vault = { money: number; items: InventoryItem[] };
 
 /** The account's baúl: 8x15 like the game's, items and zen. Only while the account is offline. */
-export function VaultCard({ accountId, locked }: { accountId: string; locked: boolean }) {
+export function VaultCard({ accountId, online }: { accountId: string; online: boolean }) {
   const toast = useToast();
   const { data, error, reload, setData } = useLoad(() => api<Vault>(`/accounts/${accountId}/vault`), [accountId]);
   const [editing, setEditing] = useState<InventoryItem | { slot: number } | 'new' | null>(null);
@@ -334,19 +334,19 @@ export function VaultCard({ accountId, locked }: { accountId: string; locked: bo
     <Card
       title={`Baúl (${data.items.length} items)`}
       actions={
-        <button className="btn btn-small" disabled={locked} onClick={() => setEditing('new')}>
+        <button className="btn btn-small" onClick={() => setEditing('new')}>
           + Agregar item
         </button>
       }
     >
-      {locked && <p className="muted small">La cuenta está conectada: el baúl se puede ver pero no tocar.</p>}
+      {online && <p className="muted small">La cuenta está conectada: los cambios se hacen dentro del juego y se guardan al instante (si tiene el baúl abierto, los ve al volver a abrirlo).</p>}
       <div className="shop-body">
         <MuGrid
           items={data.items}
           first={0}
           columns={8}
           rows={15}
-          disabled={locked}
+         
           selectedId={editingItem?.id}
           onSelect={item => setEditing(item)}
           onEmptyClick={slot => setEditing({ slot })}
@@ -357,7 +357,7 @@ export function VaultCard({ accountId, locked }: { accountId: string; locked: bo
             <span className="field-label">Zen en el baúl</span>
             <input
               inputMode="numeric"
-              disabled={locked}
+             
               value={money ?? String(data.money)}
               onChange={e => setMoney(e.target.value.replace(/[^0-9]/g, ''))}
             />
@@ -365,7 +365,7 @@ export function VaultCard({ accountId, locked }: { accountId: string; locked: bo
           {money !== null && Number(money) !== data.money && (
             <button
               className="btn btn-primary btn-small"
-              disabled={locked}
+             
               onClick={() => run(api(`${path}/money`, { method: 'PATCH', body: { money: Number(money) } }), 'Zen guardado').then(() => setMoney(null))}
             >
               Guardar zen
@@ -378,7 +378,7 @@ export function VaultCard({ accountId, locked }: { accountId: string; locked: bo
       {editing && (
         <ItemEditor
           item={editingItem}
-          locked={locked}
+          locked={false}
           onClose={() => setEditing(null)}
           onSave={(body, item) =>
             run(

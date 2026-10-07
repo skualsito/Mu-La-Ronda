@@ -1,0 +1,95 @@
+import { createHash, randomBytes } from 'node:crypto';
+import type { Sql } from 'postgres';
+
+/**
+ * OpenMU's own HTTP API (the admin panel host, openmu.<DOMAIN>), for what has to happen inside the
+ * game server: the vault of an account that is in the game lives in OpenMU's memory, so the panel
+ * hands those edits to Mu La Ronda's endpoint there (marketplace/openmu/src/Web/AdminPanel/API/
+ * MlrVaultController.cs) instead of writing the database.
+ *
+ * The API wants a key. The panel makes its own the first time - the same row OpenMU's "API keys"
+ * page creates (admin."ApiKey": base64 SHA-256 of the key, role Operator) - and keeps the key in
+ * mlr.settings, so nothing has to be set up by hand.
+ */
+
+const OPENMU_API_URL = process.env.OPENMU_API_URL || 'http://127.0.0.1:8090';
+const KEY_SETTING = 'openmu_api_key';
+const KEY_NAME = 'Mu La Ronda panel';
+
+let cachedKey: string | null = null;
+
+const hashOf = (key: string) => createHash('sha256').update(key, 'utf8').digest('base64');
+
+async function apiKey(sql: Sql): Promise<string> {
+  if (cachedKey) return cachedKey;
+  await sql`CREATE SCHEMA IF NOT EXISTS mlr`;
+  await sql`CREATE TABLE IF NOT EXISTS mlr.settings (key text PRIMARY KEY, value text NOT NULL)`;
+
+  const [stored] = await sql<{ value: string }[]>`SELECT value FROM mlr.settings WHERE key = ${KEY_SETTING}`;
+  if (stored) {
+    const [row] = await sql`
+      SELECT 1 FROM admin."ApiKey" WHERE "KeyHash" = ${hashOf(stored.value)} AND NOT "IsDisabled"`;
+    if (row) return (cachedKey = stored.value);
+  }
+
+  const key = randomBytes(36).toString('base64url');
+  await sql.begin(async tx => {
+    await tx`DELETE FROM admin."ApiKey" WHERE "Name" = ${KEY_NAME}`;
+    await tx`
+      INSERT INTO admin."ApiKey" ("Id", "Name", "KeyHash", "KeyPrefix", "Roles", "IsDisabled", "CreatedAt")
+      VALUES (gen_random_uuid(), ${KEY_NAME}, ${hashOf(key)}, ${key.slice(0, 12)}, 'Operator', false, now())`;
+    await tx`
+      INSERT INTO mlr.settings (key, value) VALUES (${KEY_SETTING}, ${key})
+      ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`;
+  });
+  return (cachedKey = key);
+}
+
+export type VaultOperation =
+  | { op: 'save' }
+  | { op: 'money'; money: number }
+  | { op: 'delete'; itemId: string }
+  | {
+      op: 'add' | 'update';
+      itemId?: string;
+      definitionId?: string;
+      level?: number;
+      durability?: number;
+      resetDurability?: boolean;
+      hasSkill?: boolean;
+      options?: { optionId: string; level?: number }[];
+      slot?: number;
+    };
+
+/**
+ * Applies the change in the game. 'offline' when the account is not in the game (any more): the
+ * caller then writes the database. Throws with OpenMU's reason when the change was refused.
+ */
+export async function vaultInGame(sql: Sql, accountId: string, operation: VaultOperation): Promise<'applied' | 'offline'> {
+  const send = async () =>
+    fetch(`${OPENMU_API_URL}/api/mlr/vault/${accountId}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'X-Api-Key': await apiKey(sql) },
+      body: JSON.stringify(operation),
+      signal: AbortSignal.timeout(8000),
+    });
+
+  let res: Response;
+  try {
+    res = await send();
+    if (res.status === 401 || res.status === 403) {
+      // The key was deleted or disabled in OpenMU's panel: make a new one, once.
+      cachedKey = null;
+      await sql`DELETE FROM mlr.settings WHERE key = ${KEY_SETTING}`;
+      res = await send();
+    }
+  } catch (err) {
+    throw new Error(`No se pudo hablar con OpenMU para cambiar el baúl en el juego: ${err instanceof Error ? err.message : String(err)}`);
+  }
+
+  if (res.ok) return 'applied';
+  const body = (await res.json().catch(() => null)) as { error?: string; online?: boolean } | null;
+  // Only the endpoint's own answer: a plain 404 is an OpenMU without it (not deployed yet).
+  if (res.status === 404 && body?.online === false) return 'offline';
+  throw new Error(body?.error ?? `OpenMU respondió ${res.status} al cambiar el baúl`);
+}

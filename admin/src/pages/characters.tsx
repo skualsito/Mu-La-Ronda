@@ -344,7 +344,7 @@ export function CharacterPage({ id }: { id: string }) {
 
       {data.accountId && (
         <Boundary resetKey={id}>
-          <VaultCard accountId={data.accountId} locked={locked} />
+          <VaultCard accountId={data.accountId} online={!!data.online} />
         </Boundary>
       )}
 

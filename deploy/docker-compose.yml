@@ -153,6 +153,8 @@ services:
       MLR_ADMIN_SECRET: ${MLR_ADMIN_SECRET:?falta MLR_ADMIN_SECRET en deploy/.env}
       DATABASE_URL: postgres://postgres:${DB_PASSWORD}@127.0.0.1:${DB_PORT:-5432}/openmu
       PRESENCE_URL: http://127.0.0.1:${PRESENCE_PORT:-3001}
+      # La API de OpenMU (su panel), para cambiar el baul de una cuenta que esta en el juego.
+      OPENMU_API_URL: http://127.0.0.1:${ADMIN_PORT:-8090}
       COMPOSE_PROJECT: mu-la-ronda
     volumes:
       - ..:/app:ro
