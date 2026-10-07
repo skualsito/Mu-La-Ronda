@@ -508,6 +508,10 @@ EventBus.on('ConnectionInfo', bytes => {
   Store.connectToGameServer(host, p.Port, fallback);
 });
 
+/** Mu La Ronda: retries of a login refused because the account was still in the game. */
+const LOGIN_RETRIES_WHEN_CONNECTED = 3;
+const LOGIN_RETRY_DELAY_MS = 2500;
+
 EventBus.on('LoginResponse', bytes => {
   const p = new LoginResponsePacket(bytes);
 
@@ -526,6 +530,27 @@ EventBus.on('LoginResponse', bytes => {
     runInAction(() => {
       Store.uiState = UIState.Characters;
     });
+    return;
+  }
+
+  // Mu La Ronda: the account is still in the game - usually this same player
+  // after a dropped connection. The server closes that old session when this
+  // attempt arrives (GameServer.PlayerAlreadyLoggedInAsync), so trying again
+  // a moment later gets in.
+  const attempt = Store.lastLoginAttempt;
+  if (
+    p.Success === LoginResponseLoginResultEnum.AccountAlreadyConnected &&
+    attempt &&
+    attempt.retries < LOGIN_RETRIES_WHEN_CONNECTED
+  ) {
+    runInAction(() => {
+      Store.loginProcessing = true;
+      Store.loginError = t('login.closingOldSession');
+    });
+    setTimeout(() => {
+      if (Store.lastLoginAttempt !== attempt) return;
+      Store.loginRequest(attempt.username, attempt.password, true);
+    }, LOGIN_RETRY_DELAY_MS);
     return;
   }
 

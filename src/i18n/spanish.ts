@@ -879,7 +879,8 @@ export const spanishLayer: LanguageLayer = {
 
     'minimap.close': 'Cerrar',
     'minimap.center': 'Centrar',
-    'camera.reset': 'Reiniciar cámara',
+    'camera.reset': 'Reiniciar cámara',
+    'login.closingOldSession': 'Cerrando la sesión anterior...',
     'moveList.title': 'Lista de destinos',
     'warp.title': 'Ventana de teletransporte',
     'warp.map': 'Mapa',

@@ -1696,7 +1696,16 @@ export const Store = new (class _Store {
     this.sendToCS(connectionInfoRequestPacket.buffer);
   }
 
-  loginRequest(username: string, password: string) {
+  /**
+   * Mu La Ronda: the last login sent, so a refusal because the account is
+   * still in the game (a dropped connection the server has not noticed yet)
+   * can be retried once the server has closed that old session.
+   */
+  lastLoginAttempt: { username: string; password: string; retries: number } | null = null;
+
+  loginRequest(username: string, password: string, retry = false) {
+    const retries = retry && this.lastLoginAttempt?.username === username ? this.lastLoginAttempt.retries + 1 : 0;
+    this.lastLoginAttempt = { username, password, retries };
     const usernameBytes = stringToBytes(username, MAX_USERNAME_LENGTH);
     const passwordBytes = stringToBytes(password, MAX_PASSWORD_LENGTH);
 
