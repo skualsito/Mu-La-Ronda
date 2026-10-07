@@ -848,10 +848,13 @@ export const Social = new (class _Social {
 
   setPartyMembers(members: PartyMember[]): void {
     const previous = new Map(this.partyMembers.map(m => [m.name, m]));
-    this.partyMembers = members.map(m => ({
-      ...m,
-      healthStep: previous.get(m.name)?.healthStep ?? m.healthStep,
-    }));
+    const previousByIndex = new Map(this.partyMembers.map(m => [m.index, m]));
+    this.partyMembers = members.map(m => {
+      // Mu La Ronda: an update that comes with a blank name keeps the one this
+      // slot had - the list at the top left showed a bar with no name.
+      const name = m.name || previousByIndex.get(m.index)?.name || m.name;
+      return { ...m, name, healthStep: previous.get(name)?.healthStep ?? m.healthStep };
+    });
   }
 
   /** RemovePartyMember: the hero's own index dissolves the whole list. */
