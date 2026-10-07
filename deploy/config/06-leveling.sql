@@ -105,11 +105,12 @@ BEGIN
   -- Llegada (/move arena) y reaparicion: las tres puertas de Arena.
   UPDATE config."ExitGate"
      SET "X1" = 53, "Y1" = 113, "X2" = 57, "Y2" = 116
-   WHERE "MapId" = arena AND "IsSpawnGate"; -- no la del estadio (11-warps.sql)
+   WHERE "MapId" = arena AND "IsSpawnGate";
 
-  -- Que se pueda entrar desde nivel 1.
-  UPDATE config."WarpInfo" SET "LevelRequirement" = 1, "Costs" = 0
-   WHERE "GateId" IN (SELECT "Id" FROM config."ExitGate" WHERE "MapId" = arena);
+  -- El /move arena como en MU: nivel 50 y 2000 de zen (hubo un tiempo en que
+  -- era desde nivel 1 y gratis).
+  UPDATE config."WarpInfo" SET "LevelRequirement" = 50, "Costs" = 2000
+   WHERE "Index" = 1;
 END $$;
 
 COMMIT;

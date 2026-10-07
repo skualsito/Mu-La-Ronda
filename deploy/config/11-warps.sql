@@ -29,30 +29,9 @@ SELECT gen_random_uuid(), 24, 'Crywolf', 15000, 10, g."Id", gc."Id"
  LIMIT 1;
 
 
--- Estadio de Arena (indice 60). Desde que 06-leveling.sql puso la llegada de
--- Arena en la zona de leveleo, el estadio (el anillo con el Arena Guard y Baz,
--- y la cancha adentro) quedo sin entrada: no se conecta caminando con el resto
--- del mapa. Este warp aterriza en las gradas, donde dejaba el /move arena
--- original (x72-73). No es puerta de reaparicion: morir en Arena sigue dejando
--- en la zona de leveleo. La fila de la M la agrega el cliente (EXTRA_ROWS).
-
-INSERT INTO config."ExitGate" ("Id", "MapId", "X1", "Y1", "X2", "Y2", "Direction", "IsSpawnGate")
-SELECT 'a1e5ad10-0000-4000-8000-000000000060', m."Id", 71, 142, 73, 150, 0, false
-  FROM config."GameMapDefinition" m
- WHERE m."Number" = 6
-ON CONFLICT ("Id") DO UPDATE SET "X1" = 71, "Y1" = 142, "X2" = 73, "Y2" = 150, "IsSpawnGate" = false;
-
-UPDATE config."WarpInfo"
-   SET "Name" = 'Estadio', "Costs" = 0, "LevelRequirement" = 1,
-       "GateId" = 'a1e5ad10-0000-4000-8000-000000000060'
- WHERE "Index" = 60
-   AND EXISTS (SELECT 1 FROM config."ExitGate" WHERE "Id" = 'a1e5ad10-0000-4000-8000-000000000060');
-
-INSERT INTO config."WarpInfo" ("Id", "Index", "Name", "Costs", "LevelRequirement", "GateId", "GameConfigurationId")
-SELECT gen_random_uuid(), 60, 'Estadio', 0, 1, g."Id", gc."Id"
-  FROM config."ExitGate" g
-  CROSS JOIN (SELECT "Id" FROM config."GameConfiguration" LIMIT 1) gc
- WHERE g."Id" = 'a1e5ad10-0000-4000-8000-000000000060'
-   AND NOT EXISTS (SELECT 1 FROM config."WarpInfo" WHERE "Index" = 60);
+-- El warp "Estadio" (indice 60) que hubo un tiempo ya no va: se borra junto
+-- con su puerta (si quedaron de un deploy anterior).
+DELETE FROM config."WarpInfo" WHERE "Index" = 60;
+DELETE FROM config."ExitGate" WHERE "Id" = 'a1e5ad10-0000-4000-8000-000000000060';
 
 COMMIT;
