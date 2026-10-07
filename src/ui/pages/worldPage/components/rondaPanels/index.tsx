@@ -340,6 +340,9 @@ const RankingsWindow = observer(() => {
 
 const zen = (n: number) => n.toLocaleString('es-AR');
 
+/** `OptionsButton` sits absolutely for the options grid; in the months row it takes its place in the line. */
+const STEPPER_BUTTON = { position: 'relative', flexShrink: 0 } as const;
+
 /** The most months one purchase takes (the server's MaximumMonths). */
 const VIP_MAX_MONTHS = 12;
 
@@ -377,9 +380,9 @@ const VipWindow = observer(() => {
     >
       <div className="ronda-vip-options">
         <span>Meses</span>
-        <OptionsButton label="-" width={28} disabled={months <= 1} onClick={() => setMonths(m => Math.max(1, m - 1))} />
+        <OptionsButton label="-" width={28} style={STEPPER_BUTTON} disabled={months <= 1} onClick={() => setMonths(m => Math.max(1, m - 1))} />
         <b className="ronda-vip-months">{months}</b>
-        <OptionsButton label="+" width={28} disabled={months >= VIP_MAX_MONTHS} onClick={() => setMonths(m => Math.min(VIP_MAX_MONTHS, m + 1))} />
+        <OptionsButton label="+" width={28} style={STEPPER_BUTTON} disabled={months >= VIP_MAX_MONTHS} onClick={() => setMonths(m => Math.min(VIP_MAX_MONTHS, m + 1))} />
         <span className="ronda-vip-code-label">Código de descuento</span>
         <input
           className="ronda-vip-code"
