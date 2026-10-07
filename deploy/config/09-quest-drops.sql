@@ -42,3 +42,11 @@ UPDATE config."DropItemGroup" g
    AND q."Number" = v.quest
    AND i."Group" = 14
    AND (v.item IS NULL OR i."Number" = v.item);
+
+-- Los tres jefes de la 3ra quest tienen pocos spawns (Death Beam Knight uno
+-- solo en Tarkan, con 150 s de respawn): reaparecen a los 30 segundos. Para
+-- poner mas, se agregan spots desde el panel admin.
+UPDATE config."MonsterDefinition"
+   SET "RespawnDelay" = interval '30 seconds'
+ WHERE "Number" IN (63, 309, 77)
+   AND "RespawnDelay" > interval '30 seconds';

@@ -86,3 +86,8 @@ UPDATE config."PlugInConfiguration" SET "IsActive" = true
    '5e0c2b7a-3d41-4f6b-9a28-7c1e4d9b0a53'); -- AutoResetChatCommandPlugIn (Mu La Ronda)
 
 COMMIT;
+
+-- ─── Items en el piso ───────────────────────────────────────────────────────
+-- Los items y el zen que caen duran 30 segundos en el piso (antes 60): con
+-- rates altos se juntaban cientos y el juego andaba lento donde se cazaba.
+UPDATE config."GameConfiguration" SET "ItemDropDuration" = interval '30 seconds';
