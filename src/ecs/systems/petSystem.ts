@@ -185,6 +185,13 @@ const nextRavenShout = () => -Math.log(1 - Math.random()) * RAVEN_SHOUT_MEAN_SEC
  */
 const FENRIR_GLOW_TICK = 0.07;
 const FENRIR_BOLTS_PER_TICK = 2;
+/**
+ * Mu La Ronda: another player's Fenrir throws one bolt every this many glow
+ * ticks instead of two every tick. Each bolt is a GLB clone; a few Fenrirs in
+ * Arena cloned ~100 a second, most of the garbage the client then paused to
+ * collect. The rider's own wolf keeps the full crackle.
+ */
+const OTHER_FENRIR_BOLT_EVERY = 3;
 /** Eye and jaw anchors: `TransformPosition(BoneTransform[11 / 13], …)`. */
 const FENRIR_HEAD_BONE = 11;
 const FENRIR_JAW_BONE = 13;
@@ -822,6 +829,8 @@ export const PetSystem: ISystemFactory = world => {
 
   /** Per-actor clock for the Fenrir glow spawns. */
   const glowClocks = new Map<Entity, number>();
+  // Mu La Ronda: glow ticks since another player's Fenrir last threw a bolt.
+  const otherBoltTicks = new WeakMap<Entity, number>();
 
   const tmpGlow = new Vector3();
   const tmpFoot = new Vector3();
@@ -1005,8 +1014,14 @@ export const PetSystem: ISystemFactory = world => {
       });
     }
 
-    for (let i = 0; i < FENRIR_BOLTS_PER_TICK; i++) {
-      spawnFenrirBolt(actor, state.fenrirThunder!);
+    if (state.owner === Store.world?.playerEntity) {
+      for (let i = 0; i < FENRIR_BOLTS_PER_TICK; i++) {
+        spawnFenrirBolt(actor, state.fenrirThunder!);
+      }
+    } else if (GameOptions.otherEquipmentEffects) {
+      const n = (otherBoltTicks.get(actor) ?? 0) + 1;
+      otherBoltTicks.set(actor, n % OTHER_FENRIR_BOLT_EVERY);
+      if (n >= OTHER_FENRIR_BOLT_EVERY) spawnFenrirBolt(actor, state.fenrirThunder!);
     }
 
     // The skill clip: the body pass is drawn a second time and a red chip
