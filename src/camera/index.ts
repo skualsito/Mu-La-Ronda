@@ -28,6 +28,7 @@
 import type { ENUM_WORLD } from '../common/types';
 import type { ArcRotateCamera, TransformNode } from '../libs/babylon/exports';
 import { GameOptions } from '../common/gameOptions';
+import { LocalStorage } from '../libs/localStorage';
 import { EventBus } from '../libs/eventBus';
 import { observable, runInAction } from 'mobx';
 import type { CameraLayer } from './layer';
@@ -81,20 +82,59 @@ for (const layer of CAMERA_LAYERS) {
   for (const world of layer.worlds) byWorld.set(world, layer);
 }
 
+/**
+ * Mu La Ronda: the player's view (zoom level, heading, tilt) is kept in the
+ * browser, so it survives a reload and a warp instead of going back to the
+ * map's frame every time; "reset camera" still goes back to it.
+ */
+const VIEW_KEY = 'mu_camera_view';
+
+type SavedView = { level: number; headingDeg: number; pitchOffsetDeg: number };
+
+function loadView(): SavedView | null {
+  try {
+    const parsed = JSON.parse(LocalStorage.load(VIEW_KEY) ?? 'null') as Partial<SavedView> | null;
+    if (!parsed || ![parsed.level, parsed.headingDeg, parsed.pitchOffsetDeg].every(Number.isFinite)) return null;
+    return {
+      level: Math.max(0, Math.min(MAX_CAMERA_LEVEL, Math.round(parsed.level!))),
+      headingDeg: parsed.headingDeg!,
+      pitchOffsetDeg: Math.max(-FIRST_PERSON_PITCH_LIMIT_DEG, Math.min(FIRST_PERSON_PITCH_LIMIT_DEG, parsed.pitchOffsetDeg!)),
+    };
+  } catch {
+    return null;
+  }
+}
+
+const savedView = loadView();
+
 /** `g_shCameraLevel`, 0..4. */
-let level = DEFAULT_CAMERA_LEVEL;
+let level = savedView?.level ?? DEFAULT_CAMERA_LEVEL;
 
 /** `CameraAngle[2]`, degrees. */
-let headingDeg = DEFAULT_HEADING_DEG;
+let headingDeg = savedView?.headingDeg ?? DEFAULT_HEADING_DEG;
 
 /**
  * Drag pitch, degrees added to the ported frame's tilt. Zero is the
  * original's fixed pitch; positive looks toward the horizon.
  */
-let pitchOffsetDeg = 0;
+let pitchOffsetDeg = savedView?.pitchOffsetDeg ?? 0;
 
 /** `CameraDistance`, original units, eased toward the level's target. */
-let distance = DISTANCE_BY_LEVEL[DEFAULT_CAMERA_LEVEL];
+let distance = DISTANCE_BY_LEVEL[level];
+
+let lastSavedView = '';
+
+/** Writes the view when it changed (rounded, so an easing turn is not a write a frame). */
+function saveView(): void {
+  const view = JSON.stringify({
+    level,
+    headingDeg: Math.round(headingDeg * 10) / 10,
+    pitchOffsetDeg: Math.round(pitchOffsetDeg * 10) / 10,
+  });
+  if (view === lastSavedView) return;
+  lastSavedView = view;
+  LocalStorage.save(VIEW_KEY, view);
+}
 
 /** The level the current map opened on, which a reset goes back to. */
 let openingLevel = DEFAULT_CAMERA_LEVEL;
@@ -113,6 +153,7 @@ export function resetCamera(): void {
 }
 
 function syncMoved(): void {
+  saveView();
   const turn = Math.abs(((headingDeg - DEFAULT_HEADING_DEG) % 360 + 540) % 360 - 180);
   const moved = level !== openingLevel || Math.abs(pitchOffsetDeg) > 0.5 || turn > 0.5;
   if (moved !== cameraView.moved) runInAction(() => (cameraView.moved = moved));
@@ -317,13 +358,16 @@ export function installCameraControl(
     (dx, dy) => applyLook(dx, dy, MOUSE_LOOK_DEG_PER_PX, MOUSE_LOOK_DEG_PER_PX)
   );
 
-  // World change resets the level (WSclient.cpp:600); heading, pitch and
-  // distance snap with it so the new map opens on its own default frame.
+  // World change resets the level in the original (WSclient.cpp:600). Mu La
+  // Ronda: the player's own view carries over - only a map that pins its own
+  // distance (an event arena, `layers.ts`) still opens on its frame.
   EventBus.on('warpCompleted', ({ map }) => {
-    level = openingLevelFor(map);
-    openingLevel = level;
-    headingDeg = DEFAULT_HEADING_DEG;
-    pitchOffsetDeg = 0;
+    openingLevel = openingLevelFor(map);
+    if (byWorld.get(map)?.distance !== undefined) {
+      level = openingLevel;
+      headingDeg = DEFAULT_HEADING_DEG;
+      pitchOffsetDeg = 0;
+    }
     distance = DISTANCE_BY_LEVEL[level];
   });
 }
