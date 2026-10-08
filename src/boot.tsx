@@ -39,6 +39,7 @@ import {
 } from './libs/mu/preloadSprites';
 import { drawnFrameRate, installPerfOverlay, recordFrame } from './libs/perfOverlay';
 import { setShedSource } from './common/loadShed';
+import { installAutoManaPotion } from './common/autoManaPotion';
 import { csmCacheStats } from './scenes/shadows';
 import { refreshServerList } from './common/serverList';
 import { ensureCacheWorker } from './common/assetDownload';
@@ -258,6 +259,9 @@ setShedSource(() => ({
   fps: drawnFrameRate().fps,
   cap: fpsLimitForStep(GameOptions.fpsLimit),
 }));
+
+// Mu La Ronda: a mana potion when the mana runs out (common/autoManaPotion.ts).
+installAutoManaPotion(Store);
 
 let lastTime = performance.now();
 engine.runRenderLoop(() => {
