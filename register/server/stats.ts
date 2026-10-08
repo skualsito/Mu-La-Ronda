@@ -25,7 +25,8 @@ const STAT = {
  * Banned characters and game masters stay out of the rankings. A GM is
  * usually made by the account's `State` (2 GameMaster, 3 GameMasterInvisible;
  * 4 and 5 are bans), not the character's `CharacterStatus` (1 banned, 32 GM),
- * so both are checked.
+ * so both are checked - and a GM's other characters too: the GM mark is per
+ * character, and a GM's alt with edited resets topped the ranking.
  */
 const STATUS_BANNED = 1;
 const STATUS_GAME_MASTER = 32;
@@ -71,6 +72,8 @@ async function query(sql: Sql, type: RankingType): Promise<readonly unknown[]> {
           JOIN data."Account" a ON a."Id" = c."AccountId"
          WHERE c."CharacterStatus" NOT IN (${STATUS_BANNED}, ${STATUS_GAME_MASTER})
            AND a."State" NOT IN ${sql(ACCOUNT_HIDDEN)}
+           AND NOT EXISTS (SELECT 1 FROM data."Character" g
+                            WHERE g."AccountId" = c."AccountId" AND g."CharacterStatus" = ${STATUS_GAME_MASTER})
          ORDER BY resets DESC, level DESC, "masterLevel" DESC, c."Experience" DESC, c."Name"
          LIMIT ${RANKING_SIZE}`;
 
@@ -86,6 +89,8 @@ async function query(sql: Sql, type: RankingType): Promise<readonly unknown[]> {
           JOIN data."Account" a ON a."Id" = c."AccountId"
          WHERE c."CharacterStatus" NOT IN (${STATUS_BANNED}, ${STATUS_GAME_MASTER})
            AND a."State" NOT IN ${sql(ACCOUNT_HIDDEN)}
+           AND NOT EXISTS (SELECT 1 FROM data."Character" g
+                            WHERE g."AccountId" = c."AccountId" AND g."CharacterStatus" = ${STATUS_GAME_MASTER})
            AND c."PlayerKillCount" > 0
          ORDER BY kills DESC, level DESC, c."Name"
          LIMIT ${RANKING_SIZE}`;
