@@ -4,8 +4,16 @@ import { defineConfig } from 'vite';
 // Game versions are selected at runtime (versions/registry.ts, loaded by
 // src/main.tsx before the app boots); one build carries all of them.
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   base: './',
+  /**
+   * Mu La Ronda: the build drops `console.log` / `console.debug`. logic.ts
+   * logs every drop, despawn and animation packet with its objects; in a
+   * crowded map that is hundreds of calls a second, and a console that is
+   * open (or a debugger attached) keeps every logged object alive.
+   * Warnings and errors stay.
+   */
+  esbuild: command === 'build' ? { pure: ['console.log', 'console.debug'] } : {},
   plugins: [],
   /**
    * The two services the UI talks to, each its own process. Proxied here so
@@ -73,4 +81,4 @@ export default defineConfig({
     // `bun test` instead (`bun run test:server`).
     exclude: ['**/node_modules/**', '**/dist/**', 'marketplace/server/**'],
   },
-});
+}));

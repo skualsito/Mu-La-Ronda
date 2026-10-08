@@ -804,6 +804,20 @@ export async function loadGLTF(
   };
 }
 
+/**
+ * Mu La Ronda: frees one `loadGLTF` clone - its meshes, and the skeleton and
+ * animation groups `instantiateModelsToScene` cloned with them, which a mesh
+ * dispose leaves in the scene. Every arrow and Multishot volley left both
+ * behind (a skeleton, its bone texture, its clips): a crowd of elves in Arena
+ * put thousands of them in the scene in a few minutes.
+ */
+export function disposeLoadedModel(model: LoadedModel): void {
+  // Often already gone with the node it was parented to.
+  if (!model.mesh.isDisposed()) model.mesh.dispose(false, false);
+  model.skeleton?.dispose();
+  for (const group of model.animationGroups) group.dispose();
+}
+
 /** Fetch and parse a GLB into the cache without placing a clone, so a later `loadGLTF` of it is not late. */
 export function warmGLTF(filePath: string, world: World): Promise<void> {
   if (!USE_MODEL_CONTAINER_CACHE) return Promise.resolve();

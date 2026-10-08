@@ -66,7 +66,7 @@ import {
 import { addEffectGlow, releaseEffectGlow } from './glow';
 import { releaseGreasedLineMaterial } from './greasedLineRelease';
 import { RGBS } from './recipes';
-import type { EffectHandle, EffectLayer } from './layer';
+import { DEAD_HANDLE, type EffectHandle, type EffectLayer } from './layer';
 
 // ---- 1. tuning -------------------------------------------------------------
 
@@ -1030,7 +1030,17 @@ export function spawnJoint(scene: Scene, at: Vector3, opts: JointOptions): Effec
   return opts.head || opts.velocity !== undefined ? spawnTrail(scene, at, opts) : spawnBolt(scene, at, opts);
 }
 
+/**
+ * Mu La Ronda: the most ribbons up at once from `effects.spawn('joint')`. Each
+ * is its own mesh, material and draw call; a crowd of casters in Arena had
+ * 1 500 up at once (4 600 draw calls a frame, a few FPS). Past it a new ribbon
+ * is not drawn. The persistent aura ribbons go through `spawnJoint` directly
+ * and are not counted.
+ */
+export const MAX_LIVE_JOINTS = 300;
+
 function spawn(scene: Scene, at: Vector3, opts: JointOptions): EffectHandle {
+  if (live.size >= MAX_LIVE_JOINTS) return DEAD_HANDLE;
   return spawnJoint(scene, at, opts);
 }
 

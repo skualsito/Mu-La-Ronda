@@ -29,7 +29,7 @@ import {
 } from '../libs/babylon/exports';
 import { clampAlpha } from './clampAlpha';
 import { chromeMaterial, disposeChromeMaterials } from './chrome';
-import { getMaterial, loadGLTF } from '../common/modelLoader';
+import { disposeLoadedModel, getMaterial, loadGLTF, type LoadedModel } from '../common/modelLoader';
 import { BlendState } from '../common/objects/enum';
 import { Store } from '../store';
 import type { TestScene } from '../scenes/testScene';
@@ -51,7 +51,7 @@ import {
 } from './core';
 import { addEffectGlow, releaseEffectGlow } from './glow';
 import { RGBS } from './recipes';
-import type { EffectHandle, EffectLayer } from './layer';
+import { DEAD_HANDLE, type EffectHandle, type EffectLayer } from './layer';
 
 // ---- 1. tuning -------------------------------------------------------------
 
@@ -446,6 +446,8 @@ export function spawnModel(scene: Scene, at: Vector3, opts: ModelOptions): Model
   let solidFaded = false;
   let scaleOverride = 0;
   let clip: AnimationGroup | null = null;
+  // Mu La Ronda: the clone, so release frees its skeleton and clips too.
+  let loaded: LoadedModel | null = null;
   let scrolledV: Texture | null = null;
   let disposed = false;
   let t = 0;
@@ -470,9 +472,10 @@ export function spawnModel(scene: Scene, at: Vector3, opts: ModelOptions): Model
     void loadGLTF(opts.model, world)
       .then(gltf => {
         if (disposed) {
-          gltf.mesh.dispose(false, false);
+          disposeLoadedModel(gltf);
           return;
         }
+        loaded = gltf;
         gltf.mesh.setParent(node);
         gltf.mesh.position.setAll(0);
         gltf.mesh.scaling.set(1, -1, 1);
@@ -737,6 +740,8 @@ export function spawnModel(scene: Scene, at: Vector3, opts: ModelOptions): Model
       for (const m of meshes) releaseEffectGlow(m);
       for (const cp of copyNodes) cp.node.dispose(false, false);
       node.dispose(false, false);
+      if (loaded) disposeLoadedModel(loaded);
+      loaded = null;
     },
   });
 
@@ -771,7 +776,15 @@ export function spawnModel(scene: Scene, at: Vector3, opts: ModelOptions): Model
   };
 }
 
+/**
+ * Mu La Ronda: the most model effects up at once from `effects.spawn('model')`
+ * - each one a GLB clone with its own nodes and skeleton. Past it a new one is
+ * not drawn (see joint.ts `MAX_LIVE_JOINTS`).
+ */
+export const MAX_LIVE_MODELS = 150;
+
 function spawn(scene: Scene, at: Vector3, opts: ModelOptions): EffectHandle {
+  if (live.size >= MAX_LIVE_MODELS) return DEAD_HANDLE;
   return spawnModel(scene, at, opts);
 }
 

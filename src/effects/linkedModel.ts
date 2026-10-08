@@ -18,7 +18,7 @@
  */
 import { Quaternion, TransformNode, VertexBuffer, type AbstractMesh, type AnimationGroup, type Mesh, type Scene, type Texture, type Vector3 } from '../libs/babylon/exports';
 import type { Entity } from '../ecs/world';
-import { loadGLTF } from '../common/modelLoader';
+import { disposeLoadedModel, loadGLTF, type LoadedModel } from '../common/modelLoader';
 import { PLAY_SPEED_TO_RATIO } from '../common/playSpeed';
 import { Store } from '../store';
 import type { TestScene } from '../scenes/testScene';
@@ -86,6 +86,8 @@ export function spawnLinkedModel(scene: Scene, _at: Vector3, opts: LinkedModelOp
   let bones: (TransformNode | null)[] = [];
   let clip: AnimationGroup | null = null;
   let keyFrames = 1;
+  // Mu La Ronda: the clone, so release frees its skeleton and clips too.
+  let loaded: LoadedModel | null = null;
   let disposed = false;
   let alpha = 0;
   let frame = 0;
@@ -126,9 +128,10 @@ export function spawnLinkedModel(scene: Scene, _at: Vector3, opts: LinkedModelOp
   void loadGLTF(opts.model, world)
     .then(gltf => {
       if (disposed) {
-        gltf.mesh.dispose(false, false);
+        disposeLoadedModel(gltf);
         return;
       }
+      loaded = gltf;
       gltf.mesh.setParent(null);
       gltf.mesh.parent = node;
       gltf.mesh.position.setAll(0);
@@ -194,6 +197,8 @@ export function spawnLinkedModel(scene: Scene, _at: Vector3, opts: LinkedModelOp
       for (const m of meshes) releaseEffectGlow(m);
       // Never the materials (core.ts's cache) or the textures (the GLB cache's).
       node.dispose(false, false);
+      if (loaded) disposeLoadedModel(loaded);
+      loaded = null;
     },
   });
 

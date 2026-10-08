@@ -36,7 +36,7 @@ import {
   type StandardMaterial,
   type Texture,
 } from '../libs/babylon/exports';
-import { loadGLTF } from '../common/modelLoader';
+import { disposeLoadedModel, loadGLTF } from '../common/modelLoader';
 import { Store } from '../store';
 import type { TestScene } from '../scenes/testScene';
 import { clampAlpha } from './clampAlpha';
@@ -392,7 +392,7 @@ function buildRig(scene: Scene, at: Vector3, opts: SpiritSwarmOptions, count: nu
     void loadGLTF(sk.model, world)
       .then(gltf => {
         if (rig.disposed) {
-          gltf.mesh.dispose(false, false);
+          disposeLoadedModel(gltf);
           return;
         }
         for (const g of gltf.animationGroups) g.dispose();
