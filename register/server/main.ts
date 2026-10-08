@@ -4,6 +4,7 @@ import { forgetSignupsBefore, recordAccount, recordSignup, signupsSince } from '
 import { BurstLimit, bucketFor, clientIp } from '../../src/common/rateLimit';
 import { isReservedName } from '../../src/common/reservedNames';
 import { handleStats } from './stats';
+import { handleSurvey } from './survey';
 
 /**
  * The account-creation endpoint behind `register.ignies.net`.
@@ -265,6 +266,10 @@ Bun.serve({
     // Mu La Ronda: rankings and per-character numbers (stats.ts).
     const stats = await handleStats(req, url, sql);
     if (stats) return stats;
+
+    // Mu La Ronda: the post-beta survey (survey.ts).
+    const survey = await handleSurvey(req, url, sql, server);
+    if (survey) return survey;
 
     if (url.pathname !== '/api/register') {
       return json({ error: 'Not found' }, 404, cors);

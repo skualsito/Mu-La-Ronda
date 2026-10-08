@@ -11,6 +11,7 @@ import { VipCodesPage } from './pages/vipCodes';
 import { ShopsPage } from './pages/shops';
 import { UsersPage } from './pages/users';
 import { ServerPage } from './pages/server';
+import { SurveyPage } from './pages/survey';
 
 /** Hash routes: #/, #/personajes, #/personajes/<id>, #/cuentas, #/cuentas/<id>, #/config, #/servidor. */
 function useRoute(): string[] {
@@ -33,6 +34,7 @@ const NAV = [
   { path: 'shops', key: 'shops', label: 'Shops', icon: 'M4 9l1.5-5h13L20 9M4 9v11h16V9M4 9h16M9 20v-6h6v6' },
   { path: 'mensajes', key: 'mensajes', label: 'Mensajes', icon: 'M4 5h16v11H8l-4 4zM8 9h8M8 12h5' },
   { path: 'vip', key: 'vip', label: 'Códigos VIP', icon: 'M20 12l-8 8-9-9V4h7zM7.5 7.5h.01' },
+  { path: 'encuesta', key: 'encuesta', label: 'Encuesta', icon: 'M9 4h6v3H9zM6 6h12v15H6zM9 11h6M9 15h4' },
   { path: 'config', key: 'config', label: 'Configuración', icon: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm8-3l2-1-2-4-2 .5-1.5-1.5L16 4h-4l-.5 2L10 7.5 8 7 6 11l2 1-2 1 2 4 2-.5 1.5 1.5.5 2h4l.5-2 1.5-1.5 2 .5 2-4z' },
   { path: 'servidor', key: 'servidor', label: 'Servidor', icon: 'M4 4h16v6H4zm0 10h16v6H4zM8 7h.01M8 17h.01' },
   { path: 'usuarios', key: 'usuarios', label: 'Usuarios', icon: 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-7 10a7 7 0 0 1 14 0M17 11a3 3 0 1 0 0-6M22 21a6 6 0 0 0-4-5.6' },
@@ -145,6 +147,9 @@ export function App() {
       break;
     case 'mensajes':
       page = <MessagesPage />;
+      break;
+    case 'encuesta':
+      page = <SurveyPage tab={id} />;
       break;
     case 'vip':
       page = <VipCodesPage />;

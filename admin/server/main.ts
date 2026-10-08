@@ -10,6 +10,7 @@ import * as skills from './skills';
 import * as messages from './messages';
 import * as vipCodes from './vipCodes';
 import * as shops from './shops';
+import * as survey from './survey';
 import { hasTerrain, terrainOf } from './terrain';
 import { openmuLogs, openmuStatus, restartOpenmu } from './docker';
 import { disconnectAccount, vaultInGame, type VaultOperation } from './openmuApi';
@@ -387,6 +388,9 @@ async function route(req: Request, url: URL, ip: string): Promise<Response> {
     else throw new HttpError(405, 'Metodo no permitido');
     return json(await messages.listMessages(sql));
   }
+
+  // ---- post-beta survey (read only) ----------------------------------------------
+  if (path === '/api/survey' && method === 'GET') return json(await survey.listResponses(sql));
 
   // ---- server --------------------------------------------------------------
   if (path === '/api/server' && method === 'GET') return json(await openmuStatus());

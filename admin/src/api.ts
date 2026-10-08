@@ -209,7 +209,7 @@ export type AutoMessage = { id: number; text: string; intervalMinutes: number; e
 export type ShopRow = { id: string; number: number; name: string; storeId: string | null; items: number; maps: string[] };
 export type ShopList = { shops: ShopRow[]; candidates: { id: string; number: number; name: string }[] };
 
-export type SectionKey = 'inicio' | 'personajes' | 'cuentas' | 'spots' | 'shops' | 'mensajes' | 'vip' | 'config' | 'servidor';
+export type SectionKey = 'inicio' | 'personajes' | 'cuentas' | 'spots' | 'shops' | 'mensajes' | 'vip' | 'encuesta' | 'config' | 'servidor';
 
 export type VipCode = {
   id: string;
@@ -227,3 +227,11 @@ export type Me = { user: string; superuser: boolean; permissions: SectionKey[]; 
 export type PanelUser = { id: number; username: string; permissions: SectionKey[]; enabled: boolean; createdAt: string; lastLoginAt: string | null };
 
 export type CharacterClassRow = { id: string; name: string; number: number };
+
+/** One answered post-beta survey (admin/server/survey.ts). */
+export type SurveyResponse = {
+  login: string;
+  answers: import('../../src/common/surveyRules').SurveyAnswers;
+  staff: boolean;
+  createdAt: string;
+};

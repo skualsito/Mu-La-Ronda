@@ -22,6 +22,13 @@ export default defineConfig({
     target: 'es2022',
     outDir: fileURLToPath(new URL('../dist-register', import.meta.url)),
     emptyOutDir: true,
+    // Mu La Ronda: the post-beta survey is a second page, served at /encuesta/.
+    rollupOptions: {
+      input: {
+        main: fileURLToPath(new URL('./index.html', import.meta.url)),
+        encuesta: fileURLToPath(new URL('./encuesta/index.html', import.meta.url)),
+      },
+    },
   },
   server: {
     port: 5174,

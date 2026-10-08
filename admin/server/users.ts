@@ -20,6 +20,7 @@ export const SECTIONS = [
   { key: 'shops', label: 'Shops' },
   { key: 'mensajes', label: 'Mensajes' },
   { key: 'vip', label: 'Códigos VIP' },
+  { key: 'encuesta', label: 'Encuesta' },
   { key: 'config', label: 'Configuración' },
   { key: 'servidor', label: 'Servidor' },
 ] as const;
@@ -203,6 +204,7 @@ export function sectionOf(path: string, method: string): Section | 'usuarios' | 
   if (path.startsWith('/api/accounts')) return 'cuentas';
   if (path.startsWith('/api/messages')) return 'mensajes';
   if (path.startsWith('/api/vip-codes')) return 'vip';
+  if (path.startsWith('/api/survey')) return 'encuesta';
   if (path.startsWith('/api/config')) return 'config';
   if (path.startsWith('/api/server')) return 'servidor';
   return 'usuarios';

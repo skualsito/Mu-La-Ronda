@@ -1672,3 +1672,65 @@ select {
 .online-list .online-chars a:hover {
   text-decoration: underline;
 }
+
+/* ---- encuesta post-beta (pages/survey.tsx) -------------------------------------- */
+
+.survey-tally {
+  margin-bottom: 18px;
+
+  h4 {
+    margin: 0 0 8px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+}
+
+.survey-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(60px, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 3px 0;
+  font-size: 13px;
+}
+
+.survey-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.survey-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--panel-2);
+  overflow: hidden;
+
+  span {
+    display: block;
+    height: 100%;
+    border-radius: 4px;
+    background: var(--accent);
+  }
+}
+
+.survey-count {
+  min-width: 72px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.survey-text {
+  max-width: 320px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.survey-ideas li {
+  display: block;
+
+  p {
+    margin: 0 0 4px;
+    max-width: none;
+  }
+}

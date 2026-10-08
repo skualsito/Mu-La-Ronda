@@ -228,3 +228,141 @@ body {
   color: #5f7472;
   text-align: center;
 }
+
+/* ---- Encuesta post-beta (encuesta/, surveyPage.tsx) ---------------------- */
+
+.sv-page {
+  justify-content: flex-start;
+}
+
+.sv-card {
+  max-width: 560px;
+}
+
+.sv-intro {
+  margin: -8px 0 18px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.sv-intro strong {
+  color: var(--text);
+}
+
+.sv-section {
+  margin: 26px 0 14px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--teal-bright);
+}
+
+.sv-form h1 + .sv-intro + .sv-section {
+  margin-top: 8px;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.sv-field {
+  display: block;
+  margin: 0 0 18px;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.sv-field legend {
+  padding: 0;
+}
+
+.sv-question {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--text);
+}
+
+.sv-question em {
+  font-style: normal;
+  color: var(--teal);
+}
+
+.sv-question small {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 400;
+  color: #6f8785;
+}
+
+.sv-options {
+  display: grid;
+  gap: 6px;
+}
+
+.sv-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #0b1514;
+  font-size: 14px;
+  line-height: 1.35;
+  cursor: pointer;
+  transition: border-color 150ms, background 150ms;
+}
+
+.sv-option:hover {
+  border-color: var(--teal-dim);
+}
+
+.sv-option input {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--teal);
+}
+
+.sv-option.sv-picked {
+  border-color: var(--teal);
+  background: rgba(0, 173, 172, 0.1);
+}
+
+.sv-staff {
+  margin-bottom: 18px;
+  font-weight: 500;
+}
+
+.sv-textarea {
+  height: auto;
+  min-height: 96px;
+  padding: 10px 12px;
+  resize: vertical;
+  line-height: 1.45;
+}
+
+.sv-number {
+  max-width: 120px;
+}
+
+.sv-count {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: #5f7472;
+  text-align: right;
+}
+
+.sv-page .rg-footer {
+  position: static;
+  margin-top: 28px;
+}
