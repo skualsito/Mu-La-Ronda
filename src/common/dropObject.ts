@@ -54,6 +54,14 @@ type PileCoin = { x: number; y: number; z: number; lag: number };
  *   the drop itself is drawn at the centre (`common/zenPile.ts`).
  */
 export class DropObject extends ModelObject {
+  /**
+   * Mu La Ronda: a drop casts no sun shadow. A few centimetres of coin or
+   * item on the ground cast next to nothing, and every one was a mover the
+   * cascades redrew each frame - 30 draws a frame for the zen of one Arena
+   * fight.
+   */
+  CastsShadow = false;
+
   /** `transform.scale`, which the pile's centimetres must not be shrunk by. */
   #zenScale = 1;
 

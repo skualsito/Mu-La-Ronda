@@ -27,3 +27,16 @@ test('a crowd shares a budget per second, the hero is not part of it', () => {
   // A second later the window starts over.
   expect(budget.allow(crowd[99], false, 1010)).toBe(true);
 });
+
+test('a slow frame rate thins the other players, never the hero', () => {
+  const budget = new SkillVisualBudget();
+  const crowd = Array.from({ length: 100 }, () => ({}));
+  expect(crowd.filter(player => budget.allow(player, false, 10, 2)).length).toBe(OTHERS_PER_SECOND / 4);
+  const other = {};
+  expect(budget.allow(other, false, 2000, 1)).toBe(true);
+  expect(budget.allow(other, false, 2000 + OTHER_MIN_GAP_MS, 1)).toBe(false);
+  expect(budget.allow(other, false, 2000 + OTHER_MIN_GAP_MS * 2, 1)).toBe(true);
+  const hero = {};
+  expect(budget.allow(hero, true, 10)).toBe(true);
+  expect(budget.allow(hero, true, 10 + HERO_MIN_GAP_MS)).toBe(true);
+});

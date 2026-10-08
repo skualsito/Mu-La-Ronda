@@ -18,16 +18,22 @@ export const HERO_MIN_GAP_MS = 166;
 export const OTHER_MIN_GAP_MS = 500;
 /** And all of them together at most this many a second. */
 export const OTHERS_PER_SECOND = 16;
+/** Mu La Ronda: the divisor of the two above per load-shed level (loadShed.ts). */
+export const SHED_DIVISOR = [1, 2, 4] as const;
 
 export class SkillVisualBudget {
   private readonly lastDrawn = new WeakMap<object, number>();
   private windowStart = -Infinity;
   private windowCount = 0;
 
-  /** Whether a cast by `caster` at `now` (ms) gets drawn; counts it if so. */
-  allow(caster: object, isHero: boolean, now: number): boolean {
+  /**
+   * Whether a cast by `caster` at `now` (ms) gets drawn; counts it if so.
+   * `shed` (loadShed.ts) thins the other players' casts while frames are slow.
+   */
+  allow(caster: object, isHero: boolean, now: number, shed: 0 | 1 | 2 = 0): boolean {
     const last = this.lastDrawn.get(caster);
-    const gap = isHero ? HERO_MIN_GAP_MS : OTHER_MIN_GAP_MS;
+    const divisor = SHED_DIVISOR[shed];
+    const gap = isHero ? HERO_MIN_GAP_MS : OTHER_MIN_GAP_MS * divisor;
     if (last !== undefined && now - last < gap) return false;
 
     if (!isHero) {
@@ -35,7 +41,7 @@ export class SkillVisualBudget {
         this.windowStart = now;
         this.windowCount = 0;
       }
-      if (this.windowCount >= OTHERS_PER_SECOND) return false;
+      if (this.windowCount >= OTHERS_PER_SECOND / divisor) return false;
       this.windowCount++;
     }
 

@@ -332,7 +332,27 @@ export function rectFrustumToRef(
 }
 
 const rect = resetRect({ minX: 0, minY: 0, maxX: 0, maxY: 0 });
+const other = resetRect({ minX: 0, minY: 0, maxX: 0, maxY: 0 });
 let lit = new Uint8Array(1024);
+
+/**
+ * Mu La Ronda: whether a skinned mesh - every worn part of every character,
+ * which `cullableByBounds` cannot trust - can reach the lit box. Its own
+ * posed bone boxes are bounded the same way the lit meshes' are; one that
+ * cannot be bounded is kept. In an Arena crowd these were most of the ~340
+ * draws the mask took while the cursor was over somebody.
+ */
+function skinnedReachesRect(mesh: AbstractMesh, viewProjection: Matrix): boolean {
+  resetRect(other);
+  if (!extendMeshRect(mesh, viewProjection, other)) return true;
+
+  return (
+    other.maxX >= rect.minX - RECT_MARGIN &&
+    other.minX <= rect.maxX + RECT_MARGIN &&
+    other.maxY >= rect.minY - RECT_MARGIN &&
+    other.minY <= rect.maxY + RECT_MARGIN
+  );
+}
 
 /**
  * The active meshes that can change a mask pixel, in active order: the lit
@@ -381,7 +401,15 @@ export function selectMaskMeshes(
     for (let i = 0; i < length; i++) {
       const mesh = list[i];
 
-      if (lit[i] === 1 || !cullableByBounds(mesh) || mesh.isInFrustum(planes)) {
+      if (lit[i] === 1) {
+        out[n++] = mesh;
+      } else if (cullableByBounds(mesh)) {
+        if (mesh.isInFrustum(planes)) out[n++] = mesh;
+      } else if (
+        !mesh.useBones ||
+        !mesh.skeleton ||
+        skinnedReachesRect(mesh, viewProjection)
+      ) {
         out[n++] = mesh;
       }
     }

@@ -84,6 +84,7 @@ import { fenrirVariant, mountKind } from './pets';
 import { skillDefinition, type SkillDefinition } from './skillsDatabase';
 import { storeRef } from './storeRef';
 import { skillVisualBudget } from './skillVisualBudget';
+import { shedLevel } from './loadShed';
 import { heldWeapons } from './chaosCastleUnit';
 import { BLAST_LIGHT, BOSS_LASER_LIGHT, HELLFIRE_CIRCLE_LIGHT, METEOR_LIGHT, SUMMON_ARRIVAL_LIGHT } from '../lighting/skills';
 import { tierIndex } from './lightingQuality';
@@ -11876,7 +11877,8 @@ function castIsDrawn(caster: Entity): boolean {
   const own = caster === storeRef().world?.playerEntity;
   // Mu La Ronda: Options can leave out the skills of other players (monsters' still show).
   if (!own && caster.playerAnimation && !GameOptions.otherSkillEffects) return false;
-  return skillVisualBudget.allow(caster, own, performance.now());
+  const now = performance.now();
+  return skillVisualBudget.allow(caster, own, now, own ? 0 : shedLevel(now));
 }
 
 export function playTargetedSkillVisual(

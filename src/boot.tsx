@@ -37,7 +37,8 @@ import {
   preloadPregameSprites,
   preloadWorldSprites,
 } from './libs/mu/preloadSprites';
-import { installPerfOverlay, recordFrame } from './libs/perfOverlay';
+import { drawnFrameRate, installPerfOverlay, recordFrame } from './libs/perfOverlay';
+import { setShedSource } from './common/loadShed';
 import { csmCacheStats } from './scenes/shadows';
 import { refreshServerList } from './common/serverList';
 import { ensureCacheWorker } from './common/assetDownload';
@@ -250,6 +251,13 @@ const COVERED_RENDER_EVERY = 6;
 let coveredFrames = 0;
 
 const framePacer = new FramePacer();
+
+// Mu La Ronda: the frames actually drawn against the cap decide how much of
+// the other players' effects is drawn (common/loadShed.ts).
+setShedSource(() => ({
+  fps: drawnFrameRate().fps,
+  cap: fpsLimitForStep(GameOptions.fpsLimit),
+}));
 
 let lastTime = performance.now();
 engine.runRenderLoop(() => {

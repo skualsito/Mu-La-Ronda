@@ -30,6 +30,7 @@ import {
 import { FOOT_THUNDER_FRAMES, MODEL, RGBS, TEX } from '../../effects/recipes';
 import { Store } from '../../store';
 import { GameOptions } from '../../common/gameOptions';
+import { shedLevel } from '../../common/loadShed';
 import { PlayerAction } from '../../common/objects/enum';
 import { RIDER_FLY_WORLDS } from '../../combat/recipes';
 import { playUiSound } from '../../sound/ui';
@@ -1018,7 +1019,7 @@ export const PetSystem: ISystemFactory = world => {
       for (let i = 0; i < FENRIR_BOLTS_PER_TICK; i++) {
         spawnFenrirBolt(actor, state.fenrirThunder!);
       }
-    } else if (GameOptions.otherEquipmentEffects) {
+    } else if (GameOptions.otherEquipmentEffects && shedLevel() < 2) {
       const n = (otherBoltTicks.get(actor) ?? 0) + 1;
       otherBoltTicks.set(actor, n % OTHER_FENRIR_BOLT_EVERY);
       if (n >= OTHER_FENRIR_BOLT_EVERY) spawnFenrirBolt(actor, state.fenrirThunder!);
