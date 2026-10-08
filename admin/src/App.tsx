@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { api, setOnUnauthorized, type Me } from './api';
-import { Boundary, ToastProvider } from './ui';
+import { Boundary, ToastProvider, useToast } from './ui';
 import { DashboardPage } from './pages/dashboard';
 import { CharactersPage, CharacterPage } from './pages/characters';
 import { AccountsPage, AccountPage } from './pages/accounts';
@@ -95,9 +95,66 @@ function Login({ onDone }: { onDone: () => void }) {
   );
 }
 
+/** Mu La Ronda: the signed-in user's own password. */
+function PasswordDialog({ onClose }: { onClose: () => void }) {
+  const toast = useToast();
+  const [current, setCurrent] = useState('');
+  const [next, setNext] = useState('');
+  const [repeat, setRepeat] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (next.length < 8) return setError('La contraseña nueva tiene que tener 8 caracteres o más');
+    if (next !== repeat) return setError('Las contraseñas nuevas no coinciden');
+    setBusy(true);
+    setError('');
+    try {
+      await api('/me/password', { method: 'POST', body: { current, next } });
+      toast('Contraseña cambiada');
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="modal-backdrop" onMouseDown={onClose}>
+      <form className="modal" role="dialog" aria-modal="true" onMouseDown={e => e.stopPropagation()} onSubmit={submit}>
+        <h2>Cambiar contraseña</h2>
+        <label className="field">
+          <span className="field-label">Contraseña actual</span>
+          <input type="password" value={current} onChange={e => setCurrent(e.target.value)} autoComplete="current-password" autoFocus />
+        </label>
+        <label className="field">
+          <span className="field-label">Contraseña nueva</span>
+          <input type="password" value={next} onChange={e => setNext(e.target.value)} autoComplete="new-password" />
+        </label>
+        <label className="field">
+          <span className="field-label">Repetir la nueva</span>
+          <input type="password" value={repeat} onChange={e => setRepeat(e.target.value)} autoComplete="new-password" />
+        </label>
+        {error && <div className="form-error">{error}</div>}
+        <p className="muted small">Solo cambia la de este panel. El panel de OpenMU sigue con la de deploy/.env.</p>
+        <div className="modal-actions">
+          <button type="button" className="btn btn-ghost" onClick={onClose}>
+            Cancelar
+          </button>
+          <button className="btn btn-primary" disabled={busy}>
+            {busy ? 'Guardando…' : 'Cambiar'}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 export function App() {
   const [session, setSession] = useState<'checking' | 'out' | Me>('checking');
   const [menuOpen, setMenuOpen] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
   const route = useRoute();
 
   useEffect(() => {
@@ -193,6 +250,9 @@ export function App() {
           </nav>
           <div className="sidebar-foot">
             <span className="muted small">Sesión: {me.user}</span>
+            <button className="btn btn-ghost btn-small" onClick={() => setChangingPassword(true)}>
+              Contraseña
+            </button>
             <button className="btn btn-ghost btn-small" onClick={logout}>
               Salir
             </button>
@@ -211,6 +271,7 @@ export function App() {
         </div>
         {menuOpen && <div className="scrim" onClick={() => setMenuOpen(false)} />}
       </div>
+      {changingPassword && <PasswordDialog onClose={() => setChangingPassword(false)} />}
     </ToastProvider>
   );
 }

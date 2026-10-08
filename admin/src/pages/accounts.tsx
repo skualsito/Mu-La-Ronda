@@ -447,7 +447,7 @@ const VIP_OPTIONS = [
 ];
 
 /** The account's VIP: what it has and until when, and a way to give one by hand. */
-function VipCard({ accountId, locked }: { accountId: string; locked: boolean }) {
+export function VipCard({ accountId, locked }: { accountId: string; locked: boolean }) {
   const toast = useToast();
   const { data, error, reload, setData } = useLoad(() => api<Vip>(`/accounts/${accountId}/vip`), [accountId]);
   const [tier, setTier] = useState<number | null>(null);

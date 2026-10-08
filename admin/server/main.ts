@@ -13,7 +13,7 @@ import * as shops from './shops';
 import * as survey from './survey';
 import { hasTerrain, terrainOf } from './terrain';
 import { openmuLogs, openmuStatus, restartOpenmu } from './docker';
-import { disconnectAccount, vaultInGame, type VaultOperation } from './openmuApi';
+import { disconnectAccount, onlinePlayers, vaultInGame, type VaultOperation } from './openmuApi';
 
 /**
  * Mu La Ronda's admin panel API (admin.<DOMAIN>/api). nginx serves the page
@@ -98,7 +98,7 @@ async function route(req: Request, url: URL, ip: string): Promise<Response> {
       return json({ error: 'El panel no tiene contraseña configurada (OPENMU_ADMIN_PASSWORD en deploy/.env, 8 caracteres o mas).' }, 503);
     }
     const { user, password } = await body(req);
-    const name = checkCredentials(String(user ?? ''), String(password ?? ''))
+    const name = (await users.checkSuperuser(sql, String(user ?? ''), String(password ?? ''), USER, checkCredentials))
       ? USER
       : await users.checkUser(sql, String(user ?? ''), String(password ?? ''));
     if (!name) return json({ error: 'Usuario o contraseña incorrectos' }, 401);
@@ -121,6 +121,15 @@ async function route(req: Request, url: URL, ip: string): Promise<Response> {
     return json({ ok: true }, 200, { 'Set-Cookie': sessionCookie('', 0) });
   }
   if (path === '/api/me') return json({ ...access, sections: users.SECTIONS });
+  if (path === '/api/me/password' && method === 'POST') {
+    if (logins.hammering(bucketFor(ip))) return json({ error: 'Demasiados intentos. Espera un minuto.' }, 429);
+    try {
+      await users.changeOwnPassword(sql, user, await body(req), USER, checkCredentials);
+    } catch (err) {
+      throw new HttpError(400, err instanceof Error ? err.message : String(err));
+    }
+    return json({ ok: true });
+  }
 
   // ---- panel users (superuser only, see users.allowed) ----------------------
   if (path === '/api/admin-users') {
@@ -138,7 +147,8 @@ async function route(req: Request, url: URL, ip: string): Promise<Response> {
   }
 
   if (path === '/api/dashboard') {
-    const [data, server] = await Promise.all([game.dashboard(sql, await onlineAccounts()), openmuStatus()]);
+    const [accounts, inGame] = await Promise.all([onlineAccounts(), onlinePlayers(sql)]);
+    const [data, server] = await Promise.all([game.dashboard(sql, accounts, inGame), openmuStatus()]);
     return json({ ...data, server });
   }
 
@@ -245,6 +255,13 @@ async function route(req: Request, url: URL, ip: string): Promise<Response> {
       }
       await game.updateCharacter(sql, id, (await body(req)) as game.CharacterPatch);
       return json(await game.getCharacter(sql, id, online));
+    }
+    if (method === 'DELETE') {
+      try {
+        return json(await game.deleteCharacter(sql, id, online));
+      } catch (err) {
+        throw new HttpError(409, err instanceof Error ? err.message : String(err));
+      }
     }
   }
 

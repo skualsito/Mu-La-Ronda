@@ -64,7 +64,17 @@ function online(onlineAccounts: Set<string>, login: string | null): boolean {
 // Dashboard
 // ---------------------------------------------------------------------------
 
-export async function dashboard(sql: Sql, onlineAccounts: Set<string>) {
+export type OnlineEntry = {
+  accountId: string;
+  login: string;
+  character: { id: string; name: string; class: string; level: number; resets: number; map: string | null } | null;
+};
+
+export async function dashboard(
+  sql: Sql,
+  onlineAccounts: Set<string>,
+  inGame: { accountId: string; login: string; characterId: string | null; map: string | null }[] | null
+) {
   const [counts] = await sql`
     SELECT (SELECT count(*) FROM data."Account")::int AS accounts,
            (SELECT count(*) FROM data."Character")::int AS characters,
@@ -82,37 +92,44 @@ export async function dashboard(sql: Sql, onlineAccounts: Set<string>) {
 
   const recent = await sql`
     SELECT a."LoginName" AS login, a."RegistrationDate" AS "registeredAt"
-      FROM data."Account" a ORDER BY a."RegistrationDate" DESC LIMIT 8`;
+      FROM data."Account" a ORDER BY a."RegistrationDate" DESC LIMIT 12`;
 
-  // Mu La Ronda: each online account with its characters, for the list that links to them.
-  // The presence service only knows the account, not which character is in game.
+  // Mu La Ronda: who is playing, by the character in the game. OpenMU knows which one
+  // (openmuApi.ts onlinePlayers); without it, the presence service's accounts alone.
   const logins = [...onlineAccounts];
-  const rows = logins.length
-    ? await sql<{ accountId: string; login: string; id: string | null; name: string | null; class: string | null; level: number | null; resets: number | null }[]>`
-        SELECT a."Id"::text AS "accountId", a."LoginName" AS login,
-               c."Id"::text AS id, c."Name" AS name, cc."Name" AS class,
-               COALESCE(l."Value", 0)::int AS level, COALESCE(r."Value", 0)::int AS resets
-          FROM data."Account" a
-          LEFT JOIN data."Character" c ON c."AccountId" = a."Id"
-          LEFT JOIN config."CharacterClass" cc ON cc."Id" = c."CharacterClassId"
+  const fromGame = inGame?.filter(p => p.characterId) ?? [];
+  const characters = fromGame.length
+    ? await sql<{ id: string; name: string; class: string; level: number; resets: number; accountId: string; login: string }[]>`
+        SELECT c."Id"::text AS id, c."Name" AS name, cc."Name" AS class,
+               COALESCE(l."Value", 0)::int AS level, COALESCE(r."Value", 0)::int AS resets,
+               a."Id"::text AS "accountId", a."LoginName" AS login
+          FROM data."Character" c
+          JOIN data."Account" a ON a."Id" = c."AccountId"
+          JOIN config."CharacterClass" cc ON cc."Id" = c."CharacterClassId"
           LEFT JOIN data."StatAttribute" l ON l."CharacterId" = c."Id" AND l."DefinitionId" = ${STAT.level}::uuid
           LEFT JOIN data."StatAttribute" r ON r."CharacterId" = c."Id" AND r."DefinitionId" = ${STAT.resets}::uuid
-         WHERE lower(a."LoginName") IN ${sql(logins)}
-         ORDER BY a."LoginName", resets DESC, level DESC`
+         WHERE c."Id" = ANY(${fromGame.map(p => p.characterId!)}::uuid[])
+         ORDER BY resets DESC, level DESC, c."Name"`
     : [];
-  const byAccount = new Map<string, { accountId: string; login: string; characters: { id: string; name: string; class: string; level: number; resets: number }[] }>();
-  for (const row of rows) {
-    let entry = byAccount.get(row.accountId);
-    if (!entry) {
-      entry = { accountId: row.accountId, login: row.login, characters: [] };
-      byAccount.set(row.accountId, entry);
-    }
-    if (row.id && row.name) {
-      entry.characters.push({ id: row.id, name: row.name, class: row.class ?? '', level: row.level ?? 0, resets: row.resets ?? 0 });
-    }
-  }
+  const mapOf = new Map(fromGame.map(p => [p.characterId!.toLowerCase(), p.map]));
+  const onlineList: OnlineEntry[] = characters.map(c => ({
+    accountId: c.accountId,
+    login: c.login,
+    character: { id: c.id, name: c.name, class: c.class, level: c.level, resets: c.resets, map: mapOf.get(c.id.toLowerCase()) ?? null },
+  }));
+  // On the character list (logged in, no character yet), or OpenMU did not answer.
+  const listed = new Set(onlineList.map(e => e.login.toLowerCase()));
+  const waiting = inGame
+    ? inGame.filter(p => !p.characterId && !listed.has(p.login.toLowerCase())).map(p => ({ accountId: p.accountId, login: p.login }))
+    : logins.length
+      ? await sql<{ accountId: string; login: string }[]>`
+          SELECT "Id"::text AS "accountId", "LoginName" AS login FROM data."Account"
+           WHERE lower("LoginName") IN ${sql(logins)} ORDER BY "LoginName"`
+      : [];
+  for (const w of waiting) onlineList.push({ accountId: w.accountId, login: w.login, character: null });
 
-  return { ...counts, online: onlineAccounts.size, onlineAccounts: logins, onlineList: [...byAccount.values()], top, recent };
+  const online = inGame ? inGame.length : onlineAccounts.size;
+  return { ...counts, online, onlineAccounts: logins, onlineList, top, recent };
 }
 
 // ---------------------------------------------------------------------------
@@ -339,6 +356,32 @@ export async function deleteAccounts(sql: Sql, ids: string[], onlineAccounts: Se
     await tx`DELETE FROM data."Account" WHERE "Id" = ANY(${accountIds}::uuid[])`;
     if (storages.length) await tx`DELETE FROM data."ItemStorage" WHERE "Id" = ANY(${storages}::uuid[])`;
     return { deleted: accounts.map(a => a.login as string) };
+  });
+}
+
+/**
+ * Mu La Ronda: deletes one character, never while its account is in the game
+ * (OpenMU would write it back on logout). Its own rows (skills, quests, letters,
+ * attributes) cascade from data."Character"; the inventory storage, the friend
+ * list entries both ways and the guild membership are not tied to it by a
+ * foreign key, so they go by hand.
+ */
+export async function deleteCharacter(sql: Sql, id: string, onlineAccounts: Set<string>) {
+  return sql.begin(async tx => {
+    const [row] = await tx`
+      SELECT c."Name" AS name, c."InventoryId" AS inventory, a."LoginName" AS login
+        FROM data."Character" c LEFT JOIN data."Account" a ON a."Id" = c."AccountId"
+       WHERE c."Id" = ${id}::uuid FOR UPDATE OF c`;
+    if (!row) throw new Error('El personaje no existe');
+    if (online(onlineAccounts, row.login)) throw new Error('La cuenta esta conectada: que salga primero.');
+    // `GuildPosition.GuildMaster` (2): a guild without its master is left half broken.
+    const [master] = await tx`SELECT 1 FROM guild."GuildMember" WHERE "Id" = ${id}::uuid AND "Status" = 2`;
+    if (master) throw new Error('Es maestro de una guild: que la disuelva primero en el juego.');
+    await tx`DELETE FROM friend."Friend" WHERE "CharacterId" = ${id}::uuid OR "FriendId" = ${id}::uuid`;
+    await tx`DELETE FROM guild."GuildMember" WHERE "Id" = ${id}::uuid`;
+    await tx`DELETE FROM data."Character" WHERE "Id" = ${id}::uuid`;
+    if (row.inventory) await tx`DELETE FROM data."ItemStorage" WHERE "Id" = ${row.inventory}::uuid`;
+    return { deleted: row.name as string };
   });
 }
 

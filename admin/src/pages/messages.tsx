@@ -1,4 +1,5 @@
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
+import { parseRichText } from '../../../src/common/richLinks';
 import { api, type AutoMessage } from '../api';
 import { Card, Confirm, ErrorBox, Loading, PageHeader, Toggle, useLoad, useToast } from '../ui';
 
@@ -13,8 +14,6 @@ const INTERVALS = [5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 240, 360, 720, 1440]
 
 const intervalLabel = (m: number) => (m < 60 ? `${m} min` : m % 60 === 0 ? `${m / 60} h` : `${Math.floor(m / 60)} h ${m % 60} min`);
 
-const ANCHOR = /<a\s+href\s*=\s*(["'])(.*?)\s*>(.*?)<\/a>/gi;
-
 /** The banner as the game draws it: gold, centred, on a dark band - links by their label, underlined. */
 function Preview({ text }: { text: string }) {
   if (!text) {
@@ -24,22 +23,23 @@ function Preview({ text }: { text: string }) {
       </div>
     );
   }
-  const parts: ReactNode[] = [];
-  let last = 0;
-  for (const m of text.matchAll(ANCHOR)) {
-    const at = m.index ?? 0;
-    if (at > last) parts.push(text.slice(last, at));
-    parts.push(
-      <a key={at} href={m[2]} target="_blank" rel="noopener noreferrer" style={{ color: 'rgb(120,200,255)' }}>
-        {m[3] || m[2]}
-      </a>
-    );
-    last = at + m[0].length;
-  }
-  if (last < text.length) parts.push(text.slice(last));
+  // The game's own reading of the text (src/common/richLinks.ts), so the
+  // preview shows exactly what the players will: the label, never the tag.
   return (
     <div className="notice-preview">
-      <span>{parts}</span>
+      <span>
+        {parseRichText(text).map((segment, i) =>
+          segment.href ? (
+            <a key={i} href={segment.href} target="_blank" rel="noopener noreferrer">
+              {segment.text}
+            </a>
+          ) : (
+            <span key={i} className="notice-run">
+              {segment.text}
+            </span>
+          )
+        )}
+      </span>
     </div>
   );
 }

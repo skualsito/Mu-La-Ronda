@@ -128,10 +128,11 @@ export type Dashboard = {
   online: number;
   onlineAccounts: string[];
   /** Each online account with its characters (which one is in game is not known). */
+  /** Who is playing: the character in the game, or null while still on the character list. */
   onlineList: {
     accountId: string;
     login: string;
-    characters: { id: string; name: string; class: string; level: number; resets: number }[];
+    character: { id: string; name: string; class: string; level: number; resets: number; map: string | null } | null;
   }[];
   top: { name: string; class: string; resets: number; level: number }[];
   recent: { login: string; registeredAt: string }[];

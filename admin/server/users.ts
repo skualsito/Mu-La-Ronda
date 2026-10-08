@@ -190,7 +190,7 @@ export async function accessOf(sql: Sql, user: string, superuserName: string): P
  * the superuser's alone.
  */
 export function sectionOf(path: string, method: string): Section | 'usuarios' | 'any' | 'vault' | null {
-  if (path === '/api/me' || path === '/api/logout') return null;
+  if (path === '/api/me' || path === '/api/me/password' || path === '/api/logout') return null;
   if (path.startsWith('/api/admin-users')) return 'usuarios';
   if (path === '/api/dashboard') return 'inicio';
   if (path === '/api/maps' && method === 'GET') return null;
@@ -201,6 +201,8 @@ export function sectionOf(path: string, method: string): Section | 'usuarios' | 
   if (path.startsWith('/api/characters') || path === '/api/classes') return 'personajes';
   // The vault shows on the account page and on each of its characters'.
   if (/^\/api\/accounts\/[^/]+\/vault/.test(path)) return 'vault';
+  // Mu La Ronda: and so does the VIP, edited from either page.
+  if (/^\/api\/accounts\/[^/]+\/vip$/.test(path)) return 'vault';
   if (path.startsWith('/api/accounts')) return 'cuentas';
   if (path.startsWith('/api/messages')) return 'mensajes';
   if (path.startsWith('/api/vip-codes')) return 'vip';
@@ -218,4 +220,60 @@ export function allowed(access: Access, path: string, method: string): boolean {
   if (section === 'any') return access.permissions.includes('personajes') || access.permissions.includes('shops');
   if (section === 'vault') return access.permissions.includes('personajes') || access.permissions.includes('cuentas');
   return access.permissions.includes(section);
+}
+
+// ---- own password -------------------------------------------------------------
+
+/**
+ * Mu La Ronda: the superuser's password changed from the panel. The first one
+ * comes from deploy/.env (MLR_ADMIN_PASSWORD, shared with OpenMU's panel); once
+ * changed here, its BCrypt hash in mlr.settings is the one this panel checks -
+ * OpenMU's own panel keeps the .env one.
+ */
+const SUPER_HASH_KEY = 'admin_password_hash';
+
+async function superHash(sql: Sql): Promise<string | null> {
+  await sql`CREATE SCHEMA IF NOT EXISTS mlr`;
+  await sql`CREATE TABLE IF NOT EXISTS mlr.settings (key text PRIMARY KEY, value text NOT NULL)`;
+  const [row] = await sql<{ value: string }[]>`SELECT value FROM mlr.settings WHERE key = ${SUPER_HASH_KEY}`;
+  return row?.value ?? null;
+}
+
+/** The superuser's login: the panel's own hash once there is one, the .env password before. */
+export async function checkSuperuser(
+  sql: Sql,
+  user: string,
+  password: string,
+  superuserName: string,
+  envCheck: (user: string, password: string) => boolean
+): Promise<boolean> {
+  if (user.trim().toLowerCase() !== superuserName.toLowerCase()) return false;
+  const hash = await superHash(sql);
+  return hash ? bcrypt.compare(password, hash) : envCheck(user, password);
+}
+
+/** Changes the signed-in user's own password, after checking the current one. */
+export async function changeOwnPassword(
+  sql: Sql,
+  user: string,
+  input: { current?: unknown; next?: unknown },
+  superuserName: string,
+  envCheck: (user: string, password: string) => boolean
+): Promise<void> {
+  const current = String(input.current ?? '');
+  const next = cleanPassword(input.next);
+  if (next === current) throw new Error('La contraseña nueva es igual a la actual');
+  if (user.toLowerCase() === superuserName.toLowerCase()) {
+    if (!(await checkSuperuser(sql, user, current, superuserName, envCheck))) throw new Error('La contraseña actual no es correcta');
+    const hash = await bcrypt.hash(next, 11);
+    await sql`
+      INSERT INTO mlr.settings (key, value) VALUES (${SUPER_HASH_KEY}, ${hash})
+      ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`;
+    return;
+  }
+  await ensure(sql);
+  const [row] = await sql<{ password_hash: string }[]>`SELECT password_hash FROM mlr.admin_users WHERE username = ${user.toLowerCase()}`;
+  if (!row || !(await bcrypt.compare(current, row.password_hash))) throw new Error('La contraseña actual no es correcta');
+  await sql`UPDATE mlr.admin_users SET password_hash = ${await bcrypt.hash(next, 11)} WHERE username = ${user.toLowerCase()}`;
+  invalidate();
 }

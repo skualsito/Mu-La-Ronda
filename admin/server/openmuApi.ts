@@ -102,3 +102,29 @@ async function post(sql: Sql, path: string, payload: unknown, what: string): Pro
   if (res.status === 404 && body?.online === false) return 'offline';
   throw new Error(body?.error ?? `OpenMU respondió ${res.status} al ${what}`);
 }
+
+export type InGamePlayer = { accountId: string; login: string; characterId: string | null; character: string | null; map: string | null };
+
+/**
+ * Mu La Ronda: who is in the game and with which character (MlrPlayersController `online`).
+ * Null when OpenMU does not answer - the caller falls back to the proxy's account list.
+ */
+export async function onlinePlayers(sql: Sql): Promise<InGamePlayer[] | null> {
+  try {
+    const get = async () =>
+      fetch(`${OPENMU_API_URL}/api/mlr/players/online`, {
+        headers: { 'X-Api-Key': await apiKey(sql) },
+        signal: AbortSignal.timeout(2500),
+      });
+    let res = await get();
+    if (res.status === 401 || res.status === 403) {
+      cachedKey = null;
+      await sql`DELETE FROM mlr.settings WHERE key = ${KEY_SETTING}`;
+      res = await get();
+    }
+    if (!res.ok) return null;
+    return (await res.json()) as InGamePlayer[];
+  } catch {
+    return null;
+  }
+}

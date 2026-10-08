@@ -1283,7 +1283,7 @@ select {
   border: 1px solid var(--line);
   border-radius: 8px;
 
-  span {
+  > span {
     max-width: 520px;
     padding: 2px 10px;
     color: rgb(255, 200, 80);
@@ -1292,6 +1292,11 @@ select {
     text-align: center;
     text-shadow: 1px 1px 0 #000;
     background: rgba(0, 0, 0, 0.5);
+  }
+
+  a {
+    color: rgb(120, 200, 255);
+    text-decoration: underline;
   }
 }
 
@@ -1317,7 +1322,7 @@ select {
   border: 1px solid var(--line);
   border-radius: var(--radius);
 
-  &.is-off .notice-preview span {
+  &.is-off .notice-preview > span {
     opacity: 0.45;
   }
 }
@@ -1661,16 +1666,23 @@ select {
   gap: 10px;
   justify-content: flex-start;
 }
-.online-list .online-chars {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
 .online-list a {
   text-decoration: none;
 }
-.online-list .online-chars a:hover {
+.online-list a:hover {
   text-decoration: underline;
+}
+
+/* The newest accounts: the whole width, in two columns. */
+.recent-accounts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 24px;
+}
+@media (max-width: 700px) {
+  .recent-accounts {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ---- encuesta post-beta (pages/survey.tsx) -------------------------------------- */

@@ -1,5 +1,5 @@
 import { api, type Dashboard } from '../api';
-import { Badge, Card, ErrorBox, Loading, PageHeader, Stat, formatDate, formatNumber, useLoad } from '../ui';
+import { Card, ErrorBox, Loading, PageHeader, Stat, formatDate, formatNumber, useLoad } from '../ui';
 
 export function DashboardPage() {
   const { data, error, reload } = useLoad(() => api<Dashboard>('/dashboard'), []);
@@ -67,43 +67,44 @@ export function DashboardPage() {
           </table>
         </Card>
 
-        <Card title="Conectados ahora">
+        <Card title={`Conectados ahora (${data.onlineList.length})`}>
           {data.onlineList.length ? (
             <ul className="list online-list">
-              {data.onlineList.map(account => {
-                // One character: the row goes straight to it; more: each name links to its own.
-                const only = account.characters.length === 1 ? account.characters[0] : null;
-                return (
-                  <li key={account.accountId}>
-                    <a href={only ? `#/personajes/${only.id}` : `#/cuentas/${account.accountId}`}>
-                      <Badge tone="ok">{account.login}</Badge>
+              {data.onlineList.map(entry =>
+                entry.character ? (
+                  <li key={entry.character.id}>
+                    <a href={`#/personajes/${entry.character.id}`}>
+                      <strong>{entry.character.name}</strong>
                     </a>
-                    <span className="online-chars">
-                      {account.characters.map(c => (
-                        <a key={c.id} href={`#/personajes/${c.id}`} title={`${c.class} · nivel ${c.level} · ${c.resets} resets`}>
-                          {c.name}
-                        </a>
-                      ))}
-                      {!account.characters.length && <span className="muted small">sin personajes</span>}
+                    <span className="muted small">
+                      {entry.character.class} · nivel {entry.character.level} · {entry.character.resets} resets
+                      {entry.character.map ? ` · ${entry.character.map}` : ''}
                     </span>
                   </li>
-                );
-              })}
+                ) : (
+                  <li key={entry.accountId}>
+                    <a href={`#/cuentas/${entry.accountId}`}>{entry.login}</a>
+                    <span className="muted small">eligiendo personaje</span>
+                  </li>
+                )
+              )}
             </ul>
           ) : (
             <p className="empty">Nadie conectado.</p>
           )}
-          <h3 className="subhead">Últimas cuentas creadas</h3>
-          <ul className="list">
-            {data.recent.map(r => (
-              <li key={r.login}>
-                <span>{r.login}</span>
-                <span className="muted small">{formatDate(r.registeredAt)}</span>
-              </li>
-            ))}
-          </ul>
         </Card>
       </div>
+
+      <Card title="Últimas cuentas creadas">
+        <ul className="list recent-accounts">
+          {data.recent.map(r => (
+            <li key={r.login}>
+              <span>{r.login}</span>
+              <span className="muted small">{formatDate(r.registeredAt)}</span>
+            </li>
+          ))}
+        </ul>
+      </Card>
     </>
   );
 }

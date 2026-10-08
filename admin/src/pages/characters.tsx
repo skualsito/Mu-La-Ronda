@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { api, type Character, type CharacterClassRow, type CharacterRow, type MapRow, type Stats } from '../api';
 import { InventoryCard } from './inventory';
 import { SkillsCard } from './skills';
-import { DisconnectButton, VaultCard } from './accounts';
+import { DisconnectButton, VaultCard, VipCard } from './accounts';
 import {
   Badge,
   Boundary,
@@ -136,6 +136,7 @@ export function CharacterPage({ id }: { id: string }) {
   const [draft, updateDraft, resetDraft] = useDraft(data, draftOf);
   const [saving, setSaving] = useState(false);
   const [confirm, setConfirm] = useState<null | { title: string; text: string; run: () => void }>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const changes = useMemo(() => {
     if (!data || !draft) return {};
@@ -191,6 +192,18 @@ export function CharacterPage({ id }: { id: string }) {
 
   const ask = (title: string, text: string, run: () => void) => setConfirm({ title, text, run });
 
+  const remove = async () => {
+    setSaving(true);
+    try {
+      await api(`/characters/${id}`, { method: 'DELETE' });
+      toast(`${data.name} borrado`);
+      location.hash = data.accountId ? `#/cuentas/${data.accountId}` : '#/personajes';
+    } catch (err) {
+      toast(err instanceof Error ? err.message : String(err), 'error');
+      setSaving(false);
+    }
+  };
+
   return (
     <>
       <PageHeader
@@ -206,6 +219,14 @@ export function CharacterPage({ id }: { id: string }) {
                 Ver cuenta
               </a>
             )}
+            <button
+              className="btn btn-danger"
+              disabled={locked || saving}
+              title={locked ? 'Conectado: que salga primero' : undefined}
+              onClick={() => setDeleting(true)}
+            >
+              Borrar personaje
+            </button>
           </>
         }
       />
@@ -335,6 +356,12 @@ export function CharacterPage({ id }: { id: string }) {
         </Card>
       </div>
 
+      {data.accountId && (
+        <Boundary resetKey={id}>
+          <VipCard accountId={data.accountId} locked={locked} />
+        </Boundary>
+      )}
+
       <Boundary resetKey={id}>
         <InventoryCard characterId={id} locked={locked} />
       </Boundary>
@@ -360,6 +387,19 @@ export function CharacterPage({ id }: { id: string }) {
           {saving ? 'Guardando…' : 'Guardar cambios'}
         </button>
       </div>
+
+      {deleting && (
+        <Confirm
+          title={`¿Borrar a ${data.name}?`}
+          text={`Se borra el personaje con su inventario, sus poderes y sus quests. No se puede deshacer. El baúl y el VIP son de la cuenta ${data.account ?? ''} y quedan.`}
+          confirmLabel="Sí, borrar"
+          danger
+          onAnswer={yes => {
+            setDeleting(false);
+            if (yes) void remove();
+          }}
+        />
+      )}
 
       {confirm && (
         <Confirm

@@ -28,6 +28,36 @@ public class MlrPlayersController : Controller
     /// <param name="gameServers">The game servers.</param>
     public MlrPlayersController(IDictionary<int, IGameServer> gameServers) => this._gameServers = gameServers;
 
+    /// <summary>The characters in the game right now: account, character name and map, one row per player.</summary>
+    /// <returns>200 with the list (players still on the character list come with a null character).</returns>
+    [HttpGet("online")]
+    public async Task<IActionResult> OnlineAsync()
+    {
+        var rows = new List<object>();
+        foreach (var server in this._gameServers.Values.OfType<GameServer>())
+        {
+            var players = await server.Context.GetPlayersAsync().ConfigureAwait(false);
+            foreach (var player in players)
+            {
+                if (player.Account is not { } account)
+                {
+                    continue;
+                }
+
+                rows.Add(new
+                {
+                    accountId = account.GetId(),
+                    login = account.LoginName,
+                    characterId = player.SelectedCharacter?.GetId(),
+                    character = player.SelectedCharacter?.Name,
+                    map = player.CurrentMap?.Definition.Name,
+                });
+            }
+        }
+
+        return this.Ok(rows);
+    }
+
     /// <summary>Disconnects every player of the account (there is one, unless it is mid-login).</summary>
     /// <param name="accountId">The account id.</param>
     /// <returns>200 with how many were disconnected, 404 when the account is not online.</returns>
