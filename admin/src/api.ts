@@ -127,6 +127,12 @@ export type Dashboard = {
   newAccounts: number;
   online: number;
   onlineAccounts: string[];
+  /** Each online account with its characters (which one is in game is not known). */
+  onlineList: {
+    accountId: string;
+    login: string;
+    characters: { id: string; name: string; class: string; level: number; resets: number }[];
+  }[];
   top: { name: string; class: string; resets: number; level: number }[];
   recent: { login: string; registeredAt: string }[];
   server: ServerStatus;

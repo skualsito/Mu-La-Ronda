@@ -84,7 +84,35 @@ export async function dashboard(sql: Sql, onlineAccounts: Set<string>) {
     SELECT a."LoginName" AS login, a."RegistrationDate" AS "registeredAt"
       FROM data."Account" a ORDER BY a."RegistrationDate" DESC LIMIT 8`;
 
-  return { ...counts, online: onlineAccounts.size, onlineAccounts: [...onlineAccounts], top, recent };
+  // Mu La Ronda: each online account with its characters, for the list that links to them.
+  // The presence service only knows the account, not which character is in game.
+  const logins = [...onlineAccounts];
+  const rows = logins.length
+    ? await sql<{ accountId: string; login: string; id: string | null; name: string | null; class: string | null; level: number | null; resets: number | null }[]>`
+        SELECT a."Id"::text AS "accountId", a."LoginName" AS login,
+               c."Id"::text AS id, c."Name" AS name, cc."Name" AS class,
+               COALESCE(l."Value", 0)::int AS level, COALESCE(r."Value", 0)::int AS resets
+          FROM data."Account" a
+          LEFT JOIN data."Character" c ON c."AccountId" = a."Id"
+          LEFT JOIN config."CharacterClass" cc ON cc."Id" = c."CharacterClassId"
+          LEFT JOIN data."StatAttribute" l ON l."CharacterId" = c."Id" AND l."DefinitionId" = ${STAT.level}::uuid
+          LEFT JOIN data."StatAttribute" r ON r."CharacterId" = c."Id" AND r."DefinitionId" = ${STAT.resets}::uuid
+         WHERE lower(a."LoginName") IN ${sql(logins)}
+         ORDER BY a."LoginName", resets DESC, level DESC`
+    : [];
+  const byAccount = new Map<string, { accountId: string; login: string; characters: { id: string; name: string; class: string; level: number; resets: number }[] }>();
+  for (const row of rows) {
+    let entry = byAccount.get(row.accountId);
+    if (!entry) {
+      entry = { accountId: row.accountId, login: row.login, characters: [] };
+      byAccount.set(row.accountId, entry);
+    }
+    if (row.id && row.name) {
+      entry.characters.push({ id: row.id, name: row.name, class: row.class ?? '', level: row.level ?? 0, resets: row.resets ?? 0 });
+    }
+  }
+
+  return { ...counts, online: onlineAccounts.size, onlineAccounts: logins, onlineList: [...byAccount.values()], top, recent };
 }
 
 // ---------------------------------------------------------------------------

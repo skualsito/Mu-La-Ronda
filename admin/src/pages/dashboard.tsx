@@ -68,14 +68,28 @@ export function DashboardPage() {
         </Card>
 
         <Card title="Conectados ahora">
-          {data.onlineAccounts.length ? (
-            <div className="chips">
-              {data.onlineAccounts.map(a => (
-                <Badge key={a} tone="ok">
-                  {a}
-                </Badge>
-              ))}
-            </div>
+          {data.onlineList.length ? (
+            <ul className="list online-list">
+              {data.onlineList.map(account => {
+                // One character: the row goes straight to it; more: each name links to its own.
+                const only = account.characters.length === 1 ? account.characters[0] : null;
+                return (
+                  <li key={account.accountId}>
+                    <a href={only ? `#/personajes/${only.id}` : `#/cuentas/${account.accountId}`}>
+                      <Badge tone="ok">{account.login}</Badge>
+                    </a>
+                    <span className="online-chars">
+                      {account.characters.map(c => (
+                        <a key={c.id} href={`#/personajes/${c.id}`} title={`${c.class} · nivel ${c.level} · ${c.resets} resets`}>
+                          {c.name}
+                        </a>
+                      ))}
+                      {!account.characters.length && <span className="muted small">sin personajes</span>}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
           ) : (
             <p className="empty">Nadie conectado.</p>
           )}

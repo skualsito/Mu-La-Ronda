@@ -1651,3 +1651,24 @@ select {
   width: 100%;
   height: 100%;
 }
+
+/* Mu La Ronda: who is online, scrolling once it is long; each name links to the character. */
+.online-list {
+  max-height: 260px;
+  overflow-y: auto;
+}
+.online-list li {
+  gap: 10px;
+  justify-content: flex-start;
+}
+.online-list .online-chars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.online-list a {
+  text-decoration: none;
+}
+.online-list .online-chars a:hover {
+  text-decoration: underline;
+}
