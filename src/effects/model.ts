@@ -508,6 +508,7 @@ export function spawnModel(scene: Scene, at: Vector3, opts: ModelOptions): Model
           });
           clip = gltf.animationGroups[0] ?? null;
           meshes.push(gltf.mesh);
+          gltf.mesh.setEnabled(true);
           return;
         }
         const bodyLight = new Vector3(colour[0], colour[1], colour[2]);
@@ -634,8 +635,17 @@ export function spawnModel(scene: Scene, at: Vector3, opts: ModelOptions): Model
           } else clip.play(opts.loop ?? true);
         }
         meshes.push(gltf.mesh);
+        // Only now, dressed (takeModel hands it out disabled).
+        gltf.mesh.setEnabled(true);
       })
-      .catch(err => console.warn('[effects] model failed', opts.model, err));
+      .catch(err => {
+        console.warn('[effects] model failed', opts.model, err);
+        // Half dressed: back to the pool, out of sight, rather than drawn as the raw GLB.
+        if (loaded) {
+          returnModel(loaded);
+          loaded = null;
+        }
+      });
   }
 
   const handle = live.push({

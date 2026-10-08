@@ -1,4 +1,5 @@
 import { makeAutoObservable, runInAction } from 'mobx';
+import { CACHE_WORKER_URL } from './cacheWorkerUrl';
 import { gameVersion } from '../version';
 import {
   COMPRESSED_SUFFIX,
@@ -181,7 +182,7 @@ export function ensureCacheWorker(): Promise<ServiceWorker | null> {
       /* keep going */
     }
     try {
-      const reg = await navigator.serviceWorker.register('./sw.js');
+      const reg = await navigator.serviceWorker.register(CACHE_WORKER_URL);
       await navigator.serviceWorker.ready;
       return reg.active ?? navigator.serviceWorker.controller;
     } catch (e) {

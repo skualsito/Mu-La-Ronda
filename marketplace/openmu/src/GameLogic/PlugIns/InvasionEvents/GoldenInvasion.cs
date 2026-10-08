@@ -75,28 +75,34 @@ public static class GoldenInvasion
         GoldenRabbit,
     ];
 
-    /// <summary>The monsters of one invasion, each on every map MU puts it on.</summary>
+    /// <summary>
+    /// The monsters of one invasion: a handful per map, as on the usual servers - 56 in all. They
+    /// do not come back once killed, and the run ends with the last one (BaseInvasionPlugIn).
+    /// The golden monsters MU has and OpenMU does not (Golden Dark Knight, Valkyrie, Balrog,
+    /// Mutant, Blade Hunter, Berserker, Kentauros, Gigantis, Genocider, Derkon) are left out.
+    /// </summary>
     public static List<InvasionSpawnConfiguration> Mobs() =>
     [
-        Everywhere(InvasionMonsters.GoldenBudgeDragon, 20, InvasionMaps.Lorencia, InvasionMaps.Noria, InvasionMaps.Devias),
-        Everywhere(InvasionMonsters.GoldenGoblin, 20, InvasionMaps.Noria),
-        Everywhere(InvasionMonsters.GoldenSoldier, 20, InvasionMaps.Devias),
-        Everywhere(InvasionMonsters.GoldenTitan, 10, InvasionMaps.Devias),
-        Everywhere(InvasionMonsters.GoldenDragon, 5, InvasionMaps.Lorencia, InvasionMaps.Noria, InvasionMaps.Devias, Elbeland, LostTower),
-        Everywhere(GoldenRabbit, 20, Elbeland),
-        Everywhere(GoldenKnight, 20, Dungeon),
-        Everywhere(GoldenDevil, 20, LostTower),
-        Everywhere(InvasionMonsters.GoldenVepar, 20, InvasionMaps.Atlans),
-        Everywhere(InvasionMonsters.GoldenLizardKing, 10, InvasionMaps.Atlans),
-        Everywhere(InvasionMonsters.GoldenWheel, 20, InvasionMaps.Tarkan),
-        Everywhere(InvasionMonsters.GoldenTantallos, 10, InvasionMaps.Tarkan),
-        Everywhere(GoldenStoneGolem, 10, Aida),
-        Everywhere(GoldenCrust, 10, Icarus),
-        Everywhere(GoldenSatyros, 10, KanturuRuins),
-        Everywhere(GoldenTwinTail, 10, KanturuRelics),
-        Everywhere(GoldenNapin, 10, SwampOfPeace),
-        Everywhere(GoldenIronKnight, 10, LaCleon),
-        Everywhere(GoldenGreatDragon, 5, LaCleon, KanturuRuins),
+        Everywhere(InvasionMonsters.GoldenBudgeDragon, 6, InvasionMaps.Lorencia),
+        Everywhere(InvasionMonsters.GoldenGoblin, 6, InvasionMaps.Noria),
+        Everywhere(GoldenRabbit, 6, Elbeland),
+        // OpenMU calls 79 the Golden Dragon; it is the Golden Derkon.
+        Everywhere(InvasionMonsters.GoldenDragon, 1, Icarus, InvasionMaps.Tarkan, Aida),
+        Everywhere(InvasionMonsters.GoldenSoldier, 3, InvasionMaps.Devias),
+        Everywhere(InvasionMonsters.GoldenVepar, 3, InvasionMaps.Atlans),
+        Everywhere(GoldenKnight, 3, Dungeon),
+        Everywhere(InvasionMonsters.GoldenTitan, 3, InvasionMaps.Atlans),
+        Everywhere(GoldenDevil, 3, LostTower),
+        Everywhere(InvasionMonsters.GoldenWheel, 3, InvasionMaps.Tarkan),
+        Everywhere(InvasionMonsters.GoldenLizardKing, 2, InvasionMaps.Atlans),
+        Everywhere(InvasionMonsters.GoldenTantallos, 2, InvasionMaps.Tarkan),
+        Everywhere(GoldenStoneGolem, 2, Aida),
+        Everywhere(GoldenCrust, 2, Icarus),
+        Everywhere(GoldenSatyros, 2, KanturuRuins),
+        Everywhere(GoldenTwinTail, 2, KanturuRelics),
+        Everywhere(GoldenNapin, 1, SwampOfPeace),
+        Everywhere(GoldenIronKnight, 1, LaCleon),
+        Everywhere(GoldenGreatDragon, 1, Icarus, InvasionMaps.Tarkan, Aida),
     ];
 
     /// <summary>The level (+N) of the Box of Kundun a golden monster drops on a map; null for anything else.</summary>

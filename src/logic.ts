@@ -247,6 +247,7 @@ import { NetStats } from './common/netStats';
 import { readVipCodeLine, readVipLine } from './common/vip';
 import { pointsFromWire, readPointsLine } from './common/widePoints';
 import { readSpotsLine } from './common/mapSpots';
+import { clearInvasions, readInvasionLine } from './common/invasionTally';
 import { readVaultLine } from './common/extraVaults';
 import { Notices } from './common/notices';
 import { SlideHelp } from './common/slideHelp';
@@ -752,13 +753,16 @@ function applyCharacterInformation(p: CharacterInformationView) {
   });
 }
 
-EventBus.on('CharacterInformation', packet =>
-  applyCharacterInformation(new CharacterInformationPacket(packet))
-);
+EventBus.on('CharacterInformation', packet => {
+  // Mu La Ronda: a fresh entry hears the running invasions again (BaseInvasionPlugIn sends them).
+  clearInvasions();
+  applyCharacterInformation(new CharacterInformationPacket(packet));
+});
 // F3 03 with 92 bytes: the server runs the extended plug-ins (stat values > 65535).
-EventBus.on('CharacterInformationExtended', packet =>
-  applyCharacterInformation(new CharacterInformationExtendedPacket(packet))
-);
+EventBus.on('CharacterInformationExtended', packet => {
+  clearInvasions();
+  applyCharacterInformation(new CharacterInformationExtendedPacket(packet));
+});
 
 EventBus.on('MapChanged', packet => {
   // Answers a warp the player asked for; a server-initiated one pairs with
@@ -3699,6 +3703,8 @@ EventBus.on('ServerMessage', packet => {
       readVipLine(text);
       // Mu La Ronda: the map's monster spots, for the TAB map (common/mapSpots.ts).
       if (readSpotsLine(text)) break;
+      // Mu La Ronda: the running invasion's counts, for the events window (common/invasionTally.ts).
+      if (readInvasionLine(text)) break;
       // Mu La Ronda: the real free points, past what the packets' 16 bits hold (common/widePoints.ts).
       {
         const points = readPointsLine(text);

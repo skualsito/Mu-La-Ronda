@@ -38,6 +38,8 @@ test('a returned clone is handed out again, as it was loaded', async () => {
   };
 
   const first = await takeModel('fx.glb', load);
+  // A fresh load is handed out disabled too, until the spawn has dressed it.
+  expect(first.mesh.isEnabled()).toBe(false);
   const part = first.mesh.getChildMeshes(false)[0];
   const original = part.material;
 
@@ -65,7 +67,8 @@ test('a returned clone is handed out again, as it was loaded', async () => {
   expect(part.isVisible).toBe(true);
   expect(part.alwaysSelectAsActiveMesh).toBe(false);
   expect(again.mesh.parent).toBeNull();
-  expect(again.mesh.isEnabled()).toBe(true);
+  // Disabled until the spawn has dressed it: a clone never shows as the raw GLB.
+  expect(again.mesh.isEnabled()).toBe(false);
 });
 
 test('keeps a bounded number per model and disposes the rest', async () => {

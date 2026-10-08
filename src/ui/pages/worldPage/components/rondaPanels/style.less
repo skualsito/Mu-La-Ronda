@@ -346,3 +346,25 @@
 .ronda-vip-tier.is-lower {
   opacity: 0.55;
 }
+
+// Mu La Ronda: the running invasions' counts under the events (index.tsx, InvasionCounts).
+.ronda-invasions {
+  max-height: 190px;
+  margin-top: 6px;
+  overflow-y: auto;
+  pointer-events: auto;
+
+  .ronda-invasion-title {
+    margin: 4px 0 2px;
+    color: #f0c95a;
+
+    span {
+      float: right;
+      color: #e6e6e6;
+    }
+  }
+
+  tr.is-done td {
+    opacity: 0.45;
+  }
+}

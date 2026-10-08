@@ -33,6 +33,13 @@ public class DefaultDropGenerator : IDropGenerator
     private readonly List<DropItemGroup> _chanceDropGroups = new(64);
     private readonly List<DropItemGroup> _guaranteedDropGroups = new(16);
 
+    /// <summary>
+    /// Mu La Ronda: bosses whose drops come only from their own groups (deploy/config): one of
+    /// them, at random, per item, up to their maximum drops (or one less, at random) - never the
+    /// map's general groups, so never zen. Selupan dropped zen and a common item or two.
+    /// </summary>
+    private static readonly HashSet<short> BossDropTables = [459];
+
     private readonly AsyncLock _lock = new();
     private readonly IRandomizer _randomizer;
     private readonly IList<ItemDefinition> _ancientItems;
@@ -81,6 +88,14 @@ public class DefaultDropGenerator : IDropGenerator
         using var l = await this._lock.LockAsync();
         this._guaranteedDropGroups.Clear();
         this._chanceDropGroups.Clear();
+
+        if (BossDropTables.Contains(monster.Number) && monster.DropItemGroups?.Count > 0)
+        {
+            var bossItems = this.GenerateBossDrops(monster);
+            this._guaranteedDropGroups.Clear();
+            this._chanceDropGroups.Clear();
+            return (bossItems, null);
+        }
 
         if (monster.ObjectKind == NpcObjectKind.Destructible)
         {
@@ -291,6 +306,23 @@ public class DefaultDropGenerator : IDropGenerator
         }
 
         return itemDefinition.MaximumDropLevel is not { } maxDropLevel || monsterLevel <= maxDropLevel;
+    }
+
+    private List<Item> GenerateBossDrops(MonsterDefinition monster)
+    {
+        var groups = monster.DropItemGroups.ToList();
+        var count = Math.Max(1, monster.NumberOfMaximumItemDrops - this._randomizer.NextInt(0, 2));
+        var items = new List<Item>(count);
+        for (var i = 0; i < count; i++)
+        {
+            var group = groups[this._randomizer.NextInt(0, groups.Count)];
+            if (group.PossibleItems?.Count > 0 && this.GenerateItemDrop(group, group.PossibleItems) is { } item)
+            {
+                items.Add(item);
+            }
+        }
+
+        return items;
     }
 
     private (IList<Item>? Items, uint Money) GenerateDrops(MonsterDefinition monster, int gainedExperience)

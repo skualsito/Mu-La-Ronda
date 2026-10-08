@@ -20,6 +20,22 @@
 
 const CACHE = 'mu-assets-v1';
 
+// Mu La Ronda: the build this worker came with (`sw.js?build=...`, src/common/assetDownload.ts).
+// A deploy changes it, so the browser installs this worker anew - and on activating it drops
+// what the previous build left cached, and makes the first request of every asset go back to
+// the server once. Before, a model, texture or icon changed under the same name stayed the old
+// one for good (cache first, and the browser's own cache behind it), and every new version
+// looked broken until the player cleared the site data by hand.
+const BUILD = new URL(self.location.href).searchParams.get('build') || '';
+const META = 'mu-meta';
+const BUILD_KEY = '/__mu-build';
+
+/** Kept across builds: big, and they do not change. */
+const KEPT_ACROSS_BUILDS = /\/Music\/|\.(mp3|ogg|wav)$/i;
+
+/** Assets already checked with the server since this worker started. */
+const revalidated = new Set();
+
 /** Only these are ours. Everything else is passed straight through. */
 const ASSET_PREFIXES = [
   '/game-assets/',
@@ -40,10 +56,27 @@ self.addEventListener('activate', event => {
       for (const name of await caches.keys()) {
         if (name.startsWith('mu-assets-') && name !== CACHE) await caches.delete(name);
       }
+      await dropOtherBuilds();
       await self.clients.claim();
     })()
   );
 });
+
+/** A new build: what an older one cached goes (but the music). */
+async function dropOtherBuilds() {
+  if (!BUILD) return;
+  const meta = await caches.open(META);
+  const stored = await meta.match(BUILD_KEY);
+  const previous = stored ? await stored.text() : null;
+  if (previous === BUILD) return;
+  if (previous !== null) {
+    const cache = await caches.open(CACHE);
+    for (const request of await cache.keys()) {
+      if (!KEPT_ACROSS_BUILDS.test(new URL(request.url).pathname)) await cache.delete(request);
+    }
+  }
+  await meta.put(BUILD_KEY, new Response(BUILD));
+}
 
 function isAsset(url) {
   return url.origin === self.location.origin && ASSET_PREFIXES.some(p => url.pathname.startsWith(p));
@@ -117,8 +150,13 @@ self.addEventListener('fetch', event => {
       // Not downloaded: behave as if the worker were not installed. It is
       // deliberately not written to the cache here - what is stored is what
       // the player chose on the download screen, so the numbers the screen
-      // reports stay true.
-      return fetch(request);
+      // reports stay true. The first time this worker sees an asset it asks
+      // the server whether the browser's copy is still current (a 304 when
+      // it is), so a copy from an older build is not reused.
+      const key = url.pathname + url.search;
+      if (revalidated.has(key)) return fetch(request);
+      revalidated.add(key);
+      return fetch(request, { cache: 'no-cache' });
     })()
   );
 });

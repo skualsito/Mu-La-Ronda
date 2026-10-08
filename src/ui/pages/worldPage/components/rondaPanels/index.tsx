@@ -1,4 +1,6 @@
 import './style.less';
+import { runningInvasions } from '../../../../../common/invasionTally';
+import { monsterDisplayName } from '../../../../../common/monstersDatabase';
 import { useEffect, useRef, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { tOptions } from '../../../../../i18n';
@@ -662,6 +664,46 @@ function openServerEvent(row: EventScheduleRow): void {
   else events.askChaosCastleOpening();
 }
 
+/** Mu La Ronda: the running invasions' names, by the server's tally key (common/invasionTally.ts). */
+const INVASION_LABEL: Record<string, string> = {
+  Golden: 'Invasión dorada',
+  RedDragon: 'Invasión del Dragón Rojo',
+  WhiteWizard: 'Invasión del Mago Blanco',
+};
+
+/** Mu La Ronda: every running invasion, each monster with how many are dead out of how many came. */
+const InvasionCounts = observer(() => {
+  const running = runningInvasions();
+  if (!running.length) return null;
+  return (
+    <div className="ronda-invasions">
+      {running.map(({ key, counts }) => {
+        const killed = counts.reduce((sum, c) => sum + c.killed, 0);
+        const total = counts.reduce((sum, c) => sum + c.total, 0);
+        return (
+          <div key={key} className="ronda-invasion">
+            <div className="ronda-invasion-title">
+              {INVASION_LABEL[key] ?? key} <span>{killed}/{total}</span>
+            </div>
+            <table className="ronda-table">
+              <tbody>
+                {counts.map(c => (
+                  <tr key={c.monster} className={c.killed >= c.total ? 'is-done' : ''}>
+                    <td>{monsterDisplayName(c.monster)}</td>
+                    <td className="ronda-events-clock">
+                      {c.killed}/{c.total}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      })}
+    </div>
+  );
+});
+
 const EventsWindow = observer(() => {
   // The fixed ones count down on the client: re-render once a second.
   const [now, setNow] = useState(() => serverNow());
@@ -690,6 +732,7 @@ const EventsWindow = observer(() => {
           ))}
         </tbody>
       </table>
+      <InvasionCounts />
       <p className="ronda-note">
         Blood Castle, Devil Square y Chaos Castle: tocá el evento cuando está abierto para entrar.
       </p>

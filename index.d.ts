@@ -42,5 +42,6 @@ declare module '*.wav?url' {
 }
 
 declare const APP_VERSION: string;
+declare const BUILD_ID: string;
 declare const APP_STAGE: 'dev' | 'prod' | 'cprod';
 declare const QA_ENABLED: string | undefined;

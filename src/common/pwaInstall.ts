@@ -1,4 +1,5 @@
 import { makeAutoObservable, runInAction } from 'mobx';
+import { CACHE_WORKER_URL } from './cacheWorkerUrl';
 
 /**
  * Installing the client as an app.
@@ -148,7 +149,7 @@ export function watchInstallState(): void {
   window.addEventListener('load', () => {
     try {
       if (!('serviceWorker' in navigator) || new URLSearchParams(location.search).has('nosw')) return;
-      void navigator.serviceWorker.register('./sw.js').catch(() => undefined);
+      void navigator.serviceWorker.register(CACHE_WORKER_URL).catch(() => undefined);
     } catch {
       /* best effort */
     }

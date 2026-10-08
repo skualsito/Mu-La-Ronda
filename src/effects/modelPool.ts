@@ -61,10 +61,17 @@ function record(model: LoadedModel): Pooled {
   return { model, meshes, nodes: new Set<Node>([model.mesh, ...model.mesh.getDescendants(false)]) };
 }
 
-/** A clone of `path`: a spare one when there is one, otherwise `load()`. */
+/**
+ * A clone of `path`: a spare one when there is one, otherwise `load()`.
+ * Handed out disabled - the caller enables it once it has dressed it.
+ * Enabled here, a clone the spawn failed to dress (it throws, it never gets
+ * to it) stood in the world as it came out of the GLB: Decay's landing left
+ * the whole Inferno model - the spiral it hides and the black square under
+ * it - drawn opaque on the ground.
+ */
 export async function takeModel(path: string, load: () => Promise<LoadedModel>): Promise<LoadedModel> {
   const entry = spare.get(path)?.pop() ?? record(await load());
-  entry.model.mesh.setEnabled(true);
+  entry.model.mesh.setEnabled(false);
   taken.set(entry.model, { path, entry });
   return entry.model;
 }
