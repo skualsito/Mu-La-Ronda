@@ -4,7 +4,7 @@ import { observer } from 'mobx-react-lite';
 import { useWindowChrome } from '../../../../components/muWindow/useWindowChrome';
 import { ItemIcon } from '../../../../components/itemIcon';
 import { ItemTooltip } from '../../../../components/itemTooltip';
-import { t, type TextKey } from '../../../../../i18n';
+import { t, tOptions, type TextKey } from '../../../../../i18n';
 import { CATEGORIES, displayName } from '../../../../../marketplace/categories';
 import { cancellable, stateLabelKey, statePillKey } from '../../../../../marketplace/catalogue';
 import { lookClasses } from '../../../../../marketplace/tiers';
@@ -80,7 +80,7 @@ const RowAction = observer(({ listing }: { listing: Listing }) => {
         disabled={Marketplace.busy}
         onClick={() => Marketplace.cancelListing(listing.id)}
       >
-        {t('common.cancel')}
+        {tOptions('common.cancel')}
       </button>
     );
   }
@@ -114,7 +114,7 @@ const Price = observer(({ listing }: { listing: Listing }) =>
   ) : (
     <>
       {formatZen(listing.price)}
-      <span className="mp-zen">{t('common.zen')}</span>
+      <span className="mp-zen">{tOptions('common.zen')}</span>
     </>
   )
 );
@@ -333,7 +333,7 @@ const MarketRate = observer(() => {
         <>
           <div className="mp-rate-floor">
             {t('marketplace.cheapest')} <strong>{formatZen(floor!)}</strong>{' '}
-            <span className="mp-zen">{t('common.zen')}</span>
+            <span className="mp-zen">{tOptions('common.zen')}</span>
           </div>
 
           <div className="mp-rate-rows">
@@ -449,7 +449,7 @@ const SellTab = observer(() => {
                     placeholder="0"
                     onChange={e => Marketplace.setSellPrice(e.target.value)}
                   />
-                  <span className="mp-zen">{t('common.zen')}</span>
+                  <span className="mp-zen">{tOptions('common.zen')}</span>
                 </label>
 
                 <button
@@ -518,7 +518,7 @@ const HistoryTab = observer(() => {
           <div className="mp-row-age">{sinceLabel(row.at)}</div>
           <div className="mp-row-price">
             {formatZen(row.zen)}
-            <span className="mp-zen">{t('common.zen')}</span>
+            <span className="mp-zen">{tOptions('common.zen')}</span>
           </div>
         </div>
       ))}
@@ -550,7 +550,7 @@ const ConfirmDialog = observer(() => {
           </div>
         </div>
         <div className="mp-modal-price">
-          {formatZen(listing.price)} <span className="mp-zen">{t('common.zen')}</span>
+          {formatZen(listing.price)} <span className="mp-zen">{tOptions('common.zen')}</span>
         </div>
         <div className="mp-modal-buttons">
           <button
@@ -561,7 +561,7 @@ const ConfirmDialog = observer(() => {
             {t('marketplace.confirm')}
           </button>
           <button className="mp-btn is-quiet" onClick={() => Marketplace.cancelBuy()}>
-            {t('common.cancel')}
+            {tOptions('common.cancel')}
           </button>
         </div>
       </div>
@@ -624,7 +624,7 @@ export const MarketplaceWindow = observer(() => {
         </nav>
 
         <div className="mp-wallet">
-          {formatZen(Marketplace.zen)} <span className="mp-zen">{t('common.zen')}</span>
+          {formatZen(Marketplace.zen)} <span className="mp-zen">{tOptions('common.zen')}</span>
         </div>
 
       </header>
@@ -634,7 +634,7 @@ export const MarketplaceWindow = observer(() => {
       <button
         data-no-drag
         className="mp-close"
-        aria-label={t('common.close')}
+        aria-label={tOptions('common.close')}
         style={{ '--mp-close-size': `${Math.max(34, Math.round(40 / chrome.scale))}px` } as CSSProperties}
         onClick={() => Marketplace.close()}
       >

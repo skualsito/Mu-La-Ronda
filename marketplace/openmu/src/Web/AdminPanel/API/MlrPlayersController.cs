@@ -50,7 +50,8 @@ public class MlrPlayersController : Controller
                     login = account.LoginName,
                     characterId = player.SelectedCharacter?.GetId(),
                     character = player.SelectedCharacter?.Name,
-                    map = player.CurrentMap?.Definition.Name,
+                    // The name is a LocalizedString, which would go out as an object.
+                    map = player.CurrentMap?.Definition.Name.ValueInNeutralLanguage,
                 });
             }
         }

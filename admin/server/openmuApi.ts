@@ -110,6 +110,14 @@ export type InGamePlayer = { accountId: string; login: string; characterId: stri
  * Null when OpenMU does not answer - the caller falls back to the proxy's account list.
  */
 export async function onlinePlayers(sql: Sql): Promise<InGamePlayer[] | null> {
+  const fail = (why: string) => {
+    // Once a minute at most: the dashboard asks every few seconds.
+    if (Date.now() - lastOnlineWarning > 60_000) {
+      lastOnlineWarning = Date.now();
+      console.warn(`[openmu] la lista de conectados no respondio: ${why}`);
+    }
+    return null;
+  };
   try {
     const get = async () =>
       fetch(`${OPENMU_API_URL}/api/mlr/players/online`, {
@@ -122,9 +130,23 @@ export async function onlinePlayers(sql: Sql): Promise<InGamePlayer[] | null> {
       await sql`DELETE FROM mlr.settings WHERE key = ${KEY_SETTING}`;
       res = await get();
     }
-    if (!res.ok) return null;
-    return (await res.json()) as InGamePlayer[];
-  } catch {
-    return null;
+    if (!res.ok) return fail(`HTTP ${res.status}`);
+    const rows = (await res.json()) as (Omit<InGamePlayer, 'map'> & { map: unknown })[];
+    // An OpenMU from before the fix sends the map name as a LocalizedString object.
+    return rows.map(r => ({ ...r, map: mapName(r.map) }));
+  } catch (err) {
+    return fail(err instanceof Error ? err.message : String(err));
   }
+}
+
+let lastOnlineWarning = 0;
+
+function mapName(map: unknown): string | null {
+  if (typeof map === 'string') return map;
+  if (map && typeof map === 'object') {
+    const named = map as { valueInNeutralLanguage?: unknown; value?: unknown };
+    const name = named.valueInNeutralLanguage ?? named.value;
+    return typeof name === 'string' ? name : null;
+  }
+  return null;
 }

@@ -244,7 +244,7 @@ import {
   localIndexOf,
 } from './common/itemStorage';
 import { NetStats } from './common/netStats';
-import { readVipLine } from './common/vip';
+import { readVipCodeLine, readVipLine } from './common/vip';
 import { readVaultLine } from './common/extraVaults';
 import { Notices } from './common/notices';
 import { SlideHelp } from './common/slideHelp';
@@ -3692,6 +3692,8 @@ EventBus.on('ServerMessage', packet => {
       // (SelfDefensePlugIn.cs); keep the state alongside showing it. It reads
       // the server's English, so it has to run before the line is translated.
       Social.trackSelfDefense(text);
+      // Mu La Ronda: the VIP window's code check is an answer for it, not a line to show.
+      if (readVipCodeLine(text)) break;
       readVipLine(text);
       // Mu La Ronda: "Baul 2/9" is the extra vaults' state, not a line to show.
       if (readVaultLine(text)) break;

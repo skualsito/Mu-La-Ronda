@@ -2450,6 +2450,7 @@ export const japaneseLayer: LanguageLayer = {
     'options.section.vitals': 'HPとMP',
     'options.englishItemNames': 'アイテム名を英語で表示',
     'exp.title': '経験値',
+    'exp.gained': '+{amount} 経験値',
     'perf.fps': 'FPS',
     'perf.frame': 'フレーム',
     'perf.ping': 'Ping',

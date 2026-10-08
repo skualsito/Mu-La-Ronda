@@ -319,3 +319,30 @@
     white-space: nowrap;
   }
 }
+
+// The answer to the discount code, under the months/code row.
+.ronda-vip-code-line {
+  min-height: 15px;
+  margin: 4px 0 0;
+  text-align: center;
+  font-size: 11px;
+  color: #b9a988;
+
+  &.is-ok {
+    color: #9fe08a;
+  }
+
+  &.is-bad {
+    color: #e07a6a;
+  }
+}
+
+// The price before the discount.
+.ronda-vip-full {
+  color: #8a7c62;
+}
+
+// A tier below the one the account has: can't be bought.
+.ronda-vip-tier.is-lower {
+  opacity: 0.55;
+}

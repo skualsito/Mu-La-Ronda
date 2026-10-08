@@ -2506,6 +2506,7 @@ export const italianLayer: LanguageLayer = {
     'options.section.vitals': 'Vita e mana',
     'options.englishItemNames': 'Nomi oggetti in inglese',
     'exp.title': 'Esperienza',
+    'exp.gained': '+{amount} di esperienza',
     'perf.fps': 'FPS',
     'perf.frame': 'Frame',
     'perf.ping': 'Ping',

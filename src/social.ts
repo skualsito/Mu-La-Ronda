@@ -752,6 +752,21 @@ export const Social = new (class _Social {
     return true;
   }
 
+  /**
+   * Mu La Ronda: a `/command` a window asks the server on its own (the VIP
+   * window checking a discount code): no cooldown, history or warp note.
+   */
+  sendWindowCommand(command: string): void {
+    if (Store.isOffline) return;
+    const message = toChatWire(clipChatText(command, MAX_CHAT_LENGTH));
+    const packet = PublicChatMessagePacket.createPacket(
+      PublicChatMessagePacket.getRequiredSize(10 + message.length)
+    );
+    packet.setCharacter(Store.playerData.name);
+    packet.setMessage(message);
+    Store.sendToGS(packet.buffer);
+  }
+
   private sendWhisper(to: string, text: string): void {
     const wire = toChatWire(text);
     // Name (10) + message: getRequiredSize counts from the code byte.

@@ -12,7 +12,9 @@ using MUnique.OpenMU.PlugIns;
 /// <summary>
 /// Mu La Ronda: /vip shows the account's VIP; /vip bronce|plata|oro buys 30 days
 /// of it with the character's zen (the beta's way to pay). Buying the tier one
-/// already has adds 30 days to it; another tier replaces it from now on.
+/// already has adds to it; a lower one can't be bought; a higher one waits and
+/// starts when the current one ends (Vip.NextOf). /vip codigo X checks a discount
+/// code for the VIP window, which shows the prices with it.
 /// </summary>
 [Guid("2C7D9E41-6A8B-4F3C-B1D5-0E9F8A7B6C24")]
 [PlugIn]
@@ -44,6 +46,12 @@ public class VipChatCommandPlugIn : IChatCommandPlugIn
         // "/vip oro", "/vip oro 3", "/vip oro 3 CODIGO" or "/vip oro CODIGO": the tier, how many
         // months (1-12) and a discount code.
         var parts = argument.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts[0].Equals("codigo", StringComparison.OrdinalIgnoreCase))
+        {
+            await this.CheckCodeAsync(player, parts.Length > 1 ? parts[1] : string.Empty).ConfigureAwait(false);
+            return;
+        }
+
         var months = 1;
         string? code = null;
         foreach (var part in parts.Skip(1))
@@ -66,6 +74,23 @@ public class VipChatCommandPlugIn : IChatCommandPlugIn
 
         if (player.Account is not { } account)
         {
+            return;
+        }
+
+        // Which part of the VIP this buys: more of the current tier (or a first one), or more of
+        // the higher tier that waits for the current one to end.
+        var (current, expires) = Vip.Of(player);
+        var (next, nextDays) = Vip.NextOf(player);
+        var queue = current.Number > 0 && tier.Number > current.Number;
+        if (current.Number > tier.Number)
+        {
+            await player.ShowBlueMessageAsync($"VIP: tenes VIP {current.Name}, no podes comprar uno mas bajo.").ConfigureAwait(false);
+            return;
+        }
+
+        if (queue && next.Number > 0 && next.Number != tier.Number)
+        {
+            await player.ShowBlueMessageAsync($"VIP: ya tenes VIP {next.Name} esperando a que termine el {current.Name}; podes sumarle meses a ese.").ConfigureAwait(false);
             return;
         }
 
@@ -111,17 +136,13 @@ public class VipChatCommandPlugIn : IChatCommandPlugIn
             return;
         }
 
-        // The months add up: on top of what is left of the same tier, and what is left of another
-        // tier is not lost either - it is turned into days of the new one by what they are worth.
-        var (current, expires) = Vip.Of(player);
+        // The months add up: on top of what is left of the same tier, or - for a higher tier - on
+        // top of what already waits for the current one to end.
         var now = DateTime.UtcNow;
-        var left = current.Number > 0 && expires > now ? expires - now : TimeSpan.Zero;
-        if (current.Number > 0 && current.Number != tier.Number && left > TimeSpan.Zero)
-        {
-            left = TimeSpan.FromTicks((long)(left.Ticks * ((double)current.Price / tier.Price)));
-        }
-
-        if (!Vip.Grant(player, tier, now + left + (Vip.Duration * months)))
+        var granted = queue
+            ? Vip.SetNext(player, tier, (next.Number == tier.Number ? nextDays : 0) + (Vip.Duration.TotalDays * months))
+            : Vip.Grant(player, tier, (current.Number > 0 && expires > now ? expires : now) + (Vip.Duration * months));
+        if (!granted)
         {
             // Nothing was granted: the zen goes back.
             player.TryAddMoney((int)price);
@@ -135,7 +156,26 @@ public class VipChatCommandPlugIn : IChatCommandPlugIn
             await player.ShowBlueMessageAsync($"VIP: codigo {discount.Code} aplicado, {discount.Percent}% de descuento ({price:N0} zen en vez de {fullPrice:N0}).").ConfigureAwait(false);
         }
 
+        if (queue)
+        {
+            await player.ShowBlueMessageAsync($"VIP: el {tier.Name} empieza cuando termine tu {current.Name}.").ConfigureAwait(false);
+        }
+
         player.Logger.LogInformation("VIP {Tier} x{Months} bought by {Account} ({Character}) for {Price} zen.", tier.Name, months, player.Account?.LoginName, player.Name, price);
         await player.ShowBlueMessageAsync(Vip.StatusLine(player)).ConfigureAwait(false);
+    }
+
+    /// <summary>Answers the VIP window: the code's discount, or why it can't be used (src/common/vip.ts reads it).</summary>
+    private async ValueTask CheckCodeAsync(Player player, string code)
+    {
+        if (player.Account is not { } account || code.Length is 0 or > 24)
+        {
+            return;
+        }
+
+        var (found, refusal) = await VipDiscountCodes.FindAsync(code, account.GetId()).ConfigureAwait(false);
+        await player.ShowBlueMessageAsync(found is null
+            ? $"VIP codigo {code}: {refusal}"
+            : $"VIP codigo {code}: {Math.Clamp(found.Percent, 0, 100)}% de descuento.").ConfigureAwait(false);
     }
 }

@@ -48,26 +48,14 @@
     cursor: pointer;
   }
 
-  // Same type as the labels around it; the colour is what marks it clickable,
-  // since MU has no underlined link anywhere in its interface.
-  .login-register {
+  // Mu La Ronda: "create account" as a button just under the window (same
+  // top as .login-win, plus its height and a gap).
+  .login-register-row {
     position: absolute;
-    pointer-events: auto;
-    cursor: pointer;
-    // Mu La Ronda: gold, bold and underlined - grey 11px over the stone art
-    // was nearly invisible, and it is how a new player gets an account.
-    color: #f2cf63;
-    font-size: 12px;
-    font-weight: bold;
-    line-height: 1;
-    text-decoration: underline;
-    text-underline-offset: 2px;
-    text-shadow: 1px 1px 0 #000, 0 0 4px rgba(0, 0, 0, 0.9);
-    white-space: nowrap;
-
-    &:hover {
-      color: #ffffff;
-    }
+    left: 50%;
+    top: calc((100% - 245px) * 2 / 3 + 245px + 6px);
+    transform: translateX(-50%);
+    .mu-font();
   }
 
   // The box art is the input's background, so the field itself is invisible

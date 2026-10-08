@@ -127,13 +127,14 @@ export type Dashboard = {
   newAccounts: number;
   online: number;
   onlineAccounts: string[];
-  /** Each online account with its characters (which one is in game is not known). */
   /** Who is playing: the character in the game, or null while still on the character list. */
   onlineList: {
     accountId: string;
     login: string;
     character: { id: string; name: string; class: string; level: number; resets: number; map: string | null } | null;
   }[];
+  /** False when OpenMU did not answer: onlineList is then the accounts, with no character. */
+  gameData: boolean;
   top: { name: string; class: string; resets: number; level: number }[];
   recent: { login: string; registeredAt: string }[];
   server: ServerStatus;

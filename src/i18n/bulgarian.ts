@@ -2489,6 +2489,7 @@ export const bulgarianLayer: LanguageLayer = {
     'options.section.vitals': 'Живот и мана',
     'options.englishItemNames': 'Имена на предмети на английски',
     'exp.title': 'Опит',
+    'exp.gained': '+{amount} опит',
     'perf.fps': 'FPS',
     'perf.frame': 'Кадър',
     'perf.ping': 'Пинг',

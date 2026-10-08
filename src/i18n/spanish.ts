@@ -2508,6 +2508,7 @@ export const spanishLayer: LanguageLayer = {
     'options.section.vitals': 'Vida y maná',
     'options.englishItemNames': 'Nombres de objetos en inglés',
     'exp.title': 'Experiencia',
+    'exp.gained': '+{amount} de experiencia',
     'perf.fps': 'FPS',
     'perf.frame': 'Cuadro',
     'perf.ping': 'Ping',

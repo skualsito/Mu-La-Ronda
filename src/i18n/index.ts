@@ -27,10 +27,11 @@ const FALLBACK_CODE = 'en';
 /**
  * Mu La Ronda: the game reads in English, but the Options window (and the key
  * binding names and exit prompts it shows) always reads in Spanish, whatever
- * language is picked. Keys under these prefixes resolve from that layer first.
+ * language is picked - and so does the marketplace. Keys under these prefixes
+ * resolve from that layer first.
  */
 const OPTIONS_UI_CODE = 'es';
-const OPTIONS_UI_PREFIXES = ['options.', 'keys.', 'exit.'] as const;
+const OPTIONS_UI_PREFIXES = ['options.', 'keys.', 'exit.', 'marketplace.'] as const;
 
 /**
  * Mu La Ronda: English is the default for everyone, regardless of the

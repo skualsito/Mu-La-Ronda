@@ -58,6 +58,7 @@ import { Notices } from '../../components/notices';
 import { MapNameBanner } from './components/mapNameBanner';
 import { SessionStatsWindow } from './components/sessionStats';
 import { PerfReadout } from './components/perfReadout';
+import { ExpFeed } from './components/expFeed';
 import { SlideHelpBar } from '../../components/slideHelp';
 import { DebugMenuWindow } from '../../components/debugMenu';
 import { GmPanelWindow } from '../../components/gmPanel';
@@ -76,6 +77,7 @@ const HUD = observer(() => {
       <TargetHealthBar />
       <MapNameBanner />
       <PerfReadout />
+      <ExpFeed />
       <Notices />
       <SlideHelpBar />
       <BuffBar />

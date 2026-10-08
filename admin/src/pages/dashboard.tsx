@@ -34,7 +34,7 @@ export function DashboardPage() {
         <Stat label="Cuentas baneadas" value={formatNumber(data.banned)} tone={data.banned ? 'warn' : undefined} />
       </div>
 
-      <div className="grid-2">
+      <div className="grid-2 dash-pair">
         <Card title="Top resets">
           <table className="table">
             <thead>
@@ -67,7 +67,10 @@ export function DashboardPage() {
           </table>
         </Card>
 
-        <Card title={`Conectados ahora (${data.onlineList.length})`}>
+        <Card title={`Conectados ahora (${data.onlineList.length})`} className="online-card">
+          {!data.gameData && data.onlineList.length > 0 && (
+            <p className="muted small online-note">OpenMU no respondió: se ven las cuentas, sin el personaje.</p>
+          )}
           {data.onlineList.length ? (
             <ul className="list online-list">
               {data.onlineList.map(entry =>
@@ -84,7 +87,7 @@ export function DashboardPage() {
                 ) : (
                   <li key={entry.accountId}>
                     <a href={`#/cuentas/${entry.accountId}`}>{entry.login}</a>
-                    <span className="muted small">eligiendo personaje</span>
+                    <span className="muted small">{data.gameData ? 'eligiendo personaje' : 'conectado'}</span>
                   </li>
                 )
               )}

@@ -67,7 +67,7 @@ describe('to negotiate', () => {
     const advert = store.listings.find(l => l.offerId === 'o1');
     if (!advert) throw new Error('advert missing');
     store.negotiate(advert);
-    expect(whisper).toHaveBeenCalledWith('Seller', expect.stringContaining('on the market'));
+    expect(whisper).toHaveBeenCalledWith('Seller', expect.stringContaining('en el mercado'));
     expect(store.flash).toContain('Seller');
   });
 

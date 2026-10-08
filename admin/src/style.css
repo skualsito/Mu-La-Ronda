@@ -1658,9 +1658,28 @@ select {
 }
 
 /* Mu La Ronda: who is online, scrolling once it is long; each name links to the character. */
+/* Top resets and the online list side by side, the same height: the top sets it, the list scrolls in it. */
+.dash-pair {
+  align-items: stretch;
+}
+.online-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 240px;
+}
+.online-note {
+  margin: -6px 0 8px;
+}
 .online-list {
-  max-height: 260px;
+  flex: 1 1 0;
+  min-height: 0;
   overflow-y: auto;
+}
+@media (max-width: 860px) {
+  .online-list {
+    flex: none;
+    max-height: 320px;
+  }
 }
 .online-list li {
   gap: 10px;

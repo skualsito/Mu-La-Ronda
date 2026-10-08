@@ -10,7 +10,6 @@ import { canAttackPlayer, isAttackableEntity } from './attackSystem';
 import { isMobileDevice } from '../../common/mobile';
 import { Commands } from '../../commands';
 import { Store } from '../../store';
-import { TELEPORT_ALLY } from '../../common/skillCasting';
 import { aimX, aimY } from '../../camera';
 import { requestPing } from '../../ping/pingNet';
 import { pickGround } from '../../libs/mu/terrainPick';
@@ -204,20 +203,9 @@ export const PointerInputSystem: ISystemFactory = world => {
       // cursor: the duel enemy, an outlaw, or anyone while Ctrl is held.
       const hovered = world.currentPointerTarget ?? null;
       const pvp = !!hovered && canAttackPlayer(world, hovered, ev.event.ctrlKey);
-      // `CNewUIHotKey::UpdateMouseEvent`: on another player the right click
-      // opens the quick command menu at the cursor instead of casting - but
-      // not on one the hero may attack, where the click is the attack. Ctrl
-      // is the force-cast modifier below, so it still aims past the player.
-      // Teleport Ally is cast on a party member, so it gets the click.
-      if (
-        ev.type === PointerEventTypes.POINTERDOWN &&
-        !ev.event.ctrlKey &&
-        !pvp &&
-        Store.currentSkill !== TELEPORT_ALLY &&
-        Commands.openQuickOn(hovered, ev.event.clientX, ev.event.clientY)
-      ) {
-        return;
-      }
+      // Mu La Ronda: no quick command menu on a right click over another
+      // player (`CNewUIHotKey::UpdateMouseEvent` opens one) - it got in the
+      // way more than it helped. The click casts, as anywhere else.
       // Right button: skill use (Attack() with MouseRButton). Re-picked on
       // every move while held so the cast follows the cursor.
       if (ev.type === PointerEventTypes.POINTERDOWN) {

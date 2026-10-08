@@ -343,7 +343,7 @@ export function createApp(deps: AppDeps): App {
             boxId: newBoxId(),
           });
         } catch (e) {
-          return json({ error: e instanceof Error ? e.message : 'That listing was refused.' }, 400, cors);
+          return json({ error: e instanceof Error ? e.message : 'No se pudo publicar.' }, 400, cors);
         }
 
         const token = mint({
@@ -406,7 +406,7 @@ export function createApp(deps: AppDeps): App {
           );
           return json({ offer: offers.publicOffer(offer) }, 201, cors);
         } catch (e) {
-          return json({ error: e instanceof Error ? e.message : 'That advert was refused.' }, 400, cors);
+          return json({ error: e instanceof Error ? e.message : 'No se pudo publicar el aviso.' }, 400, cors);
         }
       }
 

@@ -129,7 +129,9 @@ export async function dashboard(
   for (const w of waiting) onlineList.push({ accountId: w.accountId, login: w.login, character: null });
 
   const online = inGame ? inGame.length : onlineAccounts.size;
-  return { ...counts, online, onlineAccounts: logins, onlineList, top, recent };
+  // False when OpenMU did not answer: the list is then the accounts alone, without their characters.
+  const gameData = inGame !== null;
+  return { ...counts, online, onlineAccounts: logins, onlineList, gameData, top, recent };
 }
 
 // ---------------------------------------------------------------------------

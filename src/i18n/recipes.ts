@@ -2796,6 +2796,7 @@ export const EN_TEXT = {
 
   // ---- hud readouts ------------------------------------------------------
   'exp.title': 'Experience',
+  'exp.gained': '+{amount} experience',
   'perf.fps': 'FPS',
   'perf.frame': 'Frame',
   'perf.ping': 'Ping',

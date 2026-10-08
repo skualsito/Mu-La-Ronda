@@ -2655,6 +2655,7 @@ export const polishLayer: LanguageLayer = {
     'serverMessage.npcGuildNeedsLevel100': 'Musisz mieć co najmniej poziom 100',
     'serverMessage.npcAlreadyInGuild': 'Należysz już do gildii',
     'exp.title': 'Doświadczenie',
+    'exp.gained': '+{amount} doświadczenia',
     'perf.fps': 'FPS',
     'perf.frame': 'Klatka',
     'perf.ping': 'Ping',

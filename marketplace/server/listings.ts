@@ -77,10 +77,10 @@ export function createPending(input: {
   boxId: string;
 }): Listing {
   if (!Number.isInteger(input.price) || input.price <= 0) {
-    throw new Error('price must be a positive whole number of Zen');
+    throw new Error('El precio tiene que ser un número entero de Zen mayor a cero.');
   }
   if (input.price > MAX_PRICE) {
-    throw new Error('price is above what a character can hold');
+    throw new Error('El precio supera lo que puede tener un personaje.');
   }
 
   const now = Date.now();
@@ -112,7 +112,7 @@ export function createPending(input: {
     detail: { price: input.price, box: input.boxId },
   });
   const listing = byId(id);
-  if (!listing) throw new Error('the listing was not written');
+  if (!listing) throw new Error('No se pudo guardar la publicación.');
   return listing;
 }
 

@@ -6,12 +6,16 @@
 -- 2 plata, 3 oro) y el vencimiento (dias desde 1970-01-01 UTC). En la beta se
 -- compra con zen (/vip oro, o el boton VIP del menu Esc); el panel tambien
 -- puede darlo. Los beneficios (+10/20/30% de experiencia y zen) los pone el
--- plugin al entrar al juego.
+-- plugin al entrar al juego. Un nivel mas alto comprado mientras dura uno mas
+-- bajo queda en espera (otros dos atributos: nivel y dias) y empieza cuando
+-- termina el actual.
 INSERT INTO config."AttributeDefinition" ("Id", "Designation", "Description", "GameConfigurationId", "MaximumValue")
 SELECT v.id, v.designation, v.description, g."Id", NULL
   FROM (VALUES
           ('8b6f3a1e-5c2d-4e7f-9a10-3d4c5b6a7e81'::uuid, 'Mu La Ronda VIP Tier', '0 none, 1 bronze, 2 silver, 3 gold.'),
-          ('8b6f3a1e-5c2d-4e7f-9a10-3d4c5b6a7e82'::uuid, 'Mu La Ronda VIP Expires', 'Days since 1970-01-01 UTC.')
+          ('8b6f3a1e-5c2d-4e7f-9a10-3d4c5b6a7e82'::uuid, 'Mu La Ronda VIP Expires', 'Days since 1970-01-01 UTC.'),
+          ('8b6f3a1e-5c2d-4e7f-9a10-3d4c5b6a7e83'::uuid, 'Mu La Ronda VIP Next Tier', 'The tier that starts when the current one ends (0 none).'),
+          ('8b6f3a1e-5c2d-4e7f-9a10-3d4c5b6a7e84'::uuid, 'Mu La Ronda VIP Next Days', 'How many days the next tier lasts.')
        ) AS v(id, designation, description)
  CROSS JOIN (SELECT "Id" FROM config."GameConfiguration" LIMIT 1) g
 ON CONFLICT ("Id") DO NOTHING;

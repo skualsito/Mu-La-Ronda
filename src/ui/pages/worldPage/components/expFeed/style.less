@@ -1,0 +1,23 @@
+// The experience of each kill, top left: loose HUD text with the usual shadow.
+.exp-feed {
+  position: absolute;
+  transform-origin: 0 0;
+  pointer-events: none;
+  user-select: none;
+
+  .exp-feed-line {
+    position: absolute;
+    left: 0;
+    white-space: nowrap;
+    text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.9);
+    animation-name: exp-feed-fade;
+    animation-fill-mode: forwards;
+    animation-timing-function: linear;
+  }
+}
+
+@keyframes exp-feed-fade {
+  to {
+    opacity: 0;
+  }
+}

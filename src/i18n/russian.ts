@@ -2485,6 +2485,7 @@ export const russianLayer: LanguageLayer = {
     'options.section.vitals': 'Жизнь и мана',
     'options.englishItemNames': 'Названия предметов по-английски',
     'exp.title': 'Опыт',
+    'exp.gained': '+{amount} опыта',
     'perf.fps': 'FPS',
     'perf.frame': 'Кадр',
     'perf.ping': 'Пинг',

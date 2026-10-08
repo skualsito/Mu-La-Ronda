@@ -69,7 +69,7 @@ export function createOffer(
   now = Date.now()
 ): Offer {
   if (bySeller(input.seller, now).length >= MAX_OFFERS_PER_ACCOUNT) {
-    throw new Error(`You already have ${MAX_OFFERS_PER_ACCOUNT} items up to negotiate. Take one down first.`);
+    throw new Error(`Ya tenés ${MAX_OFFERS_PER_ACCOUNT} items para negociar. Sacá uno primero.`);
   }
 
   const id = randomUUID();
@@ -99,7 +99,7 @@ export function createOffer(
   audit('offer created', { listing: id, account: input.seller, detail: { slot: input.slot, item: [input.item.group, input.item.num] } });
 
   const row = db.query('SELECT * FROM offers WHERE id = ?').get(id) as OfferRow | null;
-  if (!row) throw new Error('the offer was not written');
+  if (!row) throw new Error('No se pudo guardar el aviso.');
   return toOffer(row);
 }
 

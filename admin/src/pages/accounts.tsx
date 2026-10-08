@@ -437,7 +437,13 @@ export function VaultCard({ accountId, online }: { accountId: string; online: bo
   );
 }
 
-type Vip = { tier: number; name: string; expiresAt: string | null; active: boolean };
+type Vip = {
+  tier: number;
+  name: string;
+  expiresAt: string | null;
+  active: boolean;
+  next: { tier: number; name: string; expiresAt: string } | null;
+};
 
 const VIP_OPTIONS = [
   { value: 0, label: 'Sin VIP' },
@@ -473,6 +479,12 @@ export function VipCard({ accountId, locked }: { accountId: string; locked: bool
         {data.active ? (
           <>
             <Badge tone="ok">{data.name}</Badge> hasta {formatDate(data.expiresAt!)}
+            {data.next && (
+              <>
+                {', después '}
+                <Badge tone="ok">{data.next.name}</Badge> hasta {formatDate(data.next.expiresAt)}
+              </>
+            )}
           </>
         ) : (
           <span className="muted">Sin VIP{data.expiresAt ? ` (el último venció ${formatDate(data.expiresAt)})` : ''}.</span>

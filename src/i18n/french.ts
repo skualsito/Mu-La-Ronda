@@ -2508,6 +2508,7 @@ export const frenchLayer: LanguageLayer = {
     'options.section.vitals': 'Vie et mana',
     'options.englishItemNames': 'Noms d’objets en anglais',
     'exp.title': 'Expérience',
+    'exp.gained': '+{amount} d’expérience',
     'perf.fps': 'FPS',
     'perf.frame': 'Image',
     'perf.ping': 'Ping',
