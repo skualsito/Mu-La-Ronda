@@ -29,7 +29,8 @@ import {
 } from '../libs/babylon/exports';
 import { clampAlpha } from './clampAlpha';
 import { chromeMaterial, disposeChromeMaterials } from './chrome';
-import { disposeLoadedModel, getMaterial, loadGLTF, type LoadedModel } from '../common/modelLoader';
+import { getMaterial, loadGLTF, type LoadedModel } from '../common/modelLoader';
+import { clearModelPool, returnModel, takeModel } from './modelPool';
 import { BlendState } from '../common/objects/enum';
 import { Store } from '../store';
 import type { TestScene } from '../scenes/testScene';
@@ -469,10 +470,10 @@ export function spawnModel(scene: Scene, at: Vector3, opts: ModelOptions): Model
   };
 
   if (world) {
-    void loadGLTF(opts.model, world)
+    void takeModel(opts.model, () => loadGLTF(opts.model, world))
       .then(gltf => {
         if (disposed) {
-          disposeLoadedModel(gltf);
+          returnModel(gltf);
           return;
         }
         loaded = gltf;
@@ -739,9 +740,10 @@ export function spawnModel(scene: Scene, at: Vector3, opts: ModelOptions): Model
       for (const m of fadeMats) m.dispose(false, false);
       for (const m of meshes) releaseEffectGlow(m);
       for (const cp of copyNodes) cp.node.dispose(false, false);
-      node.dispose(false, false);
-      if (loaded) disposeLoadedModel(loaded);
+      // Back to the pool before the node goes: it is detached there.
+      if (loaded) returnModel(loaded);
       loaded = null;
+      node.dispose(false, false);
     },
   });
 
@@ -795,6 +797,7 @@ function update(_map: number, dt: number): void {
 function reset(): void {
   live.clear();
   disposeChromeMaterials();
+  clearModelPool();
 }
 
 // ---- 3. the layer ----------------------------------------------------------
