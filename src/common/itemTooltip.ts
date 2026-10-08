@@ -169,6 +169,20 @@ export function itemDisplayName(item: Item): string {
   return nameLine(item, stats.def, stats.level);
 }
 
+/**
+ * Mu La Ronda: the Horn of Fenrir's option, as OpenMU applies it (Pets.cs):
+ * black +10% damage, blue -10% damage taken, gold life and mana +level/2 and
+ * damage +level/12 (wizardry +level/25).
+ */
+function fenrirLines(out: Lines, flags: number, heroLevel: number) {
+  if (flags & 0x01) out.add(t('item.fenrir.black'), 'blue');
+  if (flags & 0x02) out.add(t('item.fenrir.blue'), 'blue');
+  if (flags & 0x04) {
+    out.add(t('item.fenrir.goldLife', { value: Math.trunc(heroLevel / 2) }), 'blue');
+    out.add(t('item.fenrir.goldDamage', { value: Math.trunc(heroLevel / 12), wizardry: Math.trunc(heroLevel / 25) }), 'blue');
+  }
+}
+
 /** `CalcExcellentOptions` order and `GetSpecialOptionText` wording. */
 function excellentLines(out: Lines, def: ItemDef, flags: number, heroLevel: number) {
   const armorLike = isShield(def) || isArmorPart(def) || isRing(def);
@@ -644,7 +658,9 @@ function equipmentLines(
     else out.add(t('item.additionalDefense', { value: bonus }), 'blue');
   }
 
-  if (excellentFlags > 0) {
+  // Mu La Ronda: the Horn of Fenrir's option rides the excellent bits.
+  if (def.group === 13 && def.index === 37) fenrirLines(out, excellentFlags, hero.level);
+  else if (excellentFlags > 0) {
     excellentLines(out, def, excellentFlags, hero.level);
   }
 

@@ -97,6 +97,10 @@ const item: Item = {
     ReadLuckOption(array[1], item);
     ReadNormalOption(array, item);
     ReadExcellentOption(array[3], item);
+    // Mu La Ronda: the Horn of Fenrir carries its option (black / blue / gold)
+    // in the excellent bits (`GetFenrirType`); it is not an excellent item, so
+    // the bits stay (pets.ts reads its colour off them) and the flag goes.
+    if (itemGroup === 13 && itemNumber === 37) item.isExcellent = false;
     ReadAncientOption(array[4], item);
 
     if (array[6] !== 0) item.socketBonus = array[6];
