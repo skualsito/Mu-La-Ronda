@@ -8,6 +8,10 @@ import {
 } from '../libs/babylon/exports';
 import type { World } from '../ecs/world';
 import { ModelObject } from './modelObject';
+import { CapeCloth } from './capeCloth';
+import { storeRef } from './storeRef';
+import { GameOptions } from './gameOptions';
+import { shedLevel } from './loadShed';
 import { getMaterial, getScrollVariant } from './modelLoader';
 import { BlendState } from './objects/enum';
 import { loadMuSprite } from '../libs/mu/sprites';
@@ -32,6 +36,13 @@ import {
 } from './wings';
 
 const DARK = [0, 0, 0] as const;
+
+/**
+ * Mu La Ronda: another player's wings roll for a bolt one tick in this many
+ * (the wearer's own every tick). Each bolt is a model clone, like the Fenrir's
+ * (petSystem.ts `OTHER_FENRIR_BOLT_EVERY`).
+ */
+const OTHER_THUNDER_EVERY = 3;
 
 /** flare01 is 64 px; the thunder's halo is `CreateSprite(BITMAP_LIGHT, ..., 2.0f)`. */
 const THUNDER_HALO_TILES = (64 * 2) / 100;
@@ -95,6 +106,10 @@ function overlayTexture(scene: Scene, path: string): Texture {
  */
 export class WingObject extends ModelObject {
   spec: WingSpec | null = null;
+
+  /** Mu La Ronda: the cape's simulated cloth, for the model it was built on. */
+  #cloth: CapeCloth | null = null;
+  #clothOf: ModelObject['gltf'] = null;
 
   /**
    * Wings cast a shadow here, blend mesh included.
@@ -166,6 +181,8 @@ export class WingObject extends ModelObject {
     this.#wake = null;
     this.#wakeSpec = null;
     this.#dropHeld();
+    this.#cloth = null;
+    this.#clothOf = null;
   }
 
   Update(gameTime: World['gameTime']): void {
@@ -189,6 +206,9 @@ export class WingObject extends ModelObject {
 
     if (this.#heldOf !== this.gltf) this.#createHeld();
     this.#held?.update(true, this.#heldLook);
+
+    if (this.#clothOf !== this.gltf) this.#createCloth();
+    this.#cloth?.update(dt);
     this.#updateThunder(dt);
 
     if (this.spec?.wakes && this.#wakeSpec !== this.spec) {
@@ -213,8 +233,25 @@ export class WingObject extends ModelObject {
   #drawn(): boolean {
     const root = this.gltf?.mesh;
     if (!root || !this.node.isEnabled()) return false;
-    for (const mesh of root.getChildMeshes(true)) if (mesh.isVisible) return true;
+    // Mu La Ronda: every descendant - a glTF puts its meshes under nodes, so the
+    // direct children alone were none and the per-frame passes never ran.
+    for (const mesh of root.getChildMeshes(false)) if (mesh.isVisible) return true;
     return false;
+  }
+
+  /** The cape's cloth, when this part has one (debug probes read it). */
+  get cloth(): CapeCloth | null {
+    return this.#cloth;
+  }
+
+  #createCloth(): void {
+    this.#clothOf = this.gltf;
+    this.#cloth = null;
+    const index = this.spec?.cloth;
+    if (index === undefined) return;
+    const mesh = this.getMesh(index);
+    if (!mesh || mesh.getTotalVertices() === 0) return;
+    this.#cloth = new CapeCloth(mesh, () => this.Parent?.node ?? null);
   }
 
   #dropHeld(): void {
@@ -265,7 +302,12 @@ export class WingObject extends ModelObject {
     const aura = this.rootObject.BodyShine.aura;
     if (aura && aura.x + aura.y + aura.z > 0) return;
 
-    this.#thunderDue = Math.min(4, this.#thunderDue + dt / TICK);
+    // Mu La Ronda: another player's wings follow the gear-effects option and
+    // the frame-rate shedding, and thunder a third as often.
+    const own = storeRef().world?.playerEntity?.modelObject === this.rootObject;
+    if (!own && (!GameOptions.otherEquipmentEffects || shedLevel() >= 2)) return;
+
+    this.#thunderDue = Math.min(4, this.#thunderDue + dt / (own ? TICK : TICK * OTHER_THUNDER_EVERY));
 
     const scene = this.node.getScene();
     const [r, g, b] = thunder.light;

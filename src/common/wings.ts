@@ -126,6 +126,11 @@ export type WingSpec = {
   /** Capes are link-bound to bone 19 with an explicit matrix. */
   readonly cape?: 'emperor' | 'overrule';
   /**
+   * Mu La Ronda: the model's mesh that is the cape's cloth, simulated instead
+   * of standing stiff (`capeCloth.ts`, the original's `CPhysicsCloth`).
+   */
+  readonly cloth?: number;
+  /**
    * Clip to play inside a safe zone instead of clip 0 - the Wings of Darkness
    * fold shut in town (`RenderLinkObject`, ZzzCharacter.cpp:6785).
    */
@@ -246,19 +251,19 @@ const WINGS: Readonly<Record<number, WingSpec>> = {
       },
     ],
   },
-  [CAPE_OF_EMPEROR]: { blendMesh: -1, cape: 'emperor' },
+  [CAPE_OF_EMPEROR]: { blendMesh: -1, cape: 'emperor', cloth: 2 },
   [WING_OF_CURSE]: PLAIN,
   [WINGS_OF_DESPAIR]: { blendMesh: -1, passes: [{ mesh: 1, kind: 'chrome' }] },
   [WING_OF_DIMENSION]: { blendMesh: -1, passes: [{ mesh: 1, kind: 'chrome' }] },
   // The model part of the Rage Fighter's capes: Cape of Fighter on the wing
   // bone, Cape of Overrule on bone 19 (ZzzCharacter.cpp:6708-6714, :15421-15427).
-  // The cloth the original hangs under them (:9780-9809) is not drawn.
-  [CAPE_OF_FIGHTER]: PLAIN,
+  // Mu La Ronda: Cape of Fighter's model is its cloth (capeCloth.ts).
+  [CAPE_OF_FIGHTER]: { ...PLAIN, cloth: 0 },
   [CAPE_OF_OVERRULE]: { blendMesh: -1, cape: 'overrule' },
 };
 
 const CAPES: Readonly<Record<number, WingSpec>> = {
-  [CAPE_OF_LORD]: { blendMesh: -1, cape: 'emperor' },
+  [CAPE_OF_LORD]: { blendMesh: -1, cape: 'emperor', cloth: 0 },
 };
 
 /** True for the items the appearance's wing slot can legitimately hold. */
