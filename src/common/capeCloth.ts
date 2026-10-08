@@ -33,10 +33,59 @@ const BODY_BOTTOM = 0.15;
 const BODY_TOP = 1.55;
 /** Breeze, world units per second squared. */
 const WIND = 0.9;
+/**
+ * Pull back toward the cape's own shape, per 60 Hz step: it keeps the cut the
+ * model was drawn with (Cape of Overrule flares out a metre behind and would
+ * otherwise hang straight through the floor) while it still swings and trails.
+ */
+const SHAPE = 0.06;
+/** The lowest a free point may go, over the hero's feet. */
+const FLOOR = 0.03;
 
 const tmp = new Vector3();
 const tmpB = new Vector3();
 const inverse = new Matrix();
+const boneMatrix = new Matrix();
+
+/**
+ * Mu La Ronda: a skinned cape as a plain mesh. Cape of Overrule's sheet hangs
+ * off one bone of its own skeleton, in a clip of a single key - it never
+ * moved. Its vertices are put where that pose draws them (what the skinning
+ * shader does: world x bone x position), in the mesh's own space, and the
+ * skeleton is let go, so the cloth can move them.
+ */
+export function bakeSkin(mesh: AbstractMesh): void {
+  const skeleton = mesh.skeleton;
+  if (!skeleton) return;
+  (mesh as AbstractMesh & { makeGeometryUnique?: () => void }).makeGeometryUnique?.();
+  skeleton.prepare(true);
+  const matrices = skeleton.getTransformMatrices(mesh);
+  const positions = mesh.getVerticesData(VertexBuffer.PositionKind);
+  const indices = mesh.getVerticesData(VertexBuffer.MatricesIndicesKind);
+  const weights = mesh.getVerticesData(VertexBuffer.MatricesWeightsKind);
+  if (!positions || !indices || !weights) return;
+  const out = new Float32Array(positions.length);
+  for (let v = 0; v < positions.length / 3; v++) {
+    tmp.set(positions[v * 3], positions[v * 3 + 1], positions[v * 3 + 2]);
+    let x = 0;
+    let y = 0;
+    let z = 0;
+    for (let k = 0; k < 4; k++) {
+      const w = weights[v * 4 + k];
+      if (!w) continue;
+      Matrix.FromArrayToRef(matrices, indices[v * 4 + k] * 16, boneMatrix);
+      Vector3.TransformCoordinatesToRef(tmp, boneMatrix, tmpB);
+      x += tmpB.x * w;
+      y += tmpB.y * w;
+      z += tmpB.z * w;
+    }
+    out[v * 3] = x;
+    out[v * 3 + 1] = y;
+    out[v * 3 + 2] = z;
+  }
+  mesh.skeleton = null;
+  mesh.setVerticesData(VertexBuffer.PositionKind, out, true);
+}
 
 export class CapeCloth {
   readonly mesh: AbstractMesh;
@@ -238,6 +287,23 @@ export class CapeCloth {
       }
       this.relax(this.bends, this.bendLengths, 0.5);
       this.keepOutOfBody();
+    }
+    this.keepShape(world);
+  }
+
+  /** Each free point drawn a little toward where the model puts it. */
+  private keepShape(world: Matrix): void {
+    const body = this.body();
+    const floor = body ? body.getAbsolutePosition().y + FLOOR : -Infinity;
+    for (let p = 0; p < this.count; p++) {
+      if (this.pinned[p]) continue;
+      const i = p * 3;
+      tmp.set(this.restParticles[i], this.restParticles[i + 1], this.restParticles[i + 2]);
+      Vector3.TransformCoordinatesToRef(tmp, world, tmpB);
+      this.pos[i] += (tmpB.x - this.pos[i]) * SHAPE;
+      this.pos[i + 1] += (tmpB.y - this.pos[i + 1]) * SHAPE;
+      this.pos[i + 2] += (tmpB.z - this.pos[i + 2]) * SHAPE;
+      if (this.pos[i + 1] < floor) this.pos[i + 1] = floor;
     }
   }
 

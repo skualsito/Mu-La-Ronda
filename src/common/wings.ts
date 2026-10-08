@@ -259,7 +259,8 @@ const WINGS: Readonly<Record<number, WingSpec>> = {
   // bone, Cape of Overrule on bone 19 (ZzzCharacter.cpp:6708-6714, :15421-15427).
   // Mu La Ronda: Cape of Fighter's model is its cloth (capeCloth.ts).
   [CAPE_OF_FIGHTER]: { ...PLAIN, cloth: 0 },
-  [CAPE_OF_OVERRULE]: { blendMesh: -1, cape: 'overrule' },
+  // Mu La Ronda: mesh 1 is the cape itself, skinned to one bone in a one-key pose (capeCloth.ts bakes it).
+  [CAPE_OF_OVERRULE]: { blendMesh: -1, cape: 'overrule', cloth: 1 },
 };
 
 const CAPES: Readonly<Record<number, WingSpec>> = {

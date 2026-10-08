@@ -8,7 +8,7 @@ import {
 } from '../libs/babylon/exports';
 import type { World } from '../ecs/world';
 import { ModelObject } from './modelObject';
-import { CapeCloth } from './capeCloth';
+import { bakeSkin, CapeCloth } from './capeCloth';
 import { storeRef } from './storeRef';
 import { GameOptions } from './gameOptions';
 import { shedLevel } from './loadShed';
@@ -251,6 +251,7 @@ export class WingObject extends ModelObject {
     if (index === undefined) return;
     const mesh = this.getMesh(index);
     if (!mesh || mesh.getTotalVertices() === 0) return;
+    bakeSkin(mesh);
     this.#cloth = new CapeCloth(mesh, () => this.Parent?.node ?? null);
   }
 
