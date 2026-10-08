@@ -25,12 +25,21 @@ const ITERATIONS = 6;
 const STEP = 1 / 60;
 /** A frame this long (a hitch, a tab come back) restarts from the rest pose. */
 const RESET_DT = 0.5;
+/** A cape that moves this far in one frame (world units, a warp) restarts from the rest pose too. */
+const RESET_JUMP = 0.75;
 /** The band at the top of the sheet that is pinned, as a share of its height. */
 const PIN_BAND = 0.08;
 /** The body the cloth may not pass through: a vertical capsule around the hero. */
 const BODY_RADIUS = 0.26;
 const BODY_BOTTOM = 0.15;
 const BODY_TOP = 1.55;
+/**
+ * And it stays behind him: no free point closer than this to his back's plane
+ * through the body's axis, world units. The hero turns on the spot in one
+ * frame; the sheet swung through him, and the capsule then held it in front,
+ * draped over the chest - the cape that "hung crooked" online.
+ */
+const BACK_MIN = 0.1;
 /** Breeze, world units per second squared. */
 const WIND = 0.9;
 /**
@@ -44,6 +53,8 @@ const FLOOR = 0.03;
 
 const tmp = new Vector3();
 const tmpB = new Vector3();
+const back = new Vector3();
+const LOCAL_BACK = new Vector3(0, 0, 1);
 const inverse = new Matrix();
 const boneMatrix = new Matrix();
 
@@ -107,6 +118,8 @@ export class CapeCloth {
   private readonly out: Float32Array;
   private readonly count: number;
   private seeded = false;
+  /** Where the mesh was last frame, world space (a jump re-seeds). */
+  private readonly lastAt = new Vector3(Infinity, Infinity, Infinity);
   private accumulator = 0;
   private time = 0;
 
@@ -205,8 +218,11 @@ export class CapeCloth {
   update(dt: number): void {
     if (this.count === 0) return;
     const world = this.mesh.computeWorldMatrix(true);
+    const at = world.getTranslation();
+    const jumped = Vector3.Distance(at, this.lastAt) > RESET_JUMP;
+    this.lastAt.copyFrom(at);
 
-    if (!this.seeded || dt > RESET_DT) {
+    if (!this.seeded || dt > RESET_DT || jumped) {
       for (let p = 0; p < this.count; p++) this.restToWorld(world, p, this.pos);
       this.prev.set(this.pos);
       this.measure();
@@ -362,13 +378,25 @@ export class CapeCloth {
     const body = this.body();
     if (!body) return;
     const origin = body.getAbsolutePosition();
+    // The hero's back: his model faces -z, so +z is behind him.
+    Vector3.TransformNormalToRef(LOCAL_BACK, body.getWorldMatrix(), back);
+    back.y = 0;
+    const length = back.length();
+    if (length > 1e-6) back.scaleInPlace(1 / length);
     for (let p = 0; p < this.count; p++) {
       if (this.pinned[p]) continue;
       const i = p * 3;
       const height = this.pos[i + 1] - origin.y;
       if (height < BODY_BOTTOM || height > BODY_TOP) continue;
-      const dx = this.pos[i] - origin.x;
-      const dz = this.pos[i + 2] - origin.z;
+      let dx = this.pos[i] - origin.x;
+      let dz = this.pos[i + 2] - origin.z;
+      const behind = dx * back.x + dz * back.z;
+      if (length > 1e-6 && behind < BACK_MIN) {
+        dx += back.x * (BACK_MIN - behind);
+        dz += back.z * (BACK_MIN - behind);
+        this.pos[i] = origin.x + dx;
+        this.pos[i + 2] = origin.z + dz;
+      }
       const d = Math.hypot(dx, dz);
       if (d >= BODY_RADIUS || d < 1e-5) continue;
       const push = BODY_RADIUS / d;
