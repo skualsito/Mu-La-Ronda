@@ -1,4 +1,5 @@
 import React from 'react';
+import { installBackgroundPump, noteAnimationFrame } from './common/backgroundPump';
 import ReactDOM from 'react-dom/client';
 import { App } from './App';
 import './style.less';
@@ -264,8 +265,7 @@ setShedSource(() => ({
 installAutoManaPotion(Store);
 
 let lastTime = performance.now();
-engine.runRenderLoop(() => {
-  const now = performance.now();
+const runFrame = (now: number) => {
 
   // Mu La Ronda: the FPS cap. A skipped frame runs nothing - the next drawn
   // one gets the whole elapsed time as its dt.
@@ -308,6 +308,22 @@ engine.runRenderLoop(() => {
       frameErrorsSinceLog = 0;
     }
   }
+};
+
+engine.runRenderLoop(() => {
+  const now = performance.now();
+  noteAnimationFrame(now);
+  runFrame(now);
+});
+
+// Mu La Ronda: with no animation frames (tab hidden, window minimized) the
+// loop goes on from a worker tick, about 20 frames a second (common/backgroundPump.ts).
+installBackgroundPump(now => {
+  // As Babylon's own loop does: beginFrame measures the step that animations
+  // and the observers read (engine.getDeltaTime).
+  engine.beginFrame();
+  runFrame(now);
+  engine.endFrame();
 });
 
 const onResize = () => engine.resize();

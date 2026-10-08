@@ -15,6 +15,15 @@ import type { Entity, ISystemFactory } from '../world';
  *    valuable loot reads from a distance (tier colours from dropTier.ts).
  */
 
+/**
+ * Mu La Ronda: one level-up burst per character at most this often. With a
+ * level per kill, a caster clearing a spot levels several times a second, and
+ * each burst is 15 uncapped ribbons for 2 s plus sparks, a light and a sound:
+ * a few such players in Arena put 400+ ribbons (a draw call and a material
+ * each) on screen. The levels in between show no flare of their own.
+ */
+const LEVEL_UP_EVERY_MS = 2000;
+
 const GLOW_TEXTURE = 'Effect/flare01.OZJ';
 const GLOW_SCALE = 1.4;
 const GLOW_LIGHT: Record<Exclude<DropTier, 'normal'>, [number, number, number]> = {
@@ -53,7 +62,14 @@ export const ObjectEffectSystem: ISystemFactory = world => {
   const pool: TerrainDecal[] = [];
   let glowSeq = 0;
 
+  const lastLevelUp = new WeakMap<Entity, number>();
+
   EventBus.on('objectEffect', ({ entity, effect }) => {
+    if (effect === 'levelUp') {
+      const now = performance.now();
+      if (now - (lastLevelUp.get(entity) ?? -Infinity) < LEVEL_UP_EVERY_MS) return;
+      lastLevelUp.set(entity, now);
+    }
     // ReceiveDisplayEffectViewport 0x10 (WSclient.cpp:9653): SOUND_LEVEL_UP,
     // 2D, for any player in view.
     if (effect === 'levelUp') playUiSound('levelUp');

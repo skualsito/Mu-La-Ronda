@@ -245,6 +245,7 @@ import {
 } from './common/itemStorage';
 import { NetStats } from './common/netStats';
 import { readVipCodeLine, readVipLine } from './common/vip';
+import { pointsFromWire, readPointsLine } from './common/widePoints';
 import { readVaultLine } from './common/extraVaults';
 import { Notices } from './common/notices';
 import { SlideHelp } from './common/slideHelp';
@@ -3695,6 +3696,16 @@ EventBus.on('ServerMessage', packet => {
       // Mu La Ronda: the VIP window's code check is an answer for it, not a line to show.
       if (readVipCodeLine(text)) break;
       readVipLine(text);
+      // Mu La Ronda: the real free points, past what the packets' 16 bits hold (common/widePoints.ts).
+      {
+        const points = readPointsLine(text);
+        if (points !== null) {
+          runInAction(() => {
+            Store.playerData.points = points;
+          });
+          break;
+        }
+      }
       // Mu La Ronda: "Baul 2/9" is the extra vaults' state, not a line to show.
       if (readVaultLine(text)) break;
       // Mu La Ronda: no "Congratulations, you are Level N now." per level-up.
@@ -4306,7 +4317,8 @@ function applyLevelUpdate(p: LevelUpdateView, wide: boolean) {
 
   runInAction(() => {
     playerData.level = p.Level;
-    playerData.points = p.LevelUpPoints;
+    // Mu La Ronda: 16 bits on the wire; the "Puntos libres" line that follows has the real number.
+    playerData.points = pointsFromWire(p.LevelUpPoints, playerData.points);
     if (wide || !wideStats) {
       playerData.maxHP = p.MaximumHealth;
       playerData.maxMP = p.MaximumMana;

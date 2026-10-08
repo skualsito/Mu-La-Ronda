@@ -68,6 +68,9 @@ public class UpdateCharacterStatsPlugIn : IUpdateCharacterStatsPlugIn
             (byte)this._player.SelectedCharacter.InventoryExtensions)
             .ConfigureAwait(false);
 
+        // Mu La Ronda: the free points past 65 535, which the packet can't carry.
+        await WidePointsLine.SendAsync(this._player).ConfigureAwait(false);
+
         // Mu La Ronda: the packet above carries health, mana, shield and ability as 16 bit values,
         // which wrap past 65535 (around 32767 points of vitality or energy). The client also reads
         // the 32 bit packets, so the real values go right after it (see UpdateStatsPlugIn).

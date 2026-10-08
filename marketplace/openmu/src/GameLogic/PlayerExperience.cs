@@ -157,19 +157,27 @@ internal sealed class PlayerExperience
             return;
         }
 
-        if (killedObject is not null && killedObject.Attributes[Stats.Level] < player.GameContext.Configuration.MinimumMonsterLevelForMasterExperience)
+        var expTable = player.GameContext.MasterExperienceTable;
+
+        // Mu La Ronda: experience that already reaches the next master level levels up now, whatever
+        // this kill gives. The check below used to be a strict "<": a kill that landed exactly on the
+        // next level filled the bar without the level, and when the kills after it gave no master
+        // experience (a monster below the minimum level) the character stayed there at 100%.
+        var full = player.SelectedCharacter!.MasterExperience >= expTable[(int)player.Attributes[Stats.MasterLevel] + 1];
+
+        if (!full && killedObject is not null && killedObject.Attributes[Stats.Level] < player.GameContext.Configuration.MinimumMonsterLevelForMasterExperience)
         {
             await player.InvokeViewPlugInAsync<IAddExperiencePlugIn>(p => p.AddExperienceAsync(0, killedObject, ExperienceType.MonsterLevelTooLowForMasterExperience)).ConfigureAwait(false);
             return;
         }
 
-        long exp = experience;
+        long exp = full ? 0 : Math.Max(0, experience);
 
         bool lvlup = false;
-        var expTable = player.GameContext.MasterExperienceTable;
-        if (expTable[(int)player.Attributes[Stats.MasterLevel] + 1] - player.SelectedCharacter!.MasterExperience < exp)
+        if (expTable[(int)player.Attributes[Stats.MasterLevel] + 1] - player.SelectedCharacter!.MasterExperience <= exp)
         {
-            exp = expTable[(int)player.Attributes[Stats.MasterLevel] + 1] - player.SelectedCharacter.MasterExperience;
+            // Never negative: experience past the next level stays for the levels after it.
+            exp = Math.Max(0, expTable[(int)player.Attributes[Stats.MasterLevel] + 1] - player.SelectedCharacter.MasterExperience);
             lvlup = true;
         }
 
