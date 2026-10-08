@@ -36,4 +36,25 @@ describe('bestRecipe', () => {
     expect(match.recipe.name).toBe('+12 Item Combination');
     expect(match.complete).toBe(true);
   });
+
+  it('reads a +9 item with an option, Chaos, Bless and Soul as +10, not Chaos Weapon', () => {
+    const tray = [item(0, 0, { lvl: 9, optionLevel: 2, luck: true }), chaos, item(14, 13), item(14, 14)];
+    const match = bestRecipe(tray)!;
+    expect(match.recipe.name).toBe('+10 Item Combination');
+    expect(match.complete).toBe(true);
+  });
+
+  it('says Chaos Weapon while the Soul is missing, as the server would mix it then', () => {
+    const tray = [item(0, 0, { lvl: 9, optionLevel: 1 }), chaos, item(14, 13)];
+    const match = bestRecipe(tray)!;
+    expect(match.recipe.name).toBe('Chaos Weapon');
+    expect(match.complete).toBe(true);
+  });
+
+  it('heads for +10 with a +9 item that has no option', () => {
+    const tray = [item(0, 0, { lvl: 9 }), chaos, item(14, 13)];
+    const match = bestRecipe(tray)!;
+    expect(match.recipe.name).toBe('+10 Item Combination');
+    expect(match.complete).toBe(false);
+  });
 });

@@ -13,7 +13,8 @@
  */
 import { observer } from 'mobx-react-lite';
 import { t } from '../../../../../i18n';
-import { GameOptions, uiScaleFactor } from '../../../../../common/gameOptions';
+import { GameOptions } from '../../../../../common/gameOptions';
+import { MuWindows } from '../../../../components/muWindow/windowState';
 import { devQueryNumber } from '../../../../../common/devSeams';
 import { uiClick } from '../../../../../libs/sfx';
 import { MuText } from '../../../../components/muText';
@@ -124,7 +125,7 @@ export const QuestTracker = observer(() => {
   const rows = trackerRows();
   if (rows.length === 0) return null;
 
-  const scale = uiScaleFactor(GameOptions.uiScale);
+  const scale = MuWindows.interfaceScale();
   const top = CORNER_INSET + (GameOptions.minimapCorner ? MINIMAP_SLOT * scale : 0) + EVENT_ROW_BAND;
   // Dev seam: start the first N rows folded, for a screenshot of both states.
   const devFolded = devQueryNumber('trackerCollapsed') ?? 0;

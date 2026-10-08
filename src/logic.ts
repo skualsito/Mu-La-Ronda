@@ -246,6 +246,7 @@ import {
 import { NetStats } from './common/netStats';
 import { readVipCodeLine, readVipLine } from './common/vip';
 import { pointsFromWire, readPointsLine } from './common/widePoints';
+import { readSpotsLine } from './common/mapSpots';
 import { readVaultLine } from './common/extraVaults';
 import { Notices } from './common/notices';
 import { SlideHelp } from './common/slideHelp';
@@ -3696,6 +3697,8 @@ EventBus.on('ServerMessage', packet => {
       // Mu La Ronda: the VIP window's code check is an answer for it, not a line to show.
       if (readVipCodeLine(text)) break;
       readVipLine(text);
+      // Mu La Ronda: the map's monster spots, for the TAB map (common/mapSpots.ts).
+      if (readSpotsLine(text)) break;
       // Mu La Ronda: the real free points, past what the packets' 16 bits hold (common/widePoints.ts).
       {
         const points = readPointsLine(text);

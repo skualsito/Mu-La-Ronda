@@ -348,6 +348,14 @@ export function setMeshFadeBlend(mesh: AbstractMesh, on: boolean): void {
  */
 export function syncMaterialQuality(scene: Scene): void {
   for (const mesh of scene.meshes) {
+    // Mu La Ronda: a skinned mesh drops the effect it was drawing with, so
+    // the next frame compiles one for its material and skeleton as they are
+    // now. The shared item materials are frozen and keep a mesh's effect as
+    // long as they can; after a quality change mid-game the hero, its wings
+    // and its Fenrir were once seen dark, then stretched into huge shards the
+    // first time they animated, until the page was reloaded.
+    if (mesh.skeleton) mesh.resetDrawCache();
+
     const args = materialArgs.get(mesh.material as ItemMaterial);
     if (!args) continue;
 

@@ -665,6 +665,12 @@ export class ModelObject {
   CastsBlobShadow = true;
 
   /**
+   * Mu La Ronda: whether this model goes into the G-buffer (SSAO and the
+   * height fog read its depth). `DropObject` turns it off.
+   */
+  DepthOccluder = true;
+
+  /**
    * Whether snow may settle on this object (weather/snowCaps.ts). Set by
    * MapTileObject on the maps snow settles on; every mesh carries it as
    * `metadata.snowCap` for the item material to bind against.
@@ -1196,7 +1202,7 @@ export class ModelObject {
       // `CastsShadow = false`, or one carrying a light, still stands in front
       // of the camera and still has to be fogged by its own depth rather than
       // by whatever is behind it. See `occludes` in scenes/ambientOcclusion.
-      mesh.metadata.depthOccluder = true;
+      mesh.metadata.depthOccluder = this.DepthOccluder;
 
       fixSkinnedLocalBounds(mesh);
     });

@@ -95,16 +95,27 @@ internal sealed class PlayerExperience
         var maxMultiplier = attributes[Stats.RandomExperienceMaxMultiplier];
         if (minMultiplier > 0 && maxMultiplier > 0)
         {
-            var minimumExperience = (int)(experience * minMultiplier);
-            var maximumExperience = (int)(experience * maxMultiplier);
+            var minimumExperience = ToExperience(experience * minMultiplier);
+            var maximumExperience = ToExperience(experience * maxMultiplier);
             if (minimumExperience < maximumExperience)
             {
                 return Rand.NextInt(minimumExperience, maximumExperience);
             }
         }
 
-        return (int)experience;
+        return ToExperience(experience);
     }
+
+    /// <summary>
+    /// Mu La Ronda: the experience of a kill as an int, at most <see cref="int.MaxValue"/>. With this
+    /// server's rates a strong monster is worth more than that, and the plain cast of such a double
+    /// gives int.MinValue: the kill counted as negative experience, which adds nothing - a master
+    /// level character on a strong spot stopped gaining any master experience at all.
+    /// </summary>
+    /// <param name="experience">The experience.</param>
+    /// <returns>The experience, between 0 and <see cref="int.MaxValue"/>.</returns>
+    internal static int ToExperience(double experience)
+        => double.IsNaN(experience) ? 0 : (int)Math.Clamp(experience, 0, int.MaxValue);
 
     /// <summary>
     /// Adds the master experience to the current character.

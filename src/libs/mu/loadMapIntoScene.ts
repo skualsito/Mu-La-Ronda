@@ -41,6 +41,7 @@ import { combat } from '../../combat';
 import { resetTerrainMask } from './terrainMask';
 import { setShadowWorld } from '../../common/objectShadow';
 import { lookDirector } from '../../lighting/director';
+import { gameTimeout } from '../../common/backgroundPump';
 
 /** Bumped per warp request; a load whose serial is stale abandons its work. */
 let warpSerial = 0;
@@ -253,7 +254,8 @@ function failWarp(
   const delay = WARP_RETRY_DELAYS_MS[attempt];
   if (delay === undefined) return;
 
-  setTimeout(() => {
+  // A game timer: a page timer waits up to a minute in a hidden tab (common/backgroundPump.ts).
+  gameTimeout(() => {
     // A warp of its own since, or the map arrived some other way: that one
     // owns the scene now.
     if (world.mapIndex !== oldMap || sceneMap === map) return;

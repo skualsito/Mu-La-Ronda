@@ -2460,7 +2460,7 @@ export const thaiLayer: LanguageLayer = {
     'options.section.vitals': 'พลังชีวิตและมานา',
     'options.englishItemNames': 'ชื่อไอเทมเป็นภาษาอังกฤษ',
     'exp.title': 'ค่าประสบการณ์',
-    'exp.gained': '+{amount} ค่าประสบการณ์',
+    'exp.gained': '{amount} ค่าประสบการณ์',
     'perf.fps': 'FPS',
     'perf.frame': 'เฟรม',
     'perf.ping': 'Ping',

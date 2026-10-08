@@ -7,6 +7,8 @@ import { Store } from '../../../../../store';
 import { uiClick } from '../../../../../libs/sfx';
 import type { WorldMinimap } from '../../../../../libs/mu/minimap';
 import type { MinimapMarker } from '../../../../../common/minimapData';
+import { mapSpots, type MapSpot } from '../../../../../common/mapSpots';
+import { monsterDisplayName } from '../../../../../common/monstersDatabase';
 import { useMuSprite } from '../../../../components/muSprite';
 import { MuTipText } from '../../../../components/muText';
 import { useUiStageScale } from '../../../../components/uiStage';
@@ -114,6 +116,64 @@ const Marker = ({
   );
 };
 
+/** Mu La Ronda: our marker kind for monster spots (common/mapSpots.ts). */
+const SPOT_KIND = 4;
+const SPOT_SIZE = 10;
+/** Spots this close (tiles, per axis) share one ring, their monsters listed together. */
+const SPOT_MERGE_TILES = 3;
+
+function spotMarkers(spots: readonly MapSpot[]): MinimapMarker[] {
+  const groups: { x: number; y: number; spots: MapSpot[] }[] = [];
+  for (const spot of spots) {
+    const near = groups.find(
+      g => Math.abs(g.x - spot.x) <= SPOT_MERGE_TILES && Math.abs(g.y - spot.y) <= SPOT_MERGE_TILES
+    );
+    if (near) near.spots.push(spot);
+    else groups.push({ x: spot.x, y: spot.y, spots: [spot] });
+  }
+  return groups.map(g => ({
+    kind: SPOT_KIND,
+    x: g.x,
+    y: g.y,
+    rotation: 0,
+    name: g.spots
+      .map(s => `${monsterDisplayName(s.monster)} Lv.${s.level} x${s.count}`)
+      .join(' / '),
+  }));
+}
+
+/** Mu La Ronda: a monster spot, a ring at its middle with the monster's name on hover. */
+const SpotMarker = ({
+  marker,
+  center,
+  mapSize,
+  rotation,
+  onHover,
+}: {
+  marker: MinimapMarker;
+  center: MapPoint;
+  mapSize: number;
+  rotation: number;
+  onHover: (marker: MinimapMarker | null) => void;
+}) => {
+  const dx = ((marker.y - center.y) / TERRAIN_SIZE) * mapSize;
+  const dy = ((marker.x - center.x) / TERRAIN_SIZE) * mapSize;
+  return (
+    <div
+      className="minimap-spot"
+      style={{
+        left: CENTER_X - SPOT_SIZE / 2,
+        top: CENTER_Y - SPOT_SIZE / 2,
+        width: SPOT_SIZE,
+        height: SPOT_SIZE,
+        transform: `rotate(${rotation}deg) translate(${dx}px, ${dy}px)`,
+      }}
+      onMouseEnter={() => onHover(marker)}
+      onMouseLeave={() => onHover(null)}
+    />
+  );
+};
+
 const MarkerTip = ({
   marker,
   center,
@@ -183,12 +243,14 @@ const CloseButton = ({ onClick }: { onClick: () => void }) => {
 const SheetView = ({
   minimap,
   map,
+  spots,
   zoom,
   onWheel,
   close,
 }: {
   minimap: WorldMinimap;
   map: number;
+  spots: readonly MapSpot[];
   zoom: number;
   onWheel: (event: React.WheelEvent) => void;
   close: () => void;
@@ -243,6 +305,16 @@ const SheetView = ({
           {minimap.markers.map((marker, i) => (
             <Marker
               key={i}
+              marker={marker}
+              center={center}
+              mapSize={mapSize}
+              rotation={rotation}
+              onHover={setHovered}
+            />
+          ))}
+          {spotMarkers(spots).map((marker, i) => (
+            <SpotMarker
+              key={`spot-${i}`}
               marker={marker}
               center={center}
               mapSize={mapSize}
@@ -316,5 +388,14 @@ export const MinimapSheet = observer(() => {
     );
   };
 
-  return <SheetView minimap={minimap} map={map} zoom={zoom} onWheel={onWheel} close={close} />;
+  return (
+    <SheetView
+      minimap={minimap}
+      map={map}
+      spots={mapSpots(map)}
+      zoom={zoom}
+      onWheel={onWheel}
+      close={close}
+    />
+  );
 });

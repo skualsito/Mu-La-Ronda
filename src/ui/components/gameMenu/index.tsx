@@ -24,13 +24,16 @@ const FOOT = 34;
 
 /** Mu La Ronda: the server's channels, a row of small buttons at the foot of the menu. */
 const SOCIAL_LINKS = [
+  { label: 'Web', url: 'https://www.laronda.online/' },
   { label: 'Kick', url: 'https://kick.com/inframe15/' },
   { label: 'YouTube', url: 'https://www.youtube.com/@inframe15' },
   { label: 'Discord', url: 'https://discord.gg/laronda' },
 ] as const;
 const SOCIAL_HEIGHT = 26;
 const SOCIAL_GAP = 4;
-const SOCIAL_ROW = SOCIAL_HEIGHT + 10;
+const SOCIAL_COLUMNS = 2;
+const SOCIAL_ROWS = Math.ceil(SOCIAL_LINKS.length / SOCIAL_COLUMNS);
+const SOCIAL_ROW = SOCIAL_ROWS * SOCIAL_HEIGHT + (SOCIAL_ROWS - 1) * SOCIAL_GAP + 10;
 
 const CONFIRM_TEXT: Record<ExitKind, TextKey> = {
   quit: 'exit.confirmQuit',
@@ -103,7 +106,7 @@ export const GameMenuWindow = observer(() => {
 
   const buttonsEnd = FIRST_BUTTON_Y + entries.length * (BUTTON_HEIGHT + BUTTON_GAP);
   const height = buttonsEnd + SOCIAL_ROW + FOOT;
-  const socialWidth = (BUTTON_WIDTH - SOCIAL_GAP * (SOCIAL_LINKS.length - 1)) / SOCIAL_LINKS.length;
+  const socialWidth = (BUTTON_WIDTH - SOCIAL_GAP * (SOCIAL_COLUMNS - 1)) / SOCIAL_COLUMNS;
 
   const chrome = useWindowChrome(WINDOW_ID, {
     width: WIN_WIDTH,
@@ -164,8 +167,8 @@ export const GameMenuWindow = observer(() => {
               window.open(link.url, '_blank', 'noopener,noreferrer');
             }}
             style={{
-              left: (WIN_WIDTH - BUTTON_WIDTH) / 2 + i * (socialWidth + SOCIAL_GAP),
-              top: buttonsEnd + 4,
+              left: (WIN_WIDTH - BUTTON_WIDTH) / 2 + (i % SOCIAL_COLUMNS) * (socialWidth + SOCIAL_GAP),
+              top: buttonsEnd + 4 + Math.floor(i / SOCIAL_COLUMNS) * (SOCIAL_HEIGHT + SOCIAL_GAP),
               height: SOCIAL_HEIGHT,
             }}
           />

@@ -62,6 +62,12 @@ export class DropObject extends ModelObject {
    */
   CastsShadow = false;
 
+  /**
+   * Mu La Ronda: nor goes into the G-buffer. Ambient occlusion under a coin
+   * shows nothing, and a cleared spot's zen piles were 30 draws a frame there.
+   */
+  DepthOccluder = false;
+
   /** `transform.scale`, which the pile's centimetres must not be shrunk by. */
   #zenScale = 1;
 

@@ -24,6 +24,14 @@ import type { Entity, ISystemFactory } from '../world';
  */
 const LEVEL_UP_EVERY_MS = 2000;
 
+/**
+ * Mu La Ronda: the most ground glows at once. Each is a decal and a draw call
+ * (in the shadow and ambient occlusion passes too), and a spot cleared fast
+ * left 40+ of them, most under zen piles. Past it a zen pile gets none, and an
+ * item takes the place of a zen pile's glow when there is one.
+ */
+const MAX_GLOWS = 20;
+
 const GLOW_TEXTURE = 'Effect/flare01.OZJ';
 const GLOW_SCALE = 1.4;
 const GLOW_LIGHT: Record<Exclude<DropTier, 'normal'>, [number, number, number]> = {
@@ -79,6 +87,12 @@ export const ObjectEffectSystem: ISystemFactory = world => {
   drops.onEntityAdded.subscribe(e => {
     const tier = dropTier(e.droppedItem);
     if (tier === 'normal') return;
+    if (glows.size >= MAX_GLOWS) {
+      if (tier === 'money') return;
+      const zen = [...glows.keys()].find(d => dropTier(d.droppedItem!) === 'money');
+      if (!zen) return;
+      releaseGlow(zen);
+    }
     const decal =
       pool.pop() ??
       new TerrainDecal(world, `dropGlow${glowSeq++}`, GLOW_TEXTURE, GLOW_SCALE);
@@ -100,13 +114,15 @@ export const ObjectEffectSystem: ISystemFactory = world => {
     glows.set(e, decal);
   });
 
-  drops.onEntityRemoved.subscribe(e => {
+  function releaseGlow(e: Entity): void {
     const decal = glows.get(e);
     if (!decal) return;
     decal.hide();
     glows.delete(e);
     pool.push(decal);
-  });
+  }
+
+  drops.onEntityRemoved.subscribe(releaseGlow);
 
   return {
     update: () => {

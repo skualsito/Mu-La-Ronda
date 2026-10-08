@@ -28,6 +28,24 @@ export const defaultScaleOf = (id: string): number =>
 /** At least this many screen pixels of a window stay reachable on every side. */
 export const EDGE_MARGIN = 32;
 
+/**
+ * Mu La Ronda: how much of the screen the game's window takes, 0..1 - 1 when
+ * maximized (or full screen), about 0.5 for a window half the screen. The
+ * interface scales with it, so one set to 200% on the whole screen does not
+ * stay that big when the window is made small. Measured against the screen
+ * the window is on, minus the browser's own bars, so a maximized window on a
+ * small laptop is 1 too; the browser's zoom moves both sides alike.
+ */
+function windowShare(viewport: { width: number; height: number }): number {
+  if (typeof window === 'undefined' || !window.screen) return 1;
+  const chromeHeight = Math.max(0, window.outerHeight - window.innerHeight);
+  const fullWidth = window.screen.availWidth;
+  const fullHeight = window.screen.availHeight - chromeHeight;
+  if (!(fullWidth > 0) || !(fullHeight > 0)) return 1;
+  const share = Math.min(viewport.width / fullWidth, viewport.height / fullHeight);
+  return Math.max(0.25, Math.min(1, share));
+}
+
 /** Screen pixels kept free around a window when fitting its scale to the viewport. */
 export const FIT_MARGIN = 12;
 
@@ -95,11 +113,19 @@ export const MuWindows = new (class _MuWindows {
   }
 
   /**
+   * Mu La Ronda: what every window's own scale is multiplied by - the Size
+   * option, times the share of the screen the window takes (`windowShare`).
+   */
+  interfaceScale(): number {
+    return uiScaleFactor(GameOptions.uiScale) * windowShare(this.viewport);
+  }
+
+  /**
    * The scale the window is drawn at: the saved scale times the interface
-   * scale from the options, capped so the whole window still fits.
+   * scale, capped so the whole window still fits.
    */
   scaleOf(id: string): number {
-    const wanted = this.placement(id).scale * uiScaleFactor(GameOptions.uiScale);
+    const wanted = this.placement(id).scale * this.interfaceScale();
     return Math.min(wanted, this.fitScaleOf(id));
   }
 

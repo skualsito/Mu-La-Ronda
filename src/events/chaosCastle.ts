@@ -174,10 +174,18 @@ export function enterChaosCastle(): void {
 /**
  * The HUD row was clicked while the gate is open. Chaos Castle has no NPC
  * window: the same request the ticket sends raises the original's prompt,
- * with the head count on it. No ticket is held, so its OK only closes -
- * entering is still the Armor of Guardsman in the inventory.
+ * with the head count on it. Mu La Ronda: with an Armor of Guardsman in the
+ * inventory it is the same as using it, so the prompt's OK enters (it only
+ * closed, and players with the ticket on them could not get in from the
+ * events window); without one, its OK only closes.
  */
 export function askChaosCastleOpening(): void {
+  const items = Store.playerData.items;
+  for (let slot = 0; slot < items.length; slot++) {
+    const item = items[slot];
+    if (item && useTicket(slot, item)) return;
+  }
+
   noteOpeningStateRequest(OPENING_STATE_GAME.chaosCastle);
   const packet = MiniGameOpeningStateRequestPacket.createPacket();
   packet.EventType = OPENING_STATE_GAME.chaosCastle;

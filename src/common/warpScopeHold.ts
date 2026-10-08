@@ -1,5 +1,6 @@
 import { EventBus } from '../libs/eventBus';
 import { setSceneHold } from './sceneGate';
+import { clearGameTimeout, gameTimeout } from './backgroundPump';
 
 /**
  * After a warp OpenMU parks the hero until `ClientReadyAfterMapChange`, so
@@ -22,18 +23,20 @@ const SCOPE_PACKETS = [
 ] as const;
 
 let held = false;
-let timer: ReturnType<typeof setTimeout> | null = null;
+// A game timer, not the page's: in a hidden tab a page timer could keep the
+// scene held - the game paused - for a minute after a warp (backgroundPump.ts).
+let timer: number | null = null;
 
 function release(): void {
-  if (timer) clearTimeout(timer);
+  clearGameTimeout(timer);
   timer = null;
   held = false;
   setSceneHold(HOLD, false);
 }
 
 function releaseIn(ms: number): void {
-  if (timer) clearTimeout(timer);
-  timer = setTimeout(release, ms);
+  clearGameTimeout(timer);
+  timer = gameTimeout(release, ms);
 }
 
 /** Called when the ready packet goes out. */

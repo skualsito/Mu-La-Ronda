@@ -162,7 +162,8 @@ export const MuResizeGrip = observer(
         const from = start.current;
         if (!from || move.pointerId !== from.pointerId) return;
 
-        MuWindows.setScale(id, from.scale + (move.clientX - from.x) / width);
+        // Saved without the interface scale, which `scaleOf` puts back on.
+        MuWindows.setScale(id, (from.scale + (move.clientX - from.x) / width) / MuWindows.interfaceScale());
       };
 
       const onUp = (up: globalThis.PointerEvent) => {

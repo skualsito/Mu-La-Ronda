@@ -536,6 +536,8 @@ function repairEquipment(config: MuHelperConfig): void {
 
   const items = Store.playerData.items;
   for (let slot = 0; slot < InventoryConstants.EquippableSlotsCount; slot++) {
+    // The server repairs a pet only at the trainer (ItemRepairAction).
+    if (slot === InventoryConstants.PetSlot) continue;
     const item = items[slot];
     if (!item || item.durability === undefined) continue;
     const def = itemDef(item.group, item.num);
@@ -555,12 +557,16 @@ function repairEquipment(config: MuHelperConfig): void {
 /** `CMuHelper::Work` - one 250 ms tick, one action at most. */
 function work(world: World, hero: Entity, config: MuHelperConfig): void {
   activatePet(config);
+  // Mu La Ronda: first, not last. It only sends a request (no action of the
+  // hero's), and at the end of the tick it ran only when nothing before it was
+  // busy - on a spot with drops always coming, picking them up kept it from
+  // ever being reached.
+  repairEquipment(config);
   if (!buff(world, hero, config)) return;
   if (!recoverHealth(world, hero, config)) return;
   if (!obtainItem(world, hero, config)) return;
   if (!regroup(world, hero, config)) return;
   attack(world, hero, config);
-  repairEquipment(config);
 }
 
 export function updateMuHelperLoop(world: World, dt: number): void {

@@ -361,17 +361,17 @@ public sealed class Party : AsyncDisposable
     {
         if (randomMinMultiplier <= 0 || randomMaxMultiplier <= 0)
         {
-            return (int)totalBaseExperience;
+            return PlayerExperience.ToExperience(totalBaseExperience);
         }
 
-        var minimumExperience = (int)(totalBaseExperience * randomMinMultiplier);
-        var maximumExperience = (int)(totalBaseExperience * randomMaxMultiplier);
+        var minimumExperience = PlayerExperience.ToExperience(totalBaseExperience * randomMinMultiplier);
+        var maximumExperience = PlayerExperience.ToExperience(totalBaseExperience * randomMaxMultiplier);
         if (minimumExperience < maximumExperience)
         {
             return Rand.NextInt(minimumExperience, maximumExperience);
         }
 
-        return (int)totalBaseExperience;
+        return PlayerExperience.ToExperience(totalBaseExperience);
     }
 
     private static async ValueTask<int> AwardExperienceAsync(Player player, float perLevel, IAttackable killed)
@@ -382,7 +382,7 @@ public sealed class Party : AsyncDisposable
 
         if (isAtMaxLevel && isMasterClass)
         {
-            var exp = (int)(perLevel
+            var exp = PlayerExperience.ToExperience((double)perLevel
                             * attributes[Stats.TotalLevel]
                             * player.GameContext.MasterExperienceRate
                             * (attributes[Stats.MasterExperienceRate] + attributes[Stats.BonusExperienceRate]));
@@ -391,7 +391,7 @@ public sealed class Party : AsyncDisposable
             return exp;
         }
 
-        var normalExperience = (int)(perLevel
+        var normalExperience = PlayerExperience.ToExperience((double)perLevel
                                      * attributes[Stats.Level]
                                      * player.GameContext.ExperienceRate
                                      * (attributes[Stats.ExperienceRate] + attributes[Stats.BonusExperienceRate]));

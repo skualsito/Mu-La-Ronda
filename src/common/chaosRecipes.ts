@@ -24,6 +24,12 @@ export type MixRequirement = {
 
 export type MixRecipe = {
   readonly name: string;
+  /**
+   * OpenMU's crafting number. With no recipe named in the request the server
+   * tries its combinations from the highest number down and takes the first
+   * the tray satisfies (ItemCraftAction.FindAppropriateCraftingByItems).
+   */
+  readonly number: number;
   /** Fixed chance, or the base of a chance that grows with the items' value up to `maxSuccess`. */
   readonly success?: number;
   readonly maxSuccess?: number;
@@ -34,7 +40,7 @@ export type MixRecipe = {
 
 export const CHAOS_RECIPES: readonly MixRecipe[] = [
   {
-    name: 'Chaos Weapon',
+    name: 'Chaos Weapon', number: 1,
     requires: [
       { items: [], min: 1, minLevel: 4, options: ['Option'] },
       { items: [[12, 15]], min: 1 },
@@ -43,33 +49,33 @@ export const CHAOS_RECIPES: readonly MixRecipe[] = [
     ],
   },
   {
-    name: 'Fruits', success: 90, money: 3000000,
+    name: 'Fruits', number: 6, success: 90, money: 3000000,
     requires: [
       { items: [[12, 15]], min: 1, max: 1 },
       { items: [[14, 22]], min: 1, max: 1 },
     ],
   },
   {
-    name: 'Dinorant', success: 70, money: 500000,
+    name: 'Dinorant', number: 5, success: 70, money: 500000,
     requires: [
       { items: [[12, 15]], min: 1, max: 1 },
       { items: [[13, 2]], min: 10, max: 10 },
     ],
   },
   {
-    name: 'Potion of Bless', success: 100, money: 100000,
+    name: 'Potion of Bless', number: 15, success: 100, money: 100000,
     requires: [
       { items: [[14, 13]], min: 1 },
     ],
   },
   {
-    name: 'Potion of Soul', success: 100, money: 50000,
+    name: 'Potion of Soul', number: 16, success: 100, money: 50000,
     requires: [
       { items: [[14, 14]], min: 1 },
     ],
   },
   {
-    name: '+10 Item Combination', success: 60, money: 2000000,
+    name: '+10 Item Combination', number: 3, success: 60, money: 2000000,
     requires: [
       { items: [], min: 1, max: 1, minLevel: 9, maxLevel: 9 },
       { items: [[12, 15]], min: 1, max: 1 },
@@ -78,7 +84,7 @@ export const CHAOS_RECIPES: readonly MixRecipe[] = [
     ],
   },
   {
-    name: '+11 Item Combination', success: 57, money: 4000000,
+    name: '+11 Item Combination', number: 4, success: 57, money: 4000000,
     requires: [
       { items: [], min: 1, max: 1, minLevel: 10, maxLevel: 10 },
       { items: [[12, 15]], min: 1, max: 1 },
@@ -87,7 +93,7 @@ export const CHAOS_RECIPES: readonly MixRecipe[] = [
     ],
   },
   {
-    name: '+12 Item Combination', success: 55, money: 6000000,
+    name: '+12 Item Combination', number: 22, success: 55, money: 6000000,
     requires: [
       { items: [], min: 1, max: 1, minLevel: 11, maxLevel: 11 },
       { items: [[12, 15]], min: 1, max: 1 },
@@ -96,7 +102,7 @@ export const CHAOS_RECIPES: readonly MixRecipe[] = [
     ],
   },
   {
-    name: '+13 Item Combination', success: 52, money: 8000000,
+    name: '+13 Item Combination', number: 23, success: 52, money: 8000000,
     requires: [
       { items: [], min: 1, max: 1, minLevel: 12, maxLevel: 12 },
       { items: [[12, 15]], min: 1, max: 1 },
@@ -105,7 +111,7 @@ export const CHAOS_RECIPES: readonly MixRecipe[] = [
     ],
   },
   {
-    name: '+14 Item Combination', success: 50, money: 10000000,
+    name: '+14 Item Combination', number: 49, success: 50, money: 10000000,
     requires: [
       { items: [], min: 1, max: 1, minLevel: 13, maxLevel: 13 },
       { items: [[12, 15]], min: 1, max: 1 },
@@ -114,7 +120,7 @@ export const CHAOS_RECIPES: readonly MixRecipe[] = [
     ],
   },
   {
-    name: '+15 Item Combination', success: 47, money: 12000000,
+    name: '+15 Item Combination', number: 50, success: 47, money: 12000000,
     requires: [
       { items: [], min: 1, max: 1, minLevel: 14, maxLevel: 14 },
       { items: [[12, 15]], min: 1, max: 1 },
@@ -123,7 +129,7 @@ export const CHAOS_RECIPES: readonly MixRecipe[] = [
     ],
   },
   {
-    name: 'Blood Castle Ticket',
+    name: 'Blood Castle Ticket', number: 8,
     requires: [
       { items: [[13, 16]], min: 1, max: 1 },
       { items: [[13, 17]], min: 1, max: 1 },
@@ -131,7 +137,7 @@ export const CHAOS_RECIPES: readonly MixRecipe[] = [
     ],
   },
   {
-    name: "Devil's Square Ticket",
+    name: "Devil's Square Ticket", number: 2,
     requires: [
       { items: [[14, 17]], min: 1, max: 1 },
       { items: [[14, 18]], min: 1, max: 1 },
@@ -139,7 +145,7 @@ export const CHAOS_RECIPES: readonly MixRecipe[] = [
     ],
   },
   {
-    name: 'Illusion Temple Ticket',
+    name: 'Illusion Temple Ticket', number: 37,
     requires: [
       { items: [[13, 49]], min: 1, max: 1 },
       { items: [[13, 50]], min: 1, max: 1 },
@@ -147,7 +153,7 @@ export const CHAOS_RECIPES: readonly MixRecipe[] = [
     ],
   },
   {
-    name: 'Life Stone', success: 100, money: 5000000,
+    name: 'Life Stone', number: 17, success: 100, money: 5000000,
     requires: [
       { items: [[14, 31]], min: 1, max: 1 },
       { items: [[14, 13]], min: 5, max: 5 },
@@ -156,25 +162,25 @@ export const CHAOS_RECIPES: readonly MixRecipe[] = [
     ],
   },
   {
-    name: 'Small Shield Potion', success: 50, money: 100000,
+    name: 'Small Shield Potion', number: 30, success: 50, money: 100000,
     requires: [
       { items: [[14, 3]], min: 3, max: 3 },
     ],
   },
   {
-    name: 'Medium Shield Potion', success: 30, money: 500000,
+    name: 'Medium Shield Potion', number: 31, success: 30, money: 500000,
     requires: [
       { items: [[14, 38]], min: 3, max: 3, maxLevel: 1 },
     ],
   },
   {
-    name: 'Large Shield Potion', success: 30, money: 1000000,
+    name: 'Large Shield Potion', number: 32, success: 30, money: 1000000,
     requires: [
       { items: [[14, 39]], min: 3, max: 3, maxLevel: 1 },
     ],
   },
   {
-    name: 'Fenrir Stage 1', success: 70,
+    name: 'Fenrir Stage 1', number: 25, success: 70,
     requires: [
       { items: [[13, 33]], min: 20, max: 20 },
       { items: [[12, 15]], min: 1, max: 1 },
@@ -182,7 +188,7 @@ export const CHAOS_RECIPES: readonly MixRecipe[] = [
     ],
   },
   {
-    name: 'Fenrir Stage 2', success: 50,
+    name: 'Fenrir Stage 2', number: 26, success: 50,
     requires: [
       { items: [[13, 35]], min: 5, max: 5 },
       { items: [[12, 15]], min: 1, max: 1 },
@@ -190,7 +196,7 @@ export const CHAOS_RECIPES: readonly MixRecipe[] = [
     ],
   },
   {
-    name: 'Fenrir Stage 3', success: 30, money: 10000000,
+    name: 'Fenrir Stage 3', number: 27, success: 30, money: 10000000,
     requires: [
       { items: [[13, 36]], min: 1, max: 1 },
       { items: [[12, 15]], min: 1, max: 1 },
@@ -198,7 +204,7 @@ export const CHAOS_RECIPES: readonly MixRecipe[] = [
     ],
   },
   {
-    name: '1st Level Wings',
+    name: '1st Level Wings', number: 11,
     requires: [
       { items: [[4, 6], [2, 6], [5, 7]], min: 1, max: 1, minLevel: 4, options: ['Option'] },
       { items: [], min: 0, minLevel: 4, options: ['Option'] },
@@ -208,7 +214,7 @@ export const CHAOS_RECIPES: readonly MixRecipe[] = [
     ],
   },
   {
-    name: 'Cape of Lord/Fighter', maxSuccess: 90, money: 5000000,
+    name: 'Cape of Lord/Fighter', number: 24, maxSuccess: 90, money: 5000000,
     requires: [
       { items: [[12, 0], [12, 1], [12, 2], [12, 41]], min: 1, max: 1 },
       { items: [], min: 0, minLevel: 4, options: ['Excellent'] },
@@ -217,7 +223,7 @@ export const CHAOS_RECIPES: readonly MixRecipe[] = [
     ],
   },
   {
-    name: '2nd Level Wings', maxSuccess: 90, money: 5000000,
+    name: '2nd Level Wings', number: 7, maxSuccess: 90, money: 5000000,
     requires: [
       { items: [[12, 0], [12, 1], [12, 2], [12, 41]], min: 1, max: 1 },
       { items: [], min: 0, minLevel: 4, options: ['Excellent'] },
@@ -226,7 +232,7 @@ export const CHAOS_RECIPES: readonly MixRecipe[] = [
     ],
   },
   {
-    name: '3rd Level Wings, Stage 1', success: 1, maxSuccess: 60,
+    name: '3rd Level Wings, Stage 1', number: 38, success: 1, maxSuccess: 60,
     requires: [
       { items: [[12, 3], [12, 4], [12, 5], [12, 6], [12, 42], [12, 49], [13, 30]], min: 1, max: 1, minLevel: 9, options: ['Option'] },
       { items: [], min: 1, minLevel: 7, options: ['AncientBonus', 'Option'] },
@@ -236,7 +242,7 @@ export const CHAOS_RECIPES: readonly MixRecipe[] = [
     ],
   },
   {
-    name: '3rd Level Wings, Stage 2', success: 1, maxSuccess: 40,
+    name: '3rd Level Wings, Stage 2', number: 39, success: 1, maxSuccess: 40,
     requires: [
       { items: [], min: 1, minLevel: 9, options: ['Excellent', 'Option'] },
       { items: [[12, 15]], min: 1, max: 1 },
@@ -248,7 +254,7 @@ export const CHAOS_RECIPES: readonly MixRecipe[] = [
     ],
   },
   {
-    name: 'Guardian Option (Level 380)', money: 10000000,
+    name: 'Guardian Option (Level 380)', number: 36, money: 10000000,
     requires: [
       { items: [], min: 1, max: 1, minLevel: 4, maxLevel: 6, options: ['Option'] },
       { items: [], min: 1, max: 1, minLevel: 7, maxLevel: 9, options: ['Option'] },
@@ -258,7 +264,7 @@ export const CHAOS_RECIPES: readonly MixRecipe[] = [
     ],
   },
   {
-    name: 'Complete Secromicon', success: 100, money: 1000000,
+    name: 'Complete Secromicon', number: 46, success: 100, money: 1000000,
     requires: [
       { items: [[14, 103]], min: 1, max: 1 },
     ],

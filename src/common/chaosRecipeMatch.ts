@@ -72,8 +72,14 @@ export function matchRecipe(recipe: MixRecipe, tray: readonly (Item | null)[]): 
   };
 }
 
-/** A requirement only the Jewel of Chaos fills says nothing: most recipes take one. */
+/**
+ * A requirement only the Jewel of Chaos fills says nothing: most recipes take
+ * one. Nor does one the recipe can do without (`min` 0): Chaos Weapon takes
+ * Bless and Soul if they are there, and a +9 item with Chaos, Bless and Soul
+ * - the +10 combination - read as a Chaos Weapon.
+ */
 function telling(state: RequirementState): boolean {
+  if (state.requirement.min === 0) return false;
   const { items } = state.requirement;
   const onlyChaos = items.length === 1 && items[0][0] === JEWEL_OF_CHAOS[0] && items[0][1] === JEWEL_OF_CHAOS[1];
   return state.have > 0 && !onlyChaos;
@@ -81,9 +87,18 @@ function telling(state: RequirementState): boolean {
 
 /**
  * The recipe the tray looks most like, or null while nothing in it points to
- * one (empty, or a lone Jewel of Chaos).
+ * one (empty, or a lone Jewel of Chaos). A tray that already satisfies a
+ * recipe gets the one the server will make: of those it satisfies, the one
+ * with the highest crafting number (`MixRecipe.number`).
  */
 export function bestRecipe(tray: readonly (Item | null)[]): RecipeMatch | null {
+  let complete: RecipeMatch | null = null;
+  for (const recipe of CHAOS_RECIPES) {
+    const match = matchRecipe(recipe, tray);
+    if (match.complete && (!complete || recipe.number > complete.recipe.number)) complete = match;
+  }
+  if (complete) return complete;
+
   let best: RecipeMatch | null = null;
   let bestScore = 0;
   for (const recipe of CHAOS_RECIPES) {
@@ -93,7 +108,7 @@ export function bestRecipe(tray: readonly (Item | null)[]): RecipeMatch | null {
     const met = match.requirements.filter(r => r.ok).length;
     const missing = match.requirements.length - met;
     const score = hits * 10 + met * 3 - missing - match.extra * 4;
-    if (!best || score > bestScore) {
+    if (!best || score > bestScore || (score === bestScore && recipe.number > best.recipe.number)) {
       best = match;
       bestScore = score;
     }

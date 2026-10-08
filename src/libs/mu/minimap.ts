@@ -9,6 +9,7 @@ import { i18n, onLanguageChanged } from '../../i18n';
 import { resolveDataUrl } from './dataFolder';
 import { clearSpriteCache, loadMuSprite, type MuSprite } from './sprites';
 import { fetchAssetBytes, prefetchAsset } from '../../common/compressedAssets';
+import { generateWorldMinimap } from './generatedMinimap';
 
 /**
  * The minimap assets of one world, the way `CNewUIMiniMap::LoadImages` finds
@@ -30,6 +31,8 @@ export type WorldMinimap = {
 };
 
 const cache = new Map<ENUM_WORLD, Promise<WorldMinimap | null>>();
+/** Mu La Ronda: the blob URLs of the pictures drawn for worlds without one (generatedMinimap.ts). */
+const generated = new Map<ENUM_WORLD, string>();
 
 /**
  * The marker files to try for one world, best first: the active language's
@@ -92,6 +95,11 @@ export function evictWorldMinimaps(keep: ENUM_WORLD): void {
   for (const map of [...cache.keys()]) {
     if (map === keep) continue;
     cache.delete(map);
+    const url = generated.get(map);
+    if (url) {
+      URL.revokeObjectURL(url);
+      generated.delete(map);
+    }
     const key = minimapImagePath(map).toLowerCase();
     clearSpriteCache(path => path === key);
   }
@@ -113,7 +121,16 @@ async function readWorldMinimap(map: ENUM_WORLD): Promise<WorldMinimap | null> {
   try {
     image = await loadMuSprite(minimapImagePath(map));
   } catch {
-    return null;
+    // Mu La Ronda: no picture in the Data (Arena...): one drawn from the
+    // ground the hero is on. Only while on that map - so a miss is not kept.
+    const { Store } = await import('../../store');
+    const drawn = Store.world ? await generateWorldMinimap(Store.world, map) : null;
+    if (!drawn) {
+      cache.delete(map);
+      return null;
+    }
+    generated.set(map, drawn.url);
+    image = drawn;
   }
 
   return { image, markers: await readMarkers(worldNum) };

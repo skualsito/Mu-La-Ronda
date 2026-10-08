@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { t, type TextKey } from '../../../../../i18n';
 import { Commands } from '../../../../../commands';
-import { GameOptions, uiScaleFactor } from '../../../../../common/gameOptions';
+import { GameOptions } from '../../../../../common/gameOptions';
+import { MuWindows } from '../../../../components/muWindow/windowState';
 import type { CommandKind } from '../../../../../common/chatCommands';
 import { playUiSound, uiClick } from '../../../../../libs/sfx';
 import { MuSpriteFrame, useMuSprite } from '../../../../components/muSprite';
@@ -121,7 +122,7 @@ export const QuickCommandWindow = observer(() => {
 
   if (!target) return null;
 
-  const scale = uiScaleFactor(GameOptions.uiScale);
+  const scale = MuWindows.interfaceScale();
   // `y = MouseY - 50` is clamped to the top by `OpenQuickCommand`; the right
   // and bottom edges are ours, the menu being scaled by the interface size.
   const left = Math.min(Commands.quickPos.x, window.innerWidth - WIDTH * scale);

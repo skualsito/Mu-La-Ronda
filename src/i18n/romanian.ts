@@ -2500,7 +2500,7 @@ export const romanianLayer: LanguageLayer = {
     'options.section.vitals': 'Viață și mana',
     'options.englishItemNames': 'Nume de obiecte în engleză',
     'exp.title': 'Experiență',
-    'exp.gained': '+{amount} experiență',
+    'exp.gained': '{amount} experiență',
     'perf.fps': 'FPS',
     'perf.frame': 'Cadru',
     'perf.ping': 'Ping',

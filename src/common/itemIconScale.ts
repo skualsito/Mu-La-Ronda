@@ -501,6 +501,16 @@ export const ITEM_ICON_SCALE: Readonly<Record<string, number>> = {
   '12_127': 0.0017,
   '12_128': 0.0017,
   '12_129': 0.0017,
+  // Mu La Ronda: Lahap's other bundles, at the Bless / Soul bundles' scale -
+  // they were missing from items.json, so the port never listed them.
+  '12_136': 0.004,
+  '12_137': 0.004,
+  '12_138': 0.004,
+  '12_139': 0.004,
+  '12_140': 0.004,
+  '12_141': 0.004,
+  '12_142': 0.004,
+  '12_143': 0.004,
   '13_0': 0.0025,
   '13_1': 0.0025,
   '13_2': 0.0025,

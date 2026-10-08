@@ -2625,7 +2625,7 @@ export const vietnameseLayer: LanguageLayer = {
     'serverMessage.npcGuildNeedsLevel100': 'Cấp độ của ngươi phải từ 100 trở lên',
     'serverMessage.npcAlreadyInGuild': 'Ngươi đã thuộc về một bang hội',
     'exp.title': 'Kinh nghiệm',
-    'exp.gained': '+{amount} kinh nghiệm',
+    'exp.gained': '{amount} kinh nghiệm',
     'perf.fps': 'FPS',
     'perf.frame': 'Khung hình',
     'perf.ping': 'Ping',

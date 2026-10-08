@@ -2,7 +2,8 @@ import './style.less';
 import { useLayoutEffect, useRef, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { Store } from '../../../../../store';
-import { GameOptions, uiScaleFactor } from '../../../../../common/gameOptions';
+import { GameOptions } from '../../../../../common/gameOptions';
+import { MuWindows } from '../../../../components/muWindow/windowState';
 import type { MinimapMarker } from '../../../../../common/minimapData';
 import { MuTipText } from '../../../../components/muText';
 import {
@@ -58,7 +59,7 @@ const PANEL_RIGHT = 10;
  */
 export function minimapCornerReach(): number {
   if (!GameOptions.minimapCorner || Store.minimapEnabled || Store.hudHidden) return 0;
-  return PANEL_RIGHT + PANEL * PANEL_SCALE * uiScaleFactor(GameOptions.uiScale);
+  return PANEL_RIGHT + PANEL * PANEL_SCALE * MuWindows.interfaceScale();
 }
 
 /** Map edge length per zoom step, in art units; the sheet draws 800. */
@@ -114,7 +115,7 @@ export const MinimapCorner = observer(() => {
   const pictureRef = useRef<HTMLDivElement>(null);
   const heroRef = useRef<HTMLDivElement>(null);
   const coordsRef = useRef<HTMLDivElement>(null);
-  const scale = PANEL_SCALE * uiScaleFactor(GameOptions.uiScale);
+  const scale = PANEL_SCALE * MuWindows.interfaceScale();
   const mapSize = ZOOM_LEVELS[zoom];
   const rotation = useMapRotation();
   const { dragging, handlers } = useMapDrag(mapSize, scale, setPan, rotation);

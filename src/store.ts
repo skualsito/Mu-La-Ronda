@@ -122,6 +122,7 @@ import { registerStore } from './common/storeRef';
 import { devVitalPercent } from './common/devSeams';
 import { Social } from './social';
 import { Economy } from './economy';
+import { clearGameTimeout, gameTimeout } from './common/backgroundPump';
 
 /**
  * How long the game server named by `ConnectionInfo` has to say `GameServerEntered`
@@ -1067,7 +1068,8 @@ export const Store = new (class _Store {
     toSlot: number;
   } | null = null;
 
-  private pendingItemMoveTimer: ReturnType<typeof setTimeout> | null = null;
+  /** A game timer (common/backgroundPump.ts): it has to fire in a hidden tab too. */
+  private pendingItemMoveTimer: number | null = null;
 
   private consumeBlockedUntil = 0;
 
@@ -2016,7 +2018,8 @@ export const Store = new (class _Store {
    */
   private warpEpoch = 0;
   private lastWarpAt = -Infinity;
-  private positionSyncTimer: ReturnType<typeof setTimeout> | null = null;
+  /** A game timer (common/backgroundPump.ts): a hidden tab's page timers wait up to a minute. */
+  private positionSyncTimer: number | null = null;
 
   noteWarp(): void {
     this.warpEpoch++;
@@ -2037,13 +2040,13 @@ export const Store = new (class _Store {
     const tileY = Math.trunc(y);
     const epoch = this.warpEpoch;
     const hero = this.world?.playerEntity;
-    if (this.positionSyncTimer) clearTimeout(this.positionSyncTimer);
+    clearGameTimeout(this.positionSyncTimer);
     // The move lands on whatever map the server has the hero on: sent after a
     // warp it put the hero on the new map at the old map's tile (Atlans at a
     // Lorencia spot). So it waits long enough for a warp's MapChanged to
     // arrive, and goes only if nothing warped meanwhile and the hero is still
     // standing on that tile of the same map.
-    this.positionSyncTimer = setTimeout(() => {
+    this.positionSyncTimer = gameTimeout(() => {
       this.positionSyncTimer = null;
       if (epoch !== this.warpEpoch || this.sceneLoading) return;
       if (performance.now() - this.lastWarpAt < POSITION_SYNC_DELAY_MS * 2) return;
@@ -2937,9 +2940,9 @@ export const Store = new (class _Store {
       this.pendingItemMove = { fromStorage, fromSlot, toStorage, toSlot };
     });
 
-    if (this.pendingItemMoveTimer) clearTimeout(this.pendingItemMoveTimer);
+    clearGameTimeout(this.pendingItemMoveTimer);
 
-    this.pendingItemMoveTimer = setTimeout(() => {
+    this.pendingItemMoveTimer = gameTimeout(() => {
       if (!this.pendingItemMove) return;
 
       console.warn('Item move timed out with no answer - rolling it back');
@@ -2993,7 +2996,7 @@ export const Store = new (class _Store {
   private clearItemMoveTimer(): void {
     if (!this.pendingItemMoveTimer) return;
 
-    clearTimeout(this.pendingItemMoveTimer);
+    clearGameTimeout(this.pendingItemMoveTimer);
     this.pendingItemMoveTimer = null;
   }
 })();
