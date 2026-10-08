@@ -2,11 +2,43 @@ import { observable, reaction, runInAction } from 'mobx';
 import { Store } from '../store';
 import { MuHelperSaveDataRequestPacket } from '../common/packets/ClientToServerPackets';
 import {
-  decodeMuHelperConfig,
+  decodeMuHelperConfig as decodeBlob,
   defaultMuHelperConfig,
   encodeMuHelperConfig,
+  restoreExtraItemNames,
   type MuHelperConfig,
 } from './config';
+
+/**
+ * Mu La Ronda: the extra items as typed, per character. The blob the server
+ * keeps cuts each to 14 characters; the whole text lives here and is put back
+ * over the cut one on every decode.
+ */
+const fullNamesKey = () => `mu_helper_extra:${Store.playerData.name ?? ''}`;
+
+function readFullNames(): string[] {
+  try {
+    const raw = localStorage.getItem(fullNamesKey());
+    const list: unknown = raw ? JSON.parse(raw) : [];
+    return Array.isArray(list) ? list.filter((x): x is string => typeof x === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeFullNames(names: readonly string[]): void {
+  try {
+    localStorage.setItem(fullNamesKey(), JSON.stringify(names));
+  } catch {
+    // Private mode: the cut names from the blob still work.
+  }
+}
+
+function decodeMuHelperConfig(blob: Uint8Array): MuHelperConfig {
+  const config = decodeBlob(blob);
+  config.extraItems = restoreExtraItemNames(config.extraItems, readFullNames());
+  return config;
+}
 
 /**
  * MU Helper state: the live config the loop follows and the window's draft.
@@ -69,6 +101,7 @@ export function resetMuHelperDraft(): void {
  * Offline the config only applies locally.
  */
 export function saveMuHelperConfig(): void {
+  writeFullNames(MuHelperState.draft.extraItems);
   const blob = encodeMuHelperConfig(MuHelperState.draft);
   runInAction(() => {
     MuHelperState.config = decodeMuHelperConfig(blob);

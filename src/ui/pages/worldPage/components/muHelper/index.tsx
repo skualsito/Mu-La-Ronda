@@ -613,6 +613,7 @@ const ObtainTab = observer(() => {
           type="text"
           maxLength={MAX_EXTRA_ITEM_CHARS}
           placeholder={t('muHelper.itemName')}
+          title={t('muHelper.itemFilterHint')}
           value={itemName}
           onKeyDown={event => {
             event.stopPropagation();

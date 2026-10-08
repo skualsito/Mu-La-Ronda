@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseAddCommand } from './chatCommands';
+import { addCommandWire, parseAddCommand } from './chatCommands';
 import { StatType } from './characterStats';
 
 describe('parseAddCommand', () => {
@@ -25,5 +25,15 @@ describe('parseAddCommand', () => {
     expect(parseAddCommand('/addfriend')).toBeUndefined();
     expect(parseAddCommand('/reset')).toBeUndefined();
     expect(parseAddCommand('hola')).toBeUndefined();
+  });
+});
+
+describe('addCommandWire', () => {
+  it('writes the server /add for every stat', () => {
+    expect(addCommandWire(StatType.Strength, 100)).toBe('/add str 100');
+    expect(addCommandWire(StatType.Agility, 2)).toBe('/add agi 2');
+    expect(addCommandWire(StatType.Vitality, 3)).toBe('/add vit 3');
+    expect(addCommandWire(StatType.Energy, 4)).toBe('/add ene 4');
+    expect(addCommandWire(StatType.Leadership, 5)).toBe('/add cmd 5');
   });
 });

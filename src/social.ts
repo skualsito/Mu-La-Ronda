@@ -36,8 +36,8 @@ import {
   matchEmojiBubbleWord,
   type EmojiBubbleId,
 } from './common/emojiBubbles';
-import { localCommandOf, parseAddCommand } from './common/chatCommands';
-import { StatAllocation } from './common/statAllocation';
+import { addCommandWire, localCommandOf, parseAddCommand } from './common/chatCommands';
+import { addableAmount } from './common/statAllocation';
 import { openRondaPanel } from './common/rondaPanels';
 import {
   chatEmojiAdvance,
@@ -654,7 +654,7 @@ export const Social = new (class _Social {
    * OpenMU parses them on the server.
    */
   sendChat(rawText: string): boolean {
-    const text = clipChatText(rawText.replace(/[\r\n]/g, ''), MAX_CHAT_LENGTH);
+    let text = clipChatText(rawText.replace(/[\r\n]/g, ''), MAX_CHAT_LENGTH);
     if (!text.trim()) return false;
 
     const now = performance.now();
@@ -676,11 +676,15 @@ export const Social = new (class _Social {
     // `/union`… act on the player under the cursor and are never sent.
     const add = parseAddCommand(text);
     if (add) {
-      this.remember(this.chatHistory, text);
-      if (add.kind === 'usage') this.errorMessage(add.usage);
-      else if (Store.playerData.points <= 0) this.errorMessage(t('notify.pointNotAdded'));
-      else StatAllocation.start(add.stat, add.amount);
-      return true;
+      const amount = add.kind === 'add' ? addableAmount(add.stat, add.amount) : 0;
+      if (add.kind === 'usage' || amount <= 0) {
+        this.remember(this.chatHistory, text);
+        this.errorMessage(add.kind === 'usage' ? add.usage : t('notify.pointNotAdded'));
+        return true;
+      }
+      // Mu La Ronda: OpenMU's own /add - every point at once, and the
+      // character re-entered on the map (chatCommands.ts).
+      text = addCommandWire(add.stat, amount);
     }
 
     const local = localCommandOf(text);

@@ -72,6 +72,7 @@ export const CHAT_COMMANDS: readonly ChatCommand[] = [
   { name: '/reset', helpKey: 'cmd.reset' },
   { name: '/resetinfo', helpKey: 'cmd.resetinfo' },
   { name: '/autoreset', helpKey: 'cmd.autoreset' },
+  { name: '/resetarbol', helpKey: 'cmd.resetarbol' },
   { name: '/vip', usage: '[bronce|plata|oro]', helpKey: 'cmd.vip' },
   { name: '/re', usage: '<on|off|auto>', helpKey: 'cmd.re', ui: 'partyReply' },
   { name: '/post', usage: '<message>', helpKey: 'cmd.post' },
@@ -170,15 +171,22 @@ const ADD_STATS: Record<string, StatType> = {
   cmd: StatType.Leadership,
 };
 
+/** OpenMU's `/add` for `stat` (AddStatChatCommandPlugIn). */
+export function addCommandWire(stat: StatType, amount: number): string {
+  const word = Object.keys(ADD_STATS).find(key => ADD_STATS[key] === stat) ?? 'str';
+  return `/add ${word} ${amount}`;
+}
+
 export type AddCommand =
   | { kind: 'add'; stat: StatType; amount: number }
   | { kind: 'usage'; usage: string };
 
 /**
  * Mu La Ronda: `/add <str|agi|vit|ene|cmd> <n>` and `/addstr <n>` (and the
- * other four) run on this client as a stat run (`statAllocation.ts`) instead
- * of going to OpenMU - its single-stat commands ship disabled, and its
- * multi-point answer for this client version re-enters the character.
+ * other four). All of them go to OpenMU as its own `/add <stat> <n>`
+ * (`addCommandWire`) - its single-stat commands ship disabled - which adds
+ * every point at once and re-enters the character on the map. The client
+ * reads the line first to clamp the amount and answer a bad one.
  * Undefined when the line is not one of them.
  */
 export function parseAddCommand(text: string): AddCommand | undefined {

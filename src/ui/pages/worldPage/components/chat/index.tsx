@@ -686,7 +686,10 @@ const ChatInput = observer(() => {
 
   const closePicker = useCallback(() => setPickerOpen(false), []);
 
-  useEffect(() => {
+  // Mu La Ronda: a layout effect, so the box is reset before it is drawn. As a
+  // plain effect it ran after the paint - with the game busy, a few frames
+  // later - and reopening right after sending showed the last line meanwhile.
+  useLayoutEffect(() => {
     if (!open) return;
     // Opened by Alt+click on an item: the box starts with its link.
     const insert = Social.takeChatInsert();
@@ -764,6 +767,9 @@ const ChatInput = observer(() => {
       playUiSound('error');
       return;
     }
+    // Sent: the box is empty the next time it opens, not only once it has.
+    setText('');
+    links.current = new Map();
     Social.followChatLog();
     Social.closeChatInput();
   };

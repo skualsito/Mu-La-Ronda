@@ -15,7 +15,90 @@ export const MAX_HUNTING_RANGE = 6;
 export const MAX_OBTAINING_RANGE = 8;
 export const MAX_EXTRA_ITEMS = 12;
 /** 15-byte ANSI slots, NUL-terminated: 14 usable characters. */
-export const MAX_EXTRA_ITEM_CHARS = 14;
+export const BLOB_EXTRA_ITEM_CHARS = 14;
+/**
+ * Mu La Ronda: how long an extra item may be typed - room for a name and its
+ * filters ("Guardian Shield +Luck +Opt 12"). The blob keeps the first 14
+ * characters; the whole entry is kept per character in the browser
+ * (`muHelper/state.ts`) and put back over the cut one.
+ */
+export const MAX_EXTRA_ITEM_CHARS = 40;
+
+/**
+ * Mu La Ronda: puts each blob entry's whole text back, from `full` (the list
+ * last saved on this browser): a slot is the first 14 characters of the entry
+ * it came from. A slot nothing here starts with stays as it is.
+ */
+export function restoreExtraItemNames(slots: readonly string[], full: readonly string[]): string[] {
+  // Each saved entry is used once, in order: two entries can share their
+  // first 14 characters ("Guardian Shield +Luck", "Guardian Shield +Opt 12").
+  const used = new Set<number>();
+  return slots.map(slot => {
+    const i = full.findIndex((entry, k) => !used.has(k) && entry.slice(0, BLOB_EXTRA_ITEM_CHARS) === slot);
+    if (i < 0) return slot;
+    used.add(i);
+    return full[i];
+  });
+}
+
+/** What `matchesExtraItem` reads off a drop. */
+export interface ExtraItemDrop {
+  name: string;
+  level?: number;
+  luck?: boolean;
+  hasSkill?: boolean;
+  /** 0..7, +4 each. */
+  optionLevel?: number;
+  isExcellent?: boolean;
+  isAncient?: boolean;
+}
+
+/**
+ * Mu La Ronda: whether a drop is what an extra item entry asks for. The words
+ * are part of the name; `+` words are filters, in any order and case:
+ *
+ *   +Luck, +Skill, +Exc, +Anc  - must have it
+ *   +Opt                       - any additional option; +Opt 12 / +Opt12: at least +12
+ *   +9                         - at least +9
+ *
+ * "Guardian Shield +Luck +Opt 12" is a Guardian Shield with luck and +12 or
+ * more. An entry with no `+` words matches by name only, as before.
+ */
+export function matchesExtraItem(entry: string, drop: ExtraItemDrop): boolean {
+  const words = entry.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const name: string[] = [];
+
+  for (let i = 0; i < words.length; i++) {
+    const word = words[i];
+    if (!word.startsWith('+')) {
+      name.push(word);
+      continue;
+    }
+    const filter = word.slice(1);
+    if (filter === 'luck') {
+      if (!drop.luck) return false;
+    } else if (filter === 'skill') {
+      if (!drop.hasSkill) return false;
+    } else if (filter === 'exc' || filter === 'excellent') {
+      if (!drop.isExcellent) return false;
+    } else if (filter === 'anc' || filter === 'ancient') {
+      if (!drop.isAncient) return false;
+    } else if (filter.startsWith('opt')) {
+      let need = Number(filter.slice(3));
+      // "+Opt 12": the amount is the next word.
+      if (filter === 'opt' && /^\d+$/.test(words[i + 1] ?? '')) need = Number(words[++i]);
+      const has = (drop.optionLevel ?? 0) * 4;
+      if (has <= 0 || has < (need || 0)) return false;
+    } else if (/^\d+$/.test(filter)) {
+      if ((drop.level ?? 0) < Number(filter)) return false;
+    } else {
+      // Not a filter after all ("+" inside a name): part of the name.
+      name.push(word);
+    }
+  }
+
+  return drop.name.toLowerCase().includes(name.join(' '));
+}
 
 export type SkillConditionBasis = 'nearby' | 'attacking';
 
@@ -130,7 +213,7 @@ const nib = (v: number) => v & 0x0f;
 
 /** A name fits a slot when every char survives the ANSI narrowing. */
 function extraItemBytes(name: string): number[] | null {
-  const trimmed = name.slice(0, MAX_EXTRA_ITEM_CHARS);
+  const trimmed = name.slice(0, BLOB_EXTRA_ITEM_CHARS);
   const bytes: number[] = [];
   for (let i = 0; i < trimmed.length; i++) {
     const code = trimmed.charCodeAt(i);

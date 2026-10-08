@@ -31,6 +31,16 @@ const IN_FLIGHT = 1000;
 /** Mu La Ronda: OpenMU's cap on every base stat (deploy/config/03-stats.sql). */
 export const MAX_STAT = 65534;
 
+/**
+ * Mu La Ronda: what `/add` may ask OpenMU for: no more than the free points,
+ * than the room under the cap (past it the server answers nothing) or than
+ * its `ushort` amount holds.
+ */
+export function addableAmount(stat: StatType, amount: number): number {
+  const room = Math.max(0, MAX_STAT - currentStat(stat));
+  return Math.min(clampAmount(amount, Store.playerData.points), room, 65535);
+}
+
 function currentStat(stat: StatType): number {
   const p = Store.playerData;
   switch (stat) {

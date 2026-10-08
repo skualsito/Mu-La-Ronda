@@ -8,7 +8,7 @@ import { PetCommandModeEnum } from '../common/packets/ClientToServerPackets';
 import { isAttackableEntity } from '../ecs/systems/attackSystem';
 import type { Entity, World } from '../ecs/world';
 import { ensureMuHelperWatching, MuHelperState } from './state';
-import type { MuHelperConfig } from './config';
+import { matchesExtraItem, type MuHelperConfig } from './config';
 import { EventBus } from '../libs/eventBus';
 
 /**
@@ -407,8 +407,17 @@ function shouldObtain(config: MuHelperConfig, e: Entity): boolean {
   if (config.pickExcellent && drop.item?.isExcellent) return true;
 
   if (config.pickExtraItems && def) {
-    const name = def.name.toLowerCase();
-    if (config.extraItems.some(entry => name.includes(entry.toLowerCase()))) {
+    const item = drop.item;
+    const candidate = {
+      name: def.name,
+      level: item?.lvl,
+      luck: item?.luck,
+      hasSkill: item?.hasSkill,
+      optionLevel: item?.optionLevel,
+      isExcellent: item?.isExcellent,
+      isAncient: item?.isAncient,
+    };
+    if (config.extraItems.some(entry => matchesExtraItem(entry, candidate))) {
       return true;
     }
   }
