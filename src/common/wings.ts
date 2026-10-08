@@ -124,7 +124,7 @@ export type WingSpec = {
   /** `f->PlaySpeed` while a FLY clip is running (Wing of Storm halves it). */
   readonly flyPlaySpeed?: number;
   /** Capes are link-bound to bone 19 with an explicit matrix. */
-  readonly cape?: 'emperor' | 'overrule';
+  readonly cape?: 'emperor' | 'overrule' | 'lord';
   /**
    * Mu La Ronda: the model's mesh that is the cape's cloth, simulated instead
    * of standing stiff (`capeCloth.ts`, the original's `CPhysicsCloth`).
@@ -148,10 +148,18 @@ const PLAIN: WingSpec = { blendMesh: -1 };
  * bone space: Cape of Overrule `AngleMatrix(0,90,0) + (10,-15,0)`, every
  * cape at or above Cape of Emperor `AngleMatrix(0,90,0) + (-47,-7,0)`.
  */
-const CAPE_LINKS: Record<'emperor' | 'overrule', BmdLink> = {
+const CAPE_LINKS: Record<'emperor' | 'overrule' | 'lord', BmdLink> = {
   emperor: { angle: [0, 90, 0], offset: [-47, -7, 0] },
   overrule: { angle: [0, 90, 0], offset: [10, -15, 0] },
+  // Mu La Ronda: the original never draws Cape of Lord's own model - that cape
+  // is a cloth of its own hung from bone 19 (ZzzCharacter.cpp:9527) - and the
+  // emperor matrix put this sheet over the head, its top in front of the face.
+  // Moved down and back so the top sits behind the neck (measured in game).
+  lord: { angle: [0, 90, 0], offset: [-73, -40, -10] },
 };
+
+/** Mu La Ronda: Cape of Lord's sheet is a size wider and longer than the body it hangs on. */
+const LORD_SCALE = Matrix.Scaling(0.85, 1, 0.85);
 
 const WINGS: Readonly<Record<number, WingSpec>> = {
   // --- 1st level. `case MODEL_WING: o->BlendMesh = 0` (ZzzObject.cpp:5284).
@@ -264,7 +272,7 @@ const WINGS: Readonly<Record<number, WingSpec>> = {
 };
 
 const CAPES: Readonly<Record<number, WingSpec>> = {
-  [CAPE_OF_LORD]: { blendMesh: -1, cape: 'emperor', cloth: 0 },
+  [CAPE_OF_LORD]: { blendMesh: -1, cape: 'lord', cloth: 0 },
 };
 
 /** True for the items the appearance's wing slot can legitimately hold. */
@@ -282,7 +290,8 @@ export function wingSpec(item: Item | null | undefined): WingSpec | null {
 /** The link matrix a cape needs, or null for a plain bone-47 wing. */
 export function wingLinkMatrix(spec: WingSpec | null): Matrix | null {
   if (!spec?.cape) return null;
-  return angleLinkMatrix(CAPE_LINKS[spec.cape]);
+  const link = angleLinkMatrix(CAPE_LINKS[spec.cape]);
+  return spec.cape === 'lord' ? LORD_SCALE.multiply(link) : link;
 }
 
 export function wingBone(spec: WingSpec | null): number {
