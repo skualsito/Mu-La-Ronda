@@ -154,12 +154,20 @@ const CAPE_LINKS: Record<'emperor' | 'overrule' | 'lord', BmdLink> = {
   // Mu La Ronda: the original never draws Cape of Lord's own model - that cape
   // is a cloth of its own hung from bone 19 (ZzzCharacter.cpp:9527) - and the
   // emperor matrix put this sheet over the head, its top in front of the face.
-  // Moved down and back so the top sits behind the neck (measured in game).
-  lord: { angle: [0, 90, 0], offset: [-73, -40, -10] },
+  // Moved down and back so the top sits behind the neck, clear of the body
+  // capsule the cloth keeps out of (inside it, the sheet was shoved to one
+  // side and hung crooked). Measured in game.
+  lord: { angle: [0, 90, 0], offset: [-77, -37, -4] },
 };
 
-/** Mu La Ronda: Cape of Lord's sheet is a size wider and longer than the body it hangs on. */
-const LORD_SCALE = Matrix.Scaling(0.85, 1, 0.85);
+/**
+ * Mu La Ronda: Cape of Lord's sheet is a size wider and longer than the body
+ * it hangs on, turned 7 degrees off the back (one side stood further out) and
+ * tipped 10 degrees nearer upright (it stood out behind like a board).
+ */
+const LORD_SHAPE = Matrix.RotationX((10 * Math.PI) / 180)
+  .multiply(Matrix.RotationZ((7 * Math.PI) / 180))
+  .multiply(Matrix.Scaling(0.85, 1, 0.85));
 
 const WINGS: Readonly<Record<number, WingSpec>> = {
   // --- 1st level. `case MODEL_WING: o->BlendMesh = 0` (ZzzObject.cpp:5284).
@@ -291,7 +299,7 @@ export function wingSpec(item: Item | null | undefined): WingSpec | null {
 export function wingLinkMatrix(spec: WingSpec | null): Matrix | null {
   if (!spec?.cape) return null;
   const link = angleLinkMatrix(CAPE_LINKS[spec.cape]);
-  return spec.cape === 'lord' ? LORD_SCALE.multiply(link) : link;
+  return spec.cape === 'lord' ? LORD_SHAPE.multiply(link) : link;
 }
 
 export function wingBone(spec: WingSpec | null): number {
