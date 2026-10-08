@@ -273,6 +273,8 @@ export const koreanLayer: LanguageLayer = {
     'options.languageHint':
       '인터페이스 언어입니다. 아이템·몬스터·스킬 이름은 바뀌지 않습니다.',
     'options.quality.classic': '클래식',
+
+    'options.quality.low': '낮음',
     'options.quality.enhanced': '향상',
     'options.quality.ultra': '울트라',
     'options.quality.characters': '캐릭터',

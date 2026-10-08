@@ -271,6 +271,8 @@ export const italianLayer: LanguageLayer = {
     'options.languageHint':
       'La lingua dell’interfaccia. I nomi di oggetti, mostri e abilità restano invariati.',
     'options.quality.classic': 'Classica',
+
+    'options.quality.low': 'Bassa',
     'options.quality.enhanced': 'Migliorata',
     'options.quality.ultra': 'Ultra',
     'options.quality.characters': 'Personaggi',

@@ -271,6 +271,8 @@ export const russianLayer: LanguageLayer = {
     'options.languageHint':
       'Язык интерфейса. Названия предметов, монстров и умений не меняются.',
     'options.quality.classic': 'Классика',
+
+    'options.quality.low': 'Низкое',
     'options.quality.enhanced': 'Улучшенное',
     'options.quality.ultra': 'Ультра',
     'options.quality.characters': 'Персонажи',

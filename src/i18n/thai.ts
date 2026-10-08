@@ -273,6 +273,8 @@ export const thaiLayer: LanguageLayer = {
     'options.languageHint':
       'ภาษาของหน้าจอ ชื่อไอเทม มอนสเตอร์ และสกิลจะไม่เปลี่ยน',
     'options.quality.classic': 'คลาสสิก',
+
+    'options.quality.low': 'ต่ำ',
     'options.quality.enhanced': 'ปรับปรุง',
     'options.quality.ultra': 'อัลตรา',
     'options.quality.characters': 'ตัวละคร',

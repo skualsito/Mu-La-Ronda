@@ -593,6 +593,8 @@ export const vietnameseLayer: LanguageLayer = {
     'options.help.selectServer': 'Đăng xuất và quay về danh sách máy chủ.',
     'options.help.switchCharacter': 'Quay về màn hình chọn nhân vật, vẫn giữ đăng nhập.',
     'options.quality.classic': 'Cổ điển',
+
+    'options.quality.low': 'Thấp',
     'options.quality.enhanced': 'Nâng cao',
     'options.quality.ultra': 'Ultra',
     'options.quality.characters': 'Nhân vật',

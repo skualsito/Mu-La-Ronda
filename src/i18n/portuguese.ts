@@ -281,6 +281,8 @@ export const portugueseLayer: LanguageLayer = {
     'options.languageHint':
       'O idioma da interface. Nomes de itens, monstros e habilidades não mudam.',
     'options.quality.classic': 'Clássica',
+
+    'options.quality.low': 'Baixa',
     'options.quality.enhanced': 'Melhorada',
     'options.quality.ultra': 'Ultra',
     'options.quality.characters': 'Personagens',

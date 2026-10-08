@@ -283,6 +283,7 @@ export const spanishLayer: LanguageLayer = {
     'options.languageHint':
       'El idioma de la interfaz. Los nombres de objetos, monstruos y habilidades no cambian.',
     'options.quality.classic': 'Clásica',
+    'options.quality.low': 'Baja',
     'options.quality.enhanced': 'Mejorada',
     'options.quality.ultra': 'Ultra',
     'options.quality.characters': 'Personajes',
@@ -2628,7 +2629,7 @@ export const spanishLayer: LanguageLayer = {
     'options.help.blockBrowserKeys':
       'Evita que atajos del navegador como F5 o el zoom actúen durante la partida y pide confirmación antes de cerrar la pestaña.',
     'options.help.presets':
-      'Ajusta Iluminación, Materiales, Detalle y toda la página Imagen a un mismo nivel.',
+      'Ajusta Iluminación, Materiales, Detalle y toda la página Imagen a un mismo nivel. Baja además apaga sombras, luces, efectos, clima, animaciones de otros y baja la resolución: para PCs que andan lentas.',
     'options.help.lightingQuality':
       'Clásica es el aspecto original. Mejorada añade sombras del sol, sombreado suave y bruma; Ultra los hace más nítidos.',
     'options.help.materialQuality':

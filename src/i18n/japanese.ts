@@ -274,6 +274,8 @@ export const japaneseLayer: LanguageLayer = {
     'options.languageHint':
       'インターフェイスの言語です。アイテム・モンスター・スキルの名前は変わりません。',
     'options.quality.classic': 'クラシック',
+
+    'options.quality.low': '低',
     'options.quality.enhanced': '強化',
     'options.quality.ultra': 'ウルトラ',
     'options.quality.characters': 'キャラクター',

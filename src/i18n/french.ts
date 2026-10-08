@@ -271,6 +271,8 @@ export const frenchLayer: LanguageLayer = {
     'options.languageHint':
       'La langue de l’interface. Les noms d’objets, de monstres et de compétences restent inchangés.',
     'options.quality.classic': 'Classique',
+
+    'options.quality.low': 'Basse',
     'options.quality.enhanced': 'Améliorée',
     'options.quality.ultra': 'Ultra',
     'options.quality.characters': 'Personnages',

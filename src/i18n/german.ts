@@ -271,6 +271,8 @@ export const germanLayer: LanguageLayer = {
     'options.languageHint':
       'Die Sprache der Oberfläche. Namen von Gegenständen, Monstern und Fertigkeiten bleiben unverändert.',
     'options.quality.classic': 'Klassisch',
+
+    'options.quality.low': 'Niedrig',
     'options.quality.enhanced': 'Verbessert',
     'options.quality.ultra': 'Ultra',
     'options.quality.characters': 'Charaktere',

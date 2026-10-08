@@ -269,6 +269,8 @@ export const chineseLayer: LanguageLayer = {
     'options.noPackHint': '仅界面 - 任务文本和怪物名称仍为英文。',
     'options.languageHint': '界面语言。物品、怪物和技能的名称保持不变。',
     'options.quality.classic': '经典',
+
+    'options.quality.low': '低',
     'options.quality.enhanced': '增强',
     'options.quality.ultra': '极致',
     'options.quality.characters': '角色',

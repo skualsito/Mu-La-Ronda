@@ -602,6 +602,8 @@ export const polishLayer: LanguageLayer = {
     'options.help.selectServer': 'Wylogowuje i wraca do listy serwerów.',
     'options.help.switchCharacter': 'Wraca do wyboru postaci bez wylogowania.',
     'options.quality.classic': 'Klasyczne',
+
+    'options.quality.low': 'Niskie',
     'options.quality.enhanced': 'Ulepszone',
     'options.quality.ultra': 'Ultra',
     'options.quality.characters': 'Postacie',

@@ -527,7 +527,7 @@ export const EN_TEXT = {
   'options.help.blockBrowserKeys':
     'Stops browser shortcuts like F5 and zoom mid-game, and asks before the tab closes.',
   'options.help.presets':
-    'Sets Lighting, Materials, Detail and the whole Image page to one matching level.',
+    'Sets Lighting, Materials, Detail and the whole Image page to one matching level. Low also turns off shadows, lights, effects, weather and other players animations and lowers the resolution, for slow PCs.',
   'options.help.lightingQuality':
     'Classic is the original look. Enhanced adds sun shadows, soft shading and haze; Ultra sharpens them.',
   'options.help.materialQuality':
@@ -670,6 +670,7 @@ export const EN_TEXT = {
 
   // Slider value labels.
   'options.quality.classic': 'Classic',
+  'options.quality.low': 'Low',
   'options.quality.enhanced': 'Enhanced',
   'options.quality.ultra': 'Ultra',
   'options.quality.characters': 'Characters',

@@ -271,6 +271,8 @@ export const bulgarianLayer: LanguageLayer = {
     'options.languageHint':
       'Езикът на интерфейса. Имената на предмети, чудовища и умения не се променят.',
     'options.quality.classic': 'Класическо',
+
+    'options.quality.low': 'Ниско',
     'options.quality.enhanced': 'Подобрено',
     'options.quality.ultra': 'Ултра',
     'options.quality.characters': 'Герои',

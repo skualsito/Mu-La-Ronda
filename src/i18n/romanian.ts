@@ -271,6 +271,8 @@ export const romanianLayer: LanguageLayer = {
     'options.languageHint':
       'Limba interfeței. Numele obiectelor, monștrilor și abilităților rămân neschimbate.',
     'options.quality.classic': 'Clasică',
+
+    'options.quality.low': 'Scăzută',
     'options.quality.enhanced': 'Îmbunătățită',
     'options.quality.ultra': 'Ultra',
     'options.quality.characters': 'Personaje',
