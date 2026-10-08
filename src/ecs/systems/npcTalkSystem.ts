@@ -15,6 +15,13 @@ import { isNpcOrTrapType } from './attackSystem';
 
 /** Chebyshev tile distance at which the hero stops and talks. */
 const TALK_RANGE = 2;
+/**
+ * Mu La Ronda: how far out the hero may stand to talk to an NPC with no free
+ * tile within `TALK_RANGE` - a big machine like Kanturu's Gateway Machine
+ * fills its own neighbourhood, so the talk used to give up without asking
+ * the server and its window never opened.
+ */
+const MAX_TALK_RANGE = 6;
 /** Seconds between path refreshes while approaching (NPCs barely move). */
 const APPROACH_INTERVAL = 0.4;
 
@@ -35,18 +42,34 @@ const TERRAIN_MAX = 255;
  * approach cuts its path at weapon reach the same way, `truncatePathForAttack`).
  * `excluded` holds tiles a previous search could not reach.
  */
+/** The talk range for this NPC: `TALK_RANGE`, or the nearest ring out with a walkable tile. */
+function talkRangeOf(world: Parameters<ISystemFactory>[0], npcX: number, npcY: number): number {
+  for (let range = TALK_RANGE; range <= MAX_TALK_RANGE; range++) {
+    for (let dx = -range; dx <= range; dx++) {
+      for (let dy = -range; dy <= range; dy++) {
+        const x = npcX + dx;
+        const y = npcY + dy;
+        if (x < 0 || y < 0 || x > TERRAIN_MAX || y > TERRAIN_MAX) continue;
+        if (world.isWalkable(x, y)) return range;
+      }
+    }
+  }
+  return TALK_RANGE;
+}
+
 function findApproachTile(
   world: Parameters<ISystemFactory>[0],
   npcX: number,
   npcY: number,
   heroX: number,
   heroY: number,
-  excluded: Set<number>
+  excluded: Set<number>,
+  range: number
 ): { x: number; y: number } | null {
   let best: { x: number; y: number } | null = null;
   let bestDist = Infinity;
-  for (let dx = -TALK_RANGE; dx <= TALK_RANGE; dx++) {
-    for (let dy = -TALK_RANGE; dy <= TALK_RANGE; dy++) {
+  for (let dx = -range; dx <= range; dx++) {
+    for (let dy = -range; dy <= range; dy++) {
       const x = npcX + dx;
       const y = npcY + dy;
       if (x < 0 || y < 0 || x > TERRAIN_MAX || y > TERRAIN_MAX) continue;
@@ -141,7 +164,8 @@ export const NpcTalkSystem: ISystemFactory = world => {
       // Out of reach: walk to a tile next to the NPC. Already in reach (the
       // hero stands beside the NPC, or the path ended early inside the
       // range) falls through to the talk request without moving.
-      if (Math.max(dx, dz) > TALK_RANGE) {
+      const range = talkRangeOf(world, npcX, npcY);
+      if (Math.max(dx, dz) > range) {
         // The A* (`libs/astar.ts`) never returns an empty path for an
         // unreachable goal: it hands back the path to the *closest* node. So
         // "unreachable" is a calculated path whose last node is not the tile
@@ -164,7 +188,7 @@ export const NpcTalkSystem: ISystemFactory = world => {
         if (approachDelay > 0) return;
         approachDelay = APPROACH_INTERVAL;
 
-        const tile = findApproachTile(world, npcX, npcY, heroX, heroY, unreachable);
+        const tile = findApproachTile(world, npcX, npcY, heroX, heroY, unreachable, range);
         if (!tile) {
           // No way to get next to the NPC (blocked in): give up like a
           // cancelled walk instead of re-requesting forever.
