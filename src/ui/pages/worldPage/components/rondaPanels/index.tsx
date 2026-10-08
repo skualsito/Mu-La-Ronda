@@ -24,6 +24,18 @@ import { playUiSound } from '../../../../../libs/sfx';
 import { ConfirmBox } from '../../../../components/optionsWindow/dialogs';
 import { Social } from '../../../../../social';
 import { markVipBuying, VIP_TIERS, vipState, type VipTierInfo } from '../../../../../common/vip';
+import {
+  bundlesIn,
+  closeNpcRequest,
+  JEWEL_MIXES,
+  looseJewels,
+  PACK_FEE_PER_TEN,
+  PACK_SIZES,
+  packRequest,
+  UNPACK_FEE,
+  unpackRequest,
+} from '../../../../../common/lahap';
+import { itemBaseName } from '../../../../../common/itemsDatabase';
 
 /**
  * Mu La Ronda's own in-game windows: the command list (`/comandos`) and the
@@ -444,8 +456,104 @@ const VipWindow = observer(() => {
   );
 });
 
+// ---------------------------------------------------------------------------
+// Lahap
+// ---------------------------------------------------------------------------
+
+const LahapWindow = observer(() => {
+  // The bag with each item's own slot: unpacking names the slot.
+  const bag = Store.playerData.items
+    .map((item, slot) => ({ slot, item }))
+    .filter(({ slot }) => slot >= 12 && slot < 12 + 64);
+  const loose = looseJewels(bag);
+  const bundles = bundlesIn(bag);
+  const money = Store.playerData.money;
+
+  // The dialog stays open on the server until it is told.
+  useEffect(
+    () => () => {
+      if (!Store.isOffline) Store.sendToGS(closeNpcRequest());
+    },
+    []
+  );
+
+  const send = (packet: DataView) => {
+    playUiSound('click');
+    Store.sendToGS(packet);
+  };
+
+  return (
+    <Panel
+      id="ronda-lahap"
+      title="Lahap"
+      width={560}
+      height={500}
+      headerHeight={34}
+      contentKey={`${[...loose.values()].join(',')}|${bundles.length}`}
+      header={
+        <p className="ronda-note">
+          Empaqueta joyas de a 10, 20 o 30 ({zen(PACK_FEE_PER_TEN)} zen cada 10) y desarma
+          paquetes ({zen(UNPACK_FEE)} zen).
+        </p>
+      }
+    >
+      <h3 className="ronda-section">Empaquetar</h3>
+      <table className="ronda-table ronda-lahap">
+        <tbody>
+          {JEWEL_MIXES.map(mix => {
+            const have = loose.get(mix.mix) ?? 0;
+            return (
+              <tr key={mix.mix}>
+                <td>{itemBaseName(mix.group, mix.num)}</td>
+                <td className="ronda-lahap-count">{have}</td>
+                <td className="ronda-lahap-actions">
+                  {PACK_SIZES.map(size => (
+                    <OptionsButton
+                      key={size}
+                      label={`x${size}`}
+                      width={52}
+                      disabled={have < size || money < (size / 10) * PACK_FEE_PER_TEN}
+                      onClick={() => send(packRequest(mix.mix, size))}
+                      style={{ position: 'relative', display: 'inline-block', marginLeft: 4 }}
+                    />
+                  ))}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      <h3 className="ronda-section">Desarmar</h3>
+      {bundles.length === 0 ? (
+        <p className="ronda-note">No tenés paquetes de joyas en el inventario.</p>
+      ) : (
+        <table className="ronda-table ronda-lahap">
+          <tbody>
+            {bundles.map(bundle => (
+              <tr key={bundle.slot}>
+                <td>{itemBaseName(12, bundle.mix.packed)}</td>
+                <td className="ronda-lahap-count">{bundle.size}</td>
+                <td className="ronda-lahap-actions">
+                  <OptionsButton
+                    label="Desarmar"
+                    width={96}
+                    disabled={money < UNPACK_FEE}
+                    onClick={() => send(unpackRequest(bundle.mix.mix, bundle.slot))}
+                    style={{ position: 'relative', display: 'inline-block' }}
+                  />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </Panel>
+  );
+});
+
 export const RondaPanels = observer(() => (
   <>
+    {rondaPanels.open === 'lahap' && <LahapWindow />}
     {rondaPanels.open === 'commands' && <CommandsWindow />}
     {rondaPanels.open === 'rankings' && <RankingsWindow />}
     {rondaPanels.open === 'vip' && <VipWindow />}

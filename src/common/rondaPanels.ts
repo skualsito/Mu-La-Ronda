@@ -5,7 +5,7 @@ import { observable, runInAction } from 'mobx';
  * (`/comandos`) and the rankings (`/ranking`, or the button on screen). Kept
  * outside the components so the chat can open them.
  */
-export type RondaPanel = 'commands' | 'rankings' | 'vip';
+export type RondaPanel = 'commands' | 'rankings' | 'vip' | 'lahap' | 'events';
 
 export const rondaPanels = observable({ open: null as RondaPanel | null });
 

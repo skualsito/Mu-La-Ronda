@@ -1,3 +1,4 @@
+import { openRondaPanel } from './common/rondaPanels';
 import { installBandNet } from './band/bandNet';
 import { installPingNet } from './ping/pingNet';
 import { runInAction } from 'mobx';
@@ -3913,6 +3914,11 @@ EventBus.on('NpcWindowResponse', packet => {
     case NpcWindowResponseNpcWindowEnum.LugardDoppelgangerEntry:
       Store.dropNpcTalk();
       events.openDoppelganger();
+      break;
+    case NpcWindowResponseNpcWindowEnum.Lahap:
+      // Mu La Ronda: jewel packing (common/lahap.ts).
+      Store.dropNpcTalk();
+      openRondaPanel('lahap');
       break;
     default:
       // A legacy quest NPC (Sebina, Marlon, Apostle Devin…): the dialog is
