@@ -65,30 +65,36 @@ export const Notices = observer(() => {
           return <div key={key} className="notice-line" style={LINE_STYLE} />;
         }
         if (hasLinks(line.text)) {
+          // One text run like any other line - laid out as separate boxes, it
+          // stood taller than its row and covered the line under it - with
+          // the links as spans inside it, blinking with the rest.
           return (
-            <div
-              key={key}
-              className="notice-line notice-rich"
-              style={{ ...LINE_STYLE, transform: `scale(${SCALE})`, transformOrigin: 'center top' }}
-            >
-              {parseRichText(line.text).map((segment, i) => {
-                const href = segment.href;
-                return (
-                  <span
-                    key={i}
-                    className={href ? 'notice-link' : undefined}
-                    onClick={href ? () => openLink(href) : undefined}
-                  >
-                    <MuText
-                      face="bold"
-                      text={segment.text}
-                      color={href ? LINK_COLOR : style.color}
-                      background={NOTICE_BACKGROUND}
-                      style={{ opacity: !href && style.blink && dim ? 128 / 255 : 1 }}
-                    />
-                  </span>
-                );
-              })}
+            <div key={key} className="notice-line notice-rich" style={LINE_STYLE}>
+              <MuText
+                face="bold"
+                color={style.color}
+                background={NOTICE_BACKGROUND}
+                style={{
+                  opacity: style.blink && dim ? 128 / 255 : 1,
+                  transform: `scale(${SCALE})`,
+                  transformOrigin: 'center top',
+                }}
+              >
+                {parseRichText(line.text).map((segment, i) => {
+                  const href = segment.href;
+                  if (!href) return <span key={i}>{segment.text}</span>;
+                  return (
+                    <span
+                      key={i}
+                      className="notice-link"
+                      style={{ color: LINK_COLOR }}
+                      onClick={() => openLink(href)}
+                    >
+                      {segment.text}
+                    </span>
+                  );
+                })}
+              </MuText>
             </div>
           );
         }
