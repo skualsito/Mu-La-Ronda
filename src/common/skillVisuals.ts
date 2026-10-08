@@ -12071,6 +12071,8 @@ export const BUFF_VISUALS: Partial<Record<number, BuffLook>> = {
   // 8 Greater Fortitude / Swell Life (135 its proficiency): orange motes off the upper body.
   8: () => ({ boneMotes: { bones: UPPER_BONES, colour: [1, 0.5, 0.1] } }),
   135: () => ({ boneMotes: { bones: UPPER_BONES, colour: [1, 0.5, 0.1] } }),
+  // Mu La Ronda - 28 GM MARK (the server puts it on a Game Master as it enters): the MU emblem turning over the head.
+  28: e => ({ gmSign: { scale: () => Math.abs(e.modelObject?.node.scaling.x ?? 1) || 1 } }),
   // 29-31 the seals: three pink ribbons low round the legs.
   29: () => ({ spearJoints: SEAL_KNOT }),
   30: () => ({ spearJoints: SEAL_KNOT }),
@@ -12169,6 +12171,31 @@ export function setBuffVisual(scene: Scene, entity: Entity, effectId: number, ac
     const on = active || shared.ids.some(id => entity.buffs?.has(id));
     keepLook(scene, entity, shared.key, on ? shared.look : null);
   }
+}
+
+/**
+ * Mu La Ronda: draw again every buff look that ended while its buff still holds. A map load's
+ * `effects.reset()` ends them all, and the bodies put in scope while the map downloaded keep
+ * their buffs - on the login that is the hero, whose GM mark (28) never showed. A hidden tab
+ * spawns no effects either (effects/index.ts), so whatever came in scope meanwhile had none.
+ */
+export function refreshBuffVisuals(scene: Scene): void {
+  const world = storeRef().world;
+  if (!world) return;
+  for (const e of new Set([...world.playersQuery.entities, ...world.netObjsQuery.entities])) {
+    if (!e.buffs?.size) continue;
+    for (const id of e.buffs) keepLook(scene, e, id, BUFF_VISUALS[id] ?? null);
+    for (const shared of SHARED_LOOKS) {
+      if (shared.ids.some(id => e.buffs!.has(id))) keepLook(scene, e, shared.key, shared.look);
+    }
+  }
+}
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    const world = storeRef().world;
+    if (!document.hidden && world) refreshBuffVisuals(world.scene);
+  });
 }
 
 /** Drop every buff look on an entity that left (despawn, out of scope). */

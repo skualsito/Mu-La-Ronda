@@ -215,6 +215,8 @@ export const MODEL = {
   fire: 'Skill/Fire01.glb',
   poison: 'Skill/Poison01.glb',
   ice: 'Skill/Ice01.glb',
+  /** Mu La Ronda: the MU emblem (musign.bmd) that turns over a Game Master's head (buff 28, GM MARK). */
+  muSign: 'Skill/musign.glb',
   /** MODEL_ICE_SMALL (Ice02.bmd): the Ice hit's shards, the Ice Monster's death (×10). */
   ice2: 'Skill/Ice02.glb',
   magic: 'Skill/Magic01.glb',

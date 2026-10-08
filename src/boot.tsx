@@ -24,6 +24,7 @@ import {
 import { upscaleLive } from './scenes/upscale';
 import { TestScene } from './scenes/testScene';
 import { loadMapIntoScene } from './libs/mu/loadMapIntoScene';
+import { refreshBuffVisuals } from './common/skillVisuals';
 import { prefetchWorldTerrain } from './libs/mu/prefetchWorld';
 import { createWorld } from './ecs/createWorld';
 import { EventBus } from './libs/eventBus';
@@ -342,7 +343,8 @@ EventBus.on('requestWarp', ({ map, pos }) => {
   // loader picks up the same promises (prefetchWorld.ts).
   if (map !== world.mapIndex) prefetchWorldTerrain(map);
 
-  loadMapIntoScene(world, map, pos);
+  // Mu La Ronda: the load ends every buff look; the bodies already in scope keep their buffs.
+  void loadMapIntoScene(world, map, pos).then(() => refreshBuffVisuals(world.scene));
 });
 
 preloadPregameSprites()

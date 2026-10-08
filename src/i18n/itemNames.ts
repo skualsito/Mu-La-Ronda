@@ -105,6 +105,10 @@ export const SPANISH_ITEM_NAMES: ItemNameFixes = {
   '12/34': 'Caja de Moño Azul',
   '13/134': 'Herradura Usada',
   '14/153': 'Polvo Estelar',
+  // Mu La Ronda: the Rage Fighter parchments (lower case).
+  '15/34': 'Pergamino Ignorar Defensa',
+  '15/35': 'Pergamino Aumento de Salud',
+  '15/36': 'Pergamino Aumento de Bloqueo',
 
   // --- blank in the pack, so the English name was showing ---------------
   '7/53': 'Yelmo de la Reina',

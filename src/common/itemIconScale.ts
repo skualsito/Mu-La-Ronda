@@ -684,4 +684,13 @@ export const ITEM_ICON_SCALE: Readonly<Record<string, number>> = {
   '15_27': 0.0023,
   '15_28': 0.0025,
   '15_29': 0.0025,
+  // Mu La Ronda: the Rage Fighter parchments, at the other parchments' scale - missing from
+  // items.json, so the port never listed them.
+  '15_30': 0.0025,
+  '15_31': 0.0025,
+  '15_32': 0.0025,
+  '15_33': 0.0025,
+  '15_34': 0.0025,
+  '15_35': 0.0025,
+  '15_36': 0.0025,
 };

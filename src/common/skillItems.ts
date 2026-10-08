@@ -94,6 +94,14 @@ const SCROLL_SKILLS: Readonly<Record<number, number>> = {
   27: 222, // ITEM_INNOVATION_PARCHMENT
   28: 233, // ITEM_SCROLL_OF_WIZARDRY_ENHANCE -> Expansion of Wizardry
   29: 237, // ITEM_SCROLL_OF_GIGANTIC_STORM
+  // Mu La Ronda: the Rage Fighter parchments (Scrolls.cs 30-36), missing here and from items.json.
+  30: 262, // Chain Drive
+  31: 263, // Dark Side
+  32: 264, // Dragon Roar
+  33: 265, // Dragon Slasher
+  34: 266, // Ignore Defense
+  35: 267, // Increase Health
+  36: 268, // Increase Block
 };
 
 /**

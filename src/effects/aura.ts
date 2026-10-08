@@ -313,6 +313,10 @@ const EMBER_SIZE = 0.6;
 const EMBER_CELLS = { w: 64, h: 64, count: 4 };
 const EMBER_FPS = 12;
 
+// Mu La Ronda: the GM emblem over the head, solid and square to the camera.
+const GM_SIGN_SCALE = 0.8;
+const GM_SIGN_HEIGHT = 2.8;
+
 /**
  * BITMAP_SKULL sub0 over a Defense-reduced body (MoveHandlers.cpp:583-634): three Skull.jpg sprites, 16 px at scale 1
  * (16 cm), in a triangle fixed to the world at `i * 120 deg + LT * 0.17 rad`, radius `50 + 20 sin(i * 15.37 +
@@ -411,6 +415,8 @@ export interface AuraOptions {
   healingRings?: boolean;
   /** Berserker: the hand auroras and the body marks. */
   berserk?: boolean;
+  /** Mu La Ronda - GM MARK: the MU emblem turning over the head; `scale` the body's Scale. */
+  gmSign?: { scale?: () => number };
 }
 
 interface Part {
@@ -900,6 +906,38 @@ function skull(scene: Scene, o: AuraOptions, stopping: () => boolean): Part {
   };
 }
 
+function gmSign(scene: Scene, o: AuraOptions, p: NonNullable<AuraOptions['gmSign']>): Part {
+  const s = p.scale?.() ?? 1;
+  const at = new Vector3();
+  const h = modelLayer.spawn(scene, o.follow(at), {
+    model: MODEL.muSign,
+    seconds: Infinity,
+    scale: GM_SIGN_SCALE * s,
+    follow: o.follow,
+    height: GM_SIGN_HEIGHT * s,
+    flat: true,
+    // Every mesh opaque (no mesh is the bright one): the emblem's own sheet, not an additive glow.
+    blendMesh: -1,
+    colour: [1, 1, 1],
+    // The bind pose lays the emblem flat, its face up: tipped over until that face looks at the camera.
+    rotate: r => {
+      const cam = scene.activeCamera?.globalPosition;
+      if (!cam) return r;
+      o.follow(at);
+      const dx = cam.x - at.x;
+      const dy = cam.y - (at.y + GM_SIGN_HEIGHT * s);
+      const dz = cam.z - at.z;
+      return r.set(Math.PI / 2 - Math.atan2(dy, Math.hypot(dx, dz)), Math.atan2(dx, dz), 0);
+    },
+  }) as ModelHandle;
+  return {
+    update() {},
+    release() {
+      h.stop();
+    },
+  };
+}
+
 function stun(scene: Scene, o: AuraOptions, stopping: () => boolean): Part {
   // The original copies the target's position once: the ribbons climb from where the stun landed.
   const centre = o.follow(new Vector3());
@@ -1069,6 +1107,7 @@ function spawn(scene: Scene, _at: Vector3, opts: AuraOptions): EffectHandle {
   if (opts.stun) parts.push(stun(scene, opts, isStopping));
   if (opts.healingRings) parts.push(healingRings(scene, opts, isStopping));
   if (opts.berserk) parts.push(berserk(scene, opts));
+  if (opts.gmSign) parts.push(gmSign(scene, opts, opts.gmSign));
 
   let ramp = 0;
   const rampSeconds = opts.ramp ?? RAMP_SECONDS;
