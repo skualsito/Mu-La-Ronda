@@ -689,6 +689,7 @@ export const EN_TEXT = {
   'options.commands': 'Commands',
   'options.rankings': 'Rankings',
   'options.vip': 'VIP',
+  'options.events': "Events",
   'exit.confirmQuit': 'Leave the game and go back to the main menu?',
   'exit.confirmServers': 'Leave the game and go back to server selection?',
   'exit.confirmCharacters': 'Leave the game and go back to character selection?',

@@ -1935,6 +1935,7 @@ export const spanishLayer: LanguageLayer = {
     'options.commands': 'Comandos',
     'options.rankings': 'Rankings',
     'options.vip': 'VIP',
+    'options.events': "Eventos",
     'exit.confirmQuit': '¿Salir del juego y volver al menú principal?',
     'exit.confirmServers': '¿Salir del juego y volver a la selección de servidor?',
     'exit.confirmCharacters': '¿Salir del juego y volver a la selección de personaje?',

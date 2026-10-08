@@ -1,5 +1,6 @@
 import { makeAutoObservable } from 'mobx';
 import type { TextKey } from '../i18n';
+import { hasLinks } from './richLinks';
 
 /**
  * The golden server notice (ZzzInterface.cpp:491-603). `ReceiveNotice`
@@ -79,7 +80,8 @@ export const Notices = new (class _Notices {
 
   /** `CreateNotice(Text, Color)`. */
   create(text: string, color: number = NoticeColor.Gold): void {
-    if (measureNoticeWidth(text) < NOTICE_MAX_WIDTH || !text.includes(' ')) {
+    // Mu La Ronda: a line with links stays whole - cut in two it could split one.
+    if (hasLinks(text) || measureNoticeWidth(text) < NOTICE_MAX_WIDTH || !text.includes(' ')) {
       this.push(text, color);
     } else {
       const [top, bottom] = cutNoticeText(text);

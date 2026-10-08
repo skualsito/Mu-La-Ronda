@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { api, type AutoMessage } from '../api';
 import { Card, Confirm, ErrorBox, Loading, PageHeader, Toggle, useLoad, useToast } from '../ui';
 
@@ -13,12 +13,63 @@ const INTERVALS = [5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 240, 360, 720, 1440]
 
 const intervalLabel = (m: number) => (m < 60 ? `${m} min` : m % 60 === 0 ? `${m / 60} h` : `${Math.floor(m / 60)} h ${m % 60} min`);
 
-/** The banner as the game draws it: gold, centred, on a dark band. */
+const ANCHOR = /<a\s+href\s*=\s*(["'])(.*?)\s*>(.*?)<\/a>/gi;
+
+/** The banner as the game draws it: gold, centred, on a dark band - links by their label, underlined. */
 function Preview({ text }: { text: string }) {
+  if (!text) {
+    return (
+      <div className="notice-preview">
+        <span>Así se ve en el juego</span>
+      </div>
+    );
+  }
+  const parts: ReactNode[] = [];
+  let last = 0;
+  for (const m of text.matchAll(ANCHOR)) {
+    const at = m.index ?? 0;
+    if (at > last) parts.push(text.slice(last, at));
+    parts.push(
+      <a key={at} href={m[2]} target="_blank" rel="noopener noreferrer" style={{ color: 'rgb(120,200,255)' }}>
+        {m[3] || m[2]}
+      </a>
+    );
+    last = at + m[0].length;
+  }
+  if (last < text.length) parts.push(text.slice(last));
   return (
     <div className="notice-preview">
-      <span>{text || 'Así se ve en el juego'}</span>
+      <span>{parts}</span>
     </div>
+  );
+}
+
+/**
+ * "Agregar link": asks for the address and its label and adds
+ * `<a href="...">label</a>` to the text. In the game the label is drawn as a
+ * link that opens the page in a new tab (only http/https addresses).
+ */
+function AddLinkButton({ text, onAdd }: { text: string; onAdd: (text: string) => void }) {
+  return (
+    <button
+      type="button"
+      className="btn btn-small"
+      onClick={() => {
+        const url = window.prompt('Link (https://...)', 'https://')?.trim();
+        if (!url || !/^https?:\/\/\S+$/i.test(url)) return;
+        const label = window.prompt('Etiqueta (lo que se ve en el juego)', '')?.trim();
+        if (!label) return;
+        const anchor = `<a href="${url.replace(/"/g, '%22')}">${label.replace(/[<>]/g, '')}</a>`;
+        const next = text ? `${text.trimEnd()} ${anchor}` : anchor;
+        if (next.length > TEXT_MAX) {
+          window.alert(`No entra: el mensaje con el link tendría ${next.length} caracteres (máximo ${TEXT_MAX}).`);
+          return;
+        }
+        onAdd(next);
+      }}
+    >
+      Agregar link
+    </button>
   );
 }
 
@@ -60,6 +111,7 @@ function MessageRow({
       <Preview text={text.trim()} />
       <div className="message-edit">
         <input value={text} maxLength={TEXT_MAX} onChange={e => setText(e.target.value)} placeholder="Texto del mensaje" />
+        <AddLinkButton text={text} onAdd={setText} />
         <span className="muted small">
           {text.length}/{TEXT_MAX}
         </span>
@@ -123,13 +175,14 @@ export function MessagesPage() {
             onChange={e => setText(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && text.trim() && create()}
           />
+          <AddLinkButton text={text} onAdd={setText} />
           <IntervalSelect value={interval} onChange={setIntervalMinutes} />
           <button className="btn btn-primary" disabled={!text.trim()} onClick={create}>
             Agregar
           </button>
         </div>
         <p className="muted small">
-          {text.length}/{TEXT_MAX} caracteres. Los textos largos el juego los corta en dos renglones. Los acentos se ven bien; los emojis no.
+          {text.length}/{TEXT_MAX} caracteres. Los textos largos el juego los corta en dos renglones (los que tienen links no). Los acentos se ven bien; los emojis no. Con "Agregar link" el mensaje lleva un link que en el juego se abre en otra pestaña.
         </p>
       </Card>
 

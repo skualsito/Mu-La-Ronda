@@ -13,6 +13,10 @@ import { MuText } from '../muText';
 import { DEFAULT_SCALE } from '../muWindow/windowState';
 import { UI_STAGE_HEIGHT } from '../uiStage';
 import { stableKeyOf } from '../partyBars/stableKey';
+import { hasLinks, openLink, parseRichText } from '../../../common/richLinks';
+
+/** Mu La Ronda: an announcement's links, in a colour of their own. */
+const LINK_COLOR = 'rgb(120,200,255)';
 
 /**
  * `RenderNotices`: the notice stack, centred, at y = 300 + 13·i of the
@@ -59,6 +63,34 @@ export const Notices = observer(() => {
         const key = stableKeyOf(line);
         if (line.text === '') {
           return <div key={key} className="notice-line" style={LINE_STYLE} />;
+        }
+        if (hasLinks(line.text)) {
+          return (
+            <div
+              key={key}
+              className="notice-line notice-rich"
+              style={{ ...LINE_STYLE, transform: `scale(${SCALE})`, transformOrigin: 'center top' }}
+            >
+              {parseRichText(line.text).map((segment, i) => {
+                const href = segment.href;
+                return (
+                  <span
+                    key={i}
+                    className={href ? 'notice-link' : undefined}
+                    onClick={href ? () => openLink(href) : undefined}
+                  >
+                    <MuText
+                      face="bold"
+                      text={segment.text}
+                      color={href ? LINK_COLOR : style.color}
+                      background={NOTICE_BACKGROUND}
+                      style={{ opacity: !href && style.blink && dim ? 128 / 255 : 1 }}
+                    />
+                  </span>
+                );
+              })}
+            </div>
+          );
         }
         return (
           <div key={key} className="notice-line" style={LINE_STYLE}>

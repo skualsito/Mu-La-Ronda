@@ -36,6 +36,12 @@ import {
   unpackRequest,
 } from '../../../../../common/lahap';
 import { itemBaseName } from '../../../../../common/itemsDatabase';
+import { eventSchedule, refreshEventSchedule, type EventScheduleRow } from '../../../../../events/schedule';
+import { rowText } from '../../../../../events/scheduleClock';
+import { EVENT_TEXT } from '../../../../../events/recipes';
+import { clockText, FIXED_EVENTS, secondsToNext } from '../../../../../events/fixedSchedule';
+import { serverNow } from '../../../../../common/serverTime';
+import { events } from '../../../../../events';
 
 /**
  * Mu La Ronda's own in-game windows: the command list (`/comandos`) and the
@@ -551,8 +557,67 @@ const LahapWindow = observer(() => {
   );
 });
 
+// ---------------------------------------------------------------------------
+// Eventos
+// ---------------------------------------------------------------------------
+
+const SERVER_EVENT_LABEL: Record<EventScheduleRow['key'], () => string> = {
+  bloodCastle: () => EVENT_TEXT.bloodCastle,
+  devilSquare: () => EVENT_TEXT.devilSquare,
+  chaosCastle: () => EVENT_TEXT.chaosCastle,
+};
+
+/** An open event's own entry, or ask the server again for a time not known yet. */
+function openServerEvent(row: EventScheduleRow): void {
+  playUiSound('click');
+  if (!row.open) {
+    refreshEventSchedule(row.key);
+    return;
+  }
+  closeRondaPanel();
+  if (row.key === 'bloodCastle') events.openBloodCastle();
+  else if (row.key === 'devilSquare') events.openDevilSquare();
+  else events.askChaosCastleOpening();
+}
+
+const EventsWindow = observer(() => {
+  // The fixed ones count down on the client: re-render once a second.
+  const [now, setNow] = useState(() => serverNow());
+  useEffect(() => {
+    const id = setInterval(() => setNow(serverNow()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  return (
+    <Panel id="ronda-events" title="Eventos" width={420} height={420} contentKey="events" noScroll>
+      <table className="ronda-table ronda-events">
+        <tbody>
+          {eventSchedule().map(row => (
+            <tr key={row.key} className={row.open ? 'is-open' : ''} onClick={() => openServerEvent(row)}>
+              <td>{SERVER_EVENT_LABEL[row.key]()}</td>
+              <td className="ronda-events-clock">
+                {row.seconds !== null && !row.open && !row.far ? clockText(row.seconds) : rowText(row)}
+              </td>
+            </tr>
+          ))}
+          {FIXED_EVENTS.map(event => (
+            <tr key={event.key}>
+              <td>{event.label}</td>
+              <td className="ronda-events-clock">{clockText(secondsToNext(event.times, now))}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="ronda-note">
+        Blood Castle, Devil Square y Chaos Castle: tocá el evento cuando está abierto para entrar.
+      </p>
+    </Panel>
+  );
+});
+
 export const RondaPanels = observer(() => (
   <>
+    {rondaPanels.open === 'events' && <EventsWindow />}
     {rondaPanels.open === 'lahap' && <LahapWindow />}
     {rondaPanels.open === 'commands' && <CommandsWindow />}
     {rondaPanels.open === 'rankings' && <RankingsWindow />}

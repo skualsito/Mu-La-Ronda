@@ -22,6 +22,16 @@ const BUTTON_GAP = 6;
 const FIRST_BUTTON_Y = 46;
 const FOOT = 34;
 
+/** Mu La Ronda: the server's channels, a row of small buttons at the foot of the menu. */
+const SOCIAL_LINKS = [
+  { label: 'Kick', url: 'https://kick.com/inframe15/' },
+  { label: 'YouTube', url: 'https://www.youtube.com/@inframe15' },
+  { label: 'Discord', url: 'https://discord.gg/laronda' },
+] as const;
+const SOCIAL_HEIGHT = 26;
+const SOCIAL_GAP = 4;
+const SOCIAL_ROW = SOCIAL_HEIGHT + 10;
+
 const CONFIRM_TEXT: Record<ExitKind, TextKey> = {
   quit: 'exit.confirmQuit',
   servers: 'exit.confirmServers',
@@ -67,6 +77,13 @@ export const GameMenuWindow = observer(() => {
         },
       },
       {
+        labelKey: 'options.events',
+        run: () => {
+          GameMenu.hide();
+          openRondaPanel('events');
+        },
+      },
+      {
         labelKey: 'options.vip',
         run: () => {
           GameMenu.hide();
@@ -84,7 +101,9 @@ export const GameMenuWindow = observer(() => {
     if (SessionExit.available(kind)) entries.push({ labelKey, run: () => setConfirming(kind) });
   }
 
-  const height = FIRST_BUTTON_Y + entries.length * (BUTTON_HEIGHT + BUTTON_GAP) + FOOT;
+  const buttonsEnd = FIRST_BUTTON_Y + entries.length * (BUTTON_HEIGHT + BUTTON_GAP);
+  const height = buttonsEnd + SOCIAL_ROW + FOOT;
+  const socialWidth = (BUTTON_WIDTH - SOCIAL_GAP * (SOCIAL_LINKS.length - 1)) / SOCIAL_LINKS.length;
 
   const chrome = useWindowChrome(WINDOW_ID, {
     width: WIN_WIDTH,
@@ -131,6 +150,23 @@ export const GameMenuWindow = observer(() => {
             style={{
               left: (WIN_WIDTH - BUTTON_WIDTH) / 2,
               top: FIRST_BUTTON_Y + i * (BUTTON_HEIGHT + BUTTON_GAP),
+            }}
+          />
+        ))}
+
+        {SOCIAL_LINKS.map((link, i) => (
+          <OptionsButton
+            key={link.label}
+            label={link.label}
+            width={socialWidth}
+            onClick={() => {
+              playUiSound('click');
+              window.open(link.url, '_blank', 'noopener,noreferrer');
+            }}
+            style={{
+              left: (WIN_WIDTH - BUTTON_WIDTH) / 2 + i * (socialWidth + SOCIAL_GAP),
+              top: buttonsEnd + 4,
+              height: SOCIAL_HEIGHT,
             }}
           />
         ))}

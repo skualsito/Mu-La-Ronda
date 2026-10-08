@@ -1,5 +1,4 @@
 import { observable, runInAction } from 'mobx';
-import { GameOptions } from '../common/gameOptions';
 import { devQueryNumbers } from '../common/devSeams';
 import { serverNow } from '../common/serverTime';
 import { MiniGameOpeningStateRequestPacket } from '../common/packets/ClientToServerPackets';
@@ -213,9 +212,10 @@ function send(key: EventScheduleKey, nowMs: number): void {
   poll.nextPollAtMs = nowMs + MIN_REQUEST_MS;
 }
 
+// Mu La Ronda: always on - the times are read in the game menu's events
+// window now, not in rows under the minimap that an option could hide.
 function pollable(): boolean {
   return (
-    GameOptions.eventTimers &&
     !Store.isOffline &&
     Store.uiState === UIState.World &&
     Store.world !== null
@@ -226,8 +226,6 @@ function pollable(): boolean {
 let publishedSecond = 0;
 
 function tick(): void {
-  if (!GameOptions.eventTimers) return;
-
   const now = serverNow();
   const second = Math.floor(now / 1000);
   if (second !== publishedSecond) {

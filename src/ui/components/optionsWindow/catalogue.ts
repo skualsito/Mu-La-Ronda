@@ -753,7 +753,6 @@ export const CATEGORIES: Category[] = [
             titleKey: 'options.section.hud',
             rows: [
               toggle('minimapCorner'),
-              toggle('eventTimers'),
               toggle('questTracker'),
               toggle('performanceReadout'),
             ],
