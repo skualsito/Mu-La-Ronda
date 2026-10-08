@@ -22,6 +22,9 @@ public static class AttackableExtensions
     private const short ExplosionMagicEffectNumber = 75;   // 0x4B
     private const short StunnedMagicEffectNumber = 61;     // 0x3D
 
+    /// <summary>Mu La Ronda: the most of its maximum health and shield a player loses to one hit from another player in Chaos Castle.</summary>
+    private const float ChaosCastlePvpHitShare = 0.06f;
+
     private static readonly IDictionary<AttributeDefinition, AttributeDefinition> ReductionModifiers =
         new Dictionary<AttributeDefinition, AttributeDefinition>
         {
@@ -300,6 +303,15 @@ public static class AttackableExtensions
             {
                 // Further halve damage in Chaos Castle for classic PvP
                 dmg /= 2;
+            }
+
+            // Mu La Ronda: with this server's stats one hit between players outweighs a whole life
+            // bar, and in Chaos Castle everyone hits everyone - the first blow killed. A hit there
+            // takes at most a share of the target's maximum health and shield (~17 hits to die).
+            if (isPvp && attackerPlayer!.CurrentMiniGame?.Definition.Type == MiniGameType.ChaosCastle)
+            {
+                var cap = (defender.Attributes[Stats.MaximumHealth] + defender.Attributes[Stats.MaximumShield]) * ChaosCastlePvpHitShare;
+                dmg = Math.Min(dmg, Math.Max(1, (int)cap));
             }
         }
 

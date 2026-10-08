@@ -299,8 +299,12 @@ public class DefaultDropGenerator : IDropGenerator
         List<Item>? droppedItems = null;
         var remainingDrops = monster.NumberOfMaximumItemDrops;
 
-        // Guaranteed groups.
-        foreach (var group in this._guaranteedDropGroups)
+        // Guaranteed groups. Mu La Ronda: when they do not all fit, which ones drop is drawn
+        // (Kundun: one drop, ancient or excellent) - in order it was always the first.
+        var guaranteed = this._guaranteedDropGroups.Count > remainingDrops
+            ? this._guaranteedDropGroups.OrderBy(_ => this._randomizer.NextInt(0, int.MaxValue)).ToList()
+            : this._guaranteedDropGroups;
+        foreach (var group in guaranteed)
         {
             if (remainingDrops <= 0)
             {

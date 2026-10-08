@@ -8,7 +8,7 @@
 -- Solo entran cuentas VIP: el plugin VIP (VipStadium.cs) rechaza el /move, las
 -- puertas y el llamado de party para el resto, y a quien se le vence el VIP
 -- adentro lo manda a Arena al entrar al juego. Se llega con /move StadiumVIP
--- (warp 61, gratis y desde nivel 1) y se reaparece adentro.
+-- (warp 61, gratis y desde nivel 50) y se reaparece adentro.
 --
 -- Los spots se copian de la zona de leveleo de Arena UNA sola vez (marca
 -- 'vip_stadium_spots_seeded' en mlr.settings); despues son del panel y un
@@ -92,14 +92,14 @@ END $$;
 
 -- El /move (indice 61; el 60 fue el viejo "Estadio" y 11-warps.sql lo borra).
 INSERT INTO config."WarpInfo" ("Id", "Index", "Name", "Costs", "LevelRequirement", "GateId", "GameConfigurationId")
-SELECT gen_random_uuid(), 61, 'Stadium VIP', 0, 1, g."Id", gc."Id"
+SELECT gen_random_uuid(), 61, 'Stadium VIP', 0, 50, g."Id", gc."Id"
   FROM config."ExitGate" g
  CROSS JOIN (SELECT "Id" FROM config."GameConfiguration" LIMIT 1) gc
  WHERE g."Id" = 'a1e5ad10-0000-4000-8000-000000000101'
    AND NOT EXISTS (SELECT 1 FROM config."WarpInfo" WHERE "Index" = 61);
 
 UPDATE config."WarpInfo"
-   SET "Name" = 'Stadium VIP', "Costs" = 0, "LevelRequirement" = 1,
+   SET "Name" = 'Stadium VIP', "Costs" = 0, "LevelRequirement" = 50,
        "GateId" = 'a1e5ad10-0000-4000-8000-000000000101'
  WHERE "Index" = 61
    AND EXISTS (SELECT 1 FROM config."ExitGate" WHERE "Id" = 'a1e5ad10-0000-4000-8000-000000000101');

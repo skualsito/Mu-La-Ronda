@@ -10,3 +10,9 @@
 DELETE FROM config."AttributeRequirement" r
  WHERE r."SkillId1" IS NOT NULL
    AND r."AttributeId" = '560931ad-0901-4342-b7f4-fd2e2fcc0563';  -- Stats.Level
+
+-- Ni la quest "Gain Hero Status" (Marlon): la Crystal of Destruction (12/44,
+-- Strike of Destruction del Blade Knight; "Orb of Explotion" en el cliente)
+-- la pedia y con resets casi nadie la tiene, asi que no se podia aprender.
+DELETE FROM config."AttributeRequirement" r
+ WHERE r."AttributeId" = '4a847231-171b-4fe2-a203-009cb4a26227';  -- Stats.GainHeroStatusQuestCompleted
