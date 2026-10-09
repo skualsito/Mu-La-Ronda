@@ -324,7 +324,7 @@ export function ItemEditor({
 }
 
 /** The game's picture of an item definition, or nothing when the pack has none. */
-function DefinitionIcon({
+export function DefinitionIcon({
   group,
   number,
   level = 0,

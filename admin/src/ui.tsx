@@ -1,4 +1,4 @@
-import { Component, createContext, useCallback, useContext, useEffect, useState, type ErrorInfo, type ReactNode } from 'react';
+import { Component, createContext, useCallback, useContext, useEffect, useRef, useState, type ErrorInfo, type ReactNode } from 'react';
 
 /** Small building blocks shared by every page. */
 
@@ -227,6 +227,110 @@ export function SelectField<T extends string | number>({
           </option>
         ))}
       </select>
+      {hint && <span className="field-hint">{hint}</span>}
+    </label>
+  );
+}
+
+/** Lower case, no accents: what the combo box compares. */
+const folded = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+
+/**
+ * A select you type into: the list filters as you write (by any part of the
+ * label, accents aside), arrows move, Enter picks, Escape gives up. For lists
+ * too long for a plain <select> - the monsters, the maps.
+ */
+export function ComboField<T extends string>({
+  label,
+  value,
+  options,
+  onChange,
+  placeholder = 'Escribí para buscar…',
+  hint,
+  emptyLabel,
+  limit = 60,
+}: {
+  label: string;
+  value: T | null;
+  options: { value: T; label: string }[];
+  onChange: (v: T | null) => void;
+  placeholder?: string;
+  hint?: string;
+  /** Offers "none" as the first choice, with this text. */
+  emptyLabel?: string;
+  limit?: number;
+}) {
+  const current = options.find(o => o.value === value) ?? null;
+  const [query, setQuery] = useState<string | null>(null);
+  const [cursor, setCursor] = useState(0);
+  const listRef = useRef<HTMLDivElement>(null);
+  const open = query !== null;
+
+  useEffect(() => {
+    listRef.current?.querySelector('.combo-option.active')?.scrollIntoView({ block: 'nearest' });
+  }, [cursor]);
+
+  const words = folded(query ?? '').split(/\s+/).filter(Boolean);
+  const matches = options.filter(o => {
+    const text = folded(o.label);
+    return words.every(w => text.includes(w));
+  });
+  const shown = matches.slice(0, limit);
+  const choices: { value: T | null; label: string }[] = emptyLabel && !words.length ? [{ value: null, label: emptyLabel }, ...shown] : shown;
+
+  const pick = (choice: { value: T | null } | undefined) => {
+    if (choice) onChange(choice.value);
+    setQuery(null);
+  };
+
+  return (
+    <label className="field combo">
+      <span className="field-label">{label}</span>
+      <input
+        value={open ? query : current?.label ?? ''}
+        placeholder={current ? current.label : placeholder}
+        onFocus={e => {
+          setQuery('');
+          setCursor(0);
+          e.target.select();
+        }}
+        onBlur={() => setQuery(null)}
+        onChange={e => {
+          setQuery(e.target.value);
+          setCursor(0);
+        }}
+        onKeyDown={e => {
+          if (e.key === 'ArrowDown') setCursor(c => Math.min(c + 1, choices.length - 1));
+          else if (e.key === 'ArrowUp') setCursor(c => Math.max(c - 1, 0));
+          else if (e.key === 'Enter') pick(choices[cursor]);
+          else if (e.key === 'Escape') setQuery(null);
+          else return;
+          e.preventDefault();
+          if (e.key === 'Enter' || e.key === 'Escape') (e.target as HTMLInputElement).blur();
+        }}
+      />
+      {open && (
+        <div className="combo-list" role="listbox" ref={listRef}>
+          {choices.map((o, i) => (
+            <button
+              type="button"
+              key={String(o.value)}
+              className={`combo-option ${i === cursor ? 'active' : ''} ${o.value === value ? 'chosen' : ''}`}
+              // Before the input's blur closes the list.
+              onMouseDown={e => {
+                e.preventDefault();
+                pick(o);
+                (document.activeElement as HTMLElement | null)?.blur();
+              }}
+              onMouseEnter={() => setCursor(i)}
+            >
+              {o.label}
+            </button>
+          ))}
+          {!choices.length && <span className="combo-empty">Nada coincide</span>}
+          {matches.length > shown.length && <span className="combo-empty">y {matches.length - shown.length} más: seguí escribiendo</span>}
+        </div>
+      )}
       {hint && <span className="field-hint">{hint}</span>}
     </label>
   );

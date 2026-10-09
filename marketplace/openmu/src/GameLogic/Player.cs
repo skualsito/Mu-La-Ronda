@@ -36,6 +36,11 @@ using Nito.AsyncEx;
 /// </summary>
 public class Player : AsyncDisposable, IBucketMapObserver, IAttackable, IAttacker, ITrader, IPartyMember, IRotatable, IHasBucketInformation, ISupportWalk, IMovable, ILoggerOwner<Player>
 {
+    /// <summary>
+    /// Mu La Ronda: the most durability the worn pet loses to one hit taken.
+    /// </summary>
+    private const double PetDurabilityLossPerHitLimit = 1.0;
+
     private static readonly MagicEffectDefinition GMEffect = new GameMasterMagicEffectDefinition
     {
         InformObservers = true,
@@ -1899,7 +1904,10 @@ public class Player : AsyncDisposable, IBucketMapObserver, IAttackable, IAttacke
 
         if (this.Inventory?.GetItem(InventoryConstants.PetSlot) is { Durability: > 0.0 } pet)
         {
-            await this.DecreaseDefenseItemDurabilityAsync(pet, hitInfo).ConfigureAwait(false);
+            // Mu La Ronda: at most one point a hit. The loss is the damage over DamagePerOneItemDurability
+            // (2000) for the Guardian Angel, Satan, Uniria, Dinorant and Fenrir, so a PvP hit of 50k took
+            // 25 points and a few hits destroyed the pet.
+            await this.DecreaseDefenseItemDurabilityAsync(pet, hitInfo, PetDurabilityLossPerHitLimit).ConfigureAwait(false);
             if (pet.Durability == 0.0)
             {
                 if (pet.IsTrainablePet())
@@ -1915,7 +1923,7 @@ public class Player : AsyncDisposable, IBucketMapObserver, IAttackable, IAttacke
         }
     }
 
-    private async ValueTask DecreaseDefenseItemDurabilityAsync(Item targetItem, HitInfo hitInfo)
+    private async ValueTask DecreaseDefenseItemDurabilityAsync(Item targetItem, HitInfo hitInfo, double maximumDecrement = double.MaxValue)
     {
         var itemDurationIncrease = targetItem.IsTrainablePet() ? this.Attributes?[Stats.PetDurationIncrease] : this.Attributes?[Stats.ItemDurationIncrease];
         if (itemDurationIncrease == 0)
@@ -1929,7 +1937,7 @@ public class Player : AsyncDisposable, IBucketMapObserver, IAttackable, IAttacke
             damageDivisor *= (double)itemDurationIncrease;
         }
 
-        var decrement = hitInfo.HealthDamage / damageDivisor;
+        var decrement = Math.Min(hitInfo.HealthDamage / damageDivisor, maximumDecrement);
         if (targetItem.DecreaseDurability(decrement))
         {
             await this.InvokeViewPlugInAsync<IItemDurabilityChangedPlugIn>(p => p.ItemDurabilityChangedAsync(targetItem, false)).ConfigureAwait(false);

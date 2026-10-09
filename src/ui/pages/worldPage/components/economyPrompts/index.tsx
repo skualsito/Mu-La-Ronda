@@ -59,6 +59,11 @@ import {
   TALL_TEXT_TOP,
 } from './layout';
 import { MsgBoxFrame } from '../../../../components/msgBoxFrame';
+import {
+  MAX_ACCOUNT_PASSWORD_LENGTH,
+  MIN_ACCOUNT_PASSWORD_LENGTH,
+  isAccountPassword,
+} from '../../../../../common/registerRules';
 
 const zen = (gold: number) => `${gold.toLocaleString('en-US')} Zen`;
 
@@ -66,7 +71,8 @@ type Spec = {
   title: string;
   /** The line under the title; the amount / pin field sits below it. */
   hint: string;
-  field: 'amount' | 'pin' | 'pin+password' | 'password' | 'none';
+  /** `passwords`: the current and a new account password (Mu La Ronda). */
+  field: 'amount' | 'pin' | 'pin+password' | 'passwords' | 'password' | 'none';
   max?: number;
   /** What the number box counts; Zen unless something else is. */
   amountLabel?: string;
@@ -172,6 +178,15 @@ function specOf(prompt: EconomyPrompt): Spec {
         field: 'none',
       };
     }
+    case 'change-password':
+      return {
+        title: t('prompt.changePassword'),
+        hint: t('prompt.changePasswordHint', {
+          min: MIN_ACCOUNT_PASSWORD_LENGTH,
+          max: MAX_ACCOUNT_PASSWORD_LENGTH,
+        }),
+        field: 'passwords',
+      };
   }
 }
 
@@ -378,6 +393,10 @@ export const EconomyPrompts = observer(() => {
       case 'delete-item':
         Store.deleteInventoryItem(prompt.slot);
         break;
+      case 'change-password':
+        // The field above holds the current password in this prompt.
+        Store.changePassword(pin, password);
+        break;
     }
 
     Economy.closePrompt();
@@ -389,6 +408,7 @@ export const EconomyPrompts = observer(() => {
     (spec.field === 'amount' && (value <= 0 || (spec.max !== undefined && value > spec.max))) ||
     (spec.field === 'pin' && pin.length < 4) ||
     (spec.field === 'pin+password' && (pin.length < 4 || !password)) ||
+    (spec.field === 'passwords' && (!pin || !isAccountPassword(password))) ||
     (spec.field === 'password' && !password);
 
   const onKeyDown = (event: ReactKeyboardEvent) => {
@@ -397,7 +417,12 @@ export const EconomyPrompts = observer(() => {
     event.stopPropagation();
   };
 
-  if (spec.field === 'pin+password') {
+  if (spec.field === 'pin+password' || spec.field === 'passwords') {
+    // The same two-field box; for the password change the first field is
+    // the current password instead of a PIN.
+    const twoPasswords = spec.field === 'passwords';
+    const firstLabel = twoPasswords ? t('prompt.currentPassword') : t('prompt.pin');
+    const secondLabel = twoPasswords ? t('prompt.newPassword') : t('prompt.password');
     return (
       <div className="economy-prompt-layer" onKeyDown={onKeyDown}>
         <TallBox>
@@ -412,30 +437,31 @@ export const EconomyPrompts = observer(() => {
           />
 
           <div className="economy-prompt-label" style={labelStyle(TALL_FIELD_ONE_LABEL_Y)}>
-            {t('prompt.pin')}
+            {firstLabel}
           </div>
           <PromptInput
-            label={t('prompt.pin')}
+            label={firstLabel}
             value={pin}
-            onChange={next => setPin(digitsOnly(next))}
+            onChange={next => setPin(twoPasswords ? next : digitsOnly(next))}
             left={TALL_INPUT_X}
             top={TALL_FIELD_ONE_INPUT_Y}
             autoFocus
-            numeric
-            maxLength={5}
+            numeric={!twoPasswords}
+            password={twoPasswords}
+            maxLength={twoPasswords ? MAX_ACCOUNT_PASSWORD_LENGTH : 5}
           />
 
           <div className="economy-prompt-label" style={labelStyle(TALL_FIELD_TWO_LABEL_Y)}>
-            {t('prompt.password')}
+            {secondLabel}
           </div>
           <PromptInput
-            label={t('prompt.password')}
+            label={secondLabel}
             value={password}
             onChange={setPassword}
             left={TALL_INPUT_X}
             top={TALL_FIELD_TWO_INPUT_Y}
             password
-            maxLength={20}
+            maxLength={twoPasswords ? MAX_ACCOUNT_PASSWORD_LENGTH : 20}
           />
 
           <PromptButtons

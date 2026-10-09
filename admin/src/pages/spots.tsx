@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api, type MapInfo, type Monster, type Spawn } from '../api';
-import { Badge, Card, Confirm, ErrorBox, Loading, NumberField, PageHeader, Toggle, useLoad, useToast } from '../ui';
+import { Badge, Card, ComboField, Confirm, ErrorBox, Loading, NumberField, PageHeader, Toggle, useLoad, useToast } from '../ui';
 
 /**
  * The spot editor: a map's walkable ground drawn from the client's terrain,
@@ -163,16 +163,13 @@ export function SpotsPage({ map: mapParam }: { map?: string }) {
                     Spot de la zona de leveleo: server fast no lo multiplica, la cantidad es la que pongas.
                   </div>
                 )}
-                <label className="field">
-                  <span className="field-label">Monstruo</span>
-                  <select value={draft.monsterId} onChange={e => setDraft({ ...draft, monsterId: e.target.value })}>
-                    {monsterOptions.map(m => (
-                      <option key={m.id} value={m.id}>
-                        {m.number} · {m.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <ComboField
+                  label="Monstruo"
+                  value={draft.monsterId || null}
+                  options={monsterOptions.map(m => ({ value: m.id, label: `${m.number} · ${m.name}` }))}
+                  onChange={v => v && setDraft({ ...draft, monsterId: v })}
+                  placeholder="Buscá por nombre o número…"
+                />
                 <div className="form-grid">
                   <NumberField
                     label="Cantidad"

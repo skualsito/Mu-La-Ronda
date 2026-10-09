@@ -312,7 +312,9 @@ export type EconomyPrompt =
   /** How many of the merchant's stock slot to buy (`quickItemActions.ts`). */
   | { kind: 'npc-buy-many'; slot: number }
   /** Mu La Ronda: destroy an inventory item for good (`Store.deleteInventoryItem`). */
-  | { kind: 'delete-item'; slot: number };
+  | { kind: 'delete-item'; slot: number }
+  /** Mu La Ronda: the account password, from the options (`/cambiarclave`). */
+  | { kind: 'change-password' };
 
 const emptyGrid = (size: number) => new Array<Item | null>(size).fill(null);
 

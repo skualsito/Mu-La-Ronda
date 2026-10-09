@@ -27,6 +27,9 @@ const BACKOFF = [1000, 2000, 4000, 8000, 15000];
 
 const MAX_ATTEMPTS = BACKOFF.length;
 
+/** Mu La Ronda: how long after the resume the MU Helper is started again. */
+const HELPER_RESTART_MS = 3000;
+
 type Step = 'idle' | 'connecting' | 'logging-in' | 'selecting';
 
 export const SessionResume = new (class _SessionResume {
@@ -36,11 +39,18 @@ export const SessionResume = new (class _SessionResume {
 
   private character = '';
   private timer: ReturnType<typeof setTimeout> | null = null;
+  /**
+   * Mu La Ronda: the MU Helper was running when the socket went away. The
+   * server forgets it with the old session, so it is started again once the
+   * character is back - a dropped connection while AFK used to leave it off.
+   */
+  private helperWasOn = false;
 
   constructor() {
-    makeAutoObservable<this, 'character' | 'timer'>(this, {
+    makeAutoObservable<this, 'character' | 'timer' | 'helperWasOn'>(this, {
       character: false,
       timer: false,
+      helperWasOn: false,
     });
   }
 
@@ -78,6 +88,7 @@ export const SessionResume = new (class _SessionResume {
     if (!this.resumable) return false;
     if (this.attempt >= MAX_ATTEMPTS) return false;
 
+    if (this.attempt === 0) this.helperWasOn = Store.muHelper.active;
     this.schedule();
     return true;
   }
@@ -160,8 +171,17 @@ export const SessionResume = new (class _SessionResume {
   /** The character is back in the world. */
   finish(): void {
     if (!this.active) return;
+    const restartHelper = this.helperWasOn;
+    this.helperWasOn = false;
     this.stop();
     Store.addNotification(t('resume.done'));
+    // Once the world around the character has loaded; `toggleMuHelper`
+    // still refuses in a safe zone.
+    if (restartHelper) {
+      setTimeout(() => {
+        if (!Store.muHelper.active && Store.world?.playerEntity) Store.toggleMuHelper();
+      }, HELPER_RESTART_MS);
+    }
   }
 
   /**

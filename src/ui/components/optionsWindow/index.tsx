@@ -4,6 +4,7 @@ import './style.less';
 import { useEffect, useRef, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { Store } from '../../../store';
+import { Economy } from '../../../economy';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { MuTableFrame } from '../muWindow';
 import { MuResizeGrip, useWindowChrome } from '../muWindow/useWindowChrome';
@@ -298,6 +299,13 @@ export const OptionsWindow = observer(() => {
 
     if (row.id === 'clearCache') {
       void clearCacheAndReload();
+      return;
+    }
+
+    if (row.id === 'changePassword') {
+      // The prompt lives on the world page, over the game.
+      Store.optionsEnabled = false;
+      Economy.openPrompt({ kind: 'change-password' });
       return;
     }
 

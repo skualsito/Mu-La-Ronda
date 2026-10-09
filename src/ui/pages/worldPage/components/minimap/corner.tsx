@@ -2,6 +2,7 @@ import './style.less';
 import { useLayoutEffect, useRef, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { Store } from '../../../../../store';
+import { PvpMode } from '../../../../../combat/pvpMode';
 import { GameOptions } from '../../../../../common/gameOptions';
 import { MuWindows } from '../../../../components/muWindow/windowState';
 import type { MinimapMarker } from '../../../../../common/minimapData';
@@ -218,6 +219,8 @@ export const MinimapCorner = observer(() => {
       <Frame width={PANEL} height={PANEL} />
       <div className="minimap-corner-bar" style={{ transform: `scale(${1 / PANEL_SCALE})` }}>
         {isPanned(pan) && <CenterButton onClick={() => setPan(NO_PAN)} />}
+        {/* Mu La Ronda: PvP mode is latched (double Ctrl, combat/pvpMode.ts). */}
+        {PvpMode.on && <div className="minimap-corner-pvp">PvP</div>}
         <div ref={coordsRef} className="minimap-corner-coords" />
       </div>
     </div>

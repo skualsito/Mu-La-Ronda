@@ -20,6 +20,9 @@ import { skillDefinition } from '../../common/skillsDatabase';
 import { truncatePathWithinRange } from '../../common/approachPath';
 import { isHostilePlayer } from '../../combat/playerTarget';
 import { duelEnemyId } from '../../events/duel';
+import { PvpMode } from '../../combat/pvpMode';
+import { inLorenciaRing } from '../../common/terrain/lorenciaRing';
+import { ENUM_WORLD } from '../../common/types';
 import { ammoReload, type Hands } from '../../combat/weaponRange';
 import { InventoryConstants } from '../../common/inventoryConstants';
 import { StorageKind } from '../../common/itemStorage';
@@ -169,9 +172,25 @@ export function canAttackPlayer(
   e: Entity,
   ctrl: boolean
 ): boolean {
+  // Mu La Ronda: PvP mode (double Ctrl) and a fight in the Lorencia ring
+  // stand in for Ctrl held (combat/pvpMode.ts).
+  const forced = ctrl || PvpMode.on || ringFight(world, e);
   return (
     isAttackablePlayer(world, e) &&
-    isHostilePlayer(e, { duelEnemyId: duelEnemyId(), ctrl })
+    isHostilePlayer(e, { duelEnemyId: duelEnemyId(), ctrl: forced })
+  );
+}
+
+/** Mu La Ronda: the hero and that player both stand in the Lorencia ring. */
+export function ringFight(world: Parameters<ISystemFactory>[0], e: Entity): boolean {
+  const hero = world.playerEntity?.transform?.pos;
+  const other = e.transform?.pos;
+  return (
+    world.mapIndex === ENUM_WORLD.WD_0LORENCIA &&
+    !!hero &&
+    !!other &&
+    inLorenciaRing(~~hero.x, ~~hero.z) &&
+    inLorenciaRing(~~other.x, ~~other.z)
   );
 }
 

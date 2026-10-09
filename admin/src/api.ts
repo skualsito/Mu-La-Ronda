@@ -211,7 +211,25 @@ export type AutoMessage = { id: number; text: string; intervalMinutes: number; e
 export type ShopRow = { id: string; number: number; name: string; storeId: string | null; items: number; maps: string[] };
 export type ShopList = { shops: ShopRow[]; candidates: { id: string; number: number; name: string }[] };
 
-export type SectionKey = 'inicio' | 'personajes' | 'cuentas' | 'spots' | 'shops' | 'mensajes' | 'vip' | 'encuesta' | 'config' | 'servidor';
+export type DropItem = { id: string; group: number; number: number; name: string };
+export type DropGroup = {
+  id: string;
+  description: string;
+  chance: number;
+  itemType: number;
+  itemLevel: number | null;
+  minMonsterLevel: number | null;
+  maxMonsterLevel: number | null;
+  monsterId: string | null;
+  monsterName: string | null;
+  mapIds: string[];
+  items: DropItem[];
+  inUse: string | null;
+  edited: boolean;
+};
+export type DropList = { groups: DropGroup[]; types: { value: number; label: string }[] };
+
+export type SectionKey = 'inicio' | 'personajes' | 'cuentas' | 'spots' | 'shops' | 'drops' | 'mensajes' | 'vip' | 'encuesta' | 'config' | 'servidor';
 
 export type VipCode = {
   id: string;

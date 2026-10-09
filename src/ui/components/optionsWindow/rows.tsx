@@ -1,3 +1,4 @@
+import { Store } from '../../../store';
 import { useEffect, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { MuSpriteFrame } from '../muSprite';
@@ -161,7 +162,11 @@ const Control = observer(
           <OptionsButton
             label={t(row.buttonKey)}
             width={96}
-            disabled={row.id === 'install' && PwaInstall.busy}
+            disabled={
+              (row.id === 'install' && PwaInstall.busy) ||
+              // Only a character in the world can send it.
+              (row.id === 'changePassword' && !Store.world?.playerEntity)
+            }
             onClick={() => actions.press(row)}
             style={{ left: 0, top: -5 }}
           />

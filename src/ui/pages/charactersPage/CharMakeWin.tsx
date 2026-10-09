@@ -124,8 +124,11 @@ export const CharMakeWin = observer(({ onClose, scale = 1 }: CharMakeWinProps) =
     preview.current?.setClass(selected.classType);
   }, [selected.classType]);
 
-  const isUnlocked = (unlock: number | null) =>
-    unlock === null || (Store.creationUnlockFlags & unlock) !== 0;
+  // Mu La Ronda: every class can be created from the start - no Magic
+  // Gladiator / Dark Lord / Summoner / Rage Fighter waiting on a character
+  // levelled first. OpenMU's CreateCharacterAction never checked the unlock
+  // flags (only `CanGetCreated`); the original client greyed the buttons out.
+  const isUnlocked = (_unlock: number | null) => true;
 
   const onCreate = () => {
     if (Store.charCreationPending) return;

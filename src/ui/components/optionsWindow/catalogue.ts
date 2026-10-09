@@ -116,7 +116,7 @@ export type KeyRow = { kind: 'key'; action: KeyAction; labelKey: TextKey };
 
 export type ButtonRow = RowBase & {
   kind: 'button';
-  id: 'install' | 'resetWindows' | 'clearCache';
+  id: 'install' | 'resetWindows' | 'clearCache' | 'changePassword';
   buttonKey: TextKey;
 };
 
@@ -310,6 +310,20 @@ export const CATEGORIES: Category[] = [
           {
             titleKey: 'options.section.connection',
             rows: [toggle('autoReconnect')],
+          },
+          // Mu La Ronda: the account's password, changed from inside the game
+          // (economyPrompts 'change-password', /cambiarclave on the server).
+          {
+            titleKey: 'options.section.account',
+            rows: [
+              {
+                kind: 'button',
+                id: 'changePassword',
+                labelKey: 'options.changePassword',
+                helpKey: 'options.help.changePassword',
+                buttonKey: 'options.changePasswordButton',
+              },
+            ],
           },
         ],
       },

@@ -98,6 +98,7 @@ import { DARK_LORD_MASTER_ALIASES, MAGIC_GLADIATOR_MASTER_ALIASES } from './skil
 import { LEFT_HAND_BONE, RIGHT_HAND_BONE } from './weaponAttachment';
 import { GROUP_BOW, GROUP_SHIELD } from './weaponClass';
 import { novaStageOf } from '../combat/novaCharge';
+import { PvpMode } from '../combat/pvpMode';
 import { createAngleDeg, turnAngle } from './turnAngle';
 
 /**
@@ -11009,7 +11010,8 @@ function plasmaTargets(caster: Entity): Entity[] {
   if (!world || !caster.transform) return [];
   let ctrl = false;
   try {
-    ctrl = world.keyboardInput.pressedKeys.has('ControlLeft');
+    // Mu La Ronda: PvP mode (double Ctrl) counts as Ctrl held.
+    ctrl = world.keyboardInput.pressedKeys.has('ControlLeft') || PvpMode.on;
   } catch {
     ctrl = false;
   }

@@ -1765,3 +1765,148 @@ select {
     max-width: none;
   }
 }
+
+/* Combo box (ui.tsx ComboField): a select you type into. */
+.combo {
+  position: relative;
+}
+
+.combo-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 4px;
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  background: var(--panel-2);
+  box-shadow: var(--shadow);
+}
+
+.combo-option {
+  padding: 7px 9px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &.active {
+    background: var(--accent-soft);
+  }
+
+  &.chosen {
+    color: var(--accent-2);
+    font-weight: 600;
+  }
+}
+
+.combo-empty {
+  padding: 7px 9px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* Drops (pages/drops.tsx). */
+.drop-filters {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 8px;
+
+  > * {
+    min-width: 0;
+  }
+
+  select,
+  input {
+    width: 100%;
+  }
+
+  .combo .field-label:empty {
+    display: none;
+  }
+}
+
+.drop-maps-tools {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.drop-maps {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 2px 12px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.drop-map {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 13px;
+  cursor: pointer;
+
+  input {
+    height: auto;
+  }
+}
+
+.drop-items {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.drop-item {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+
+  .def-name {
+    flex: 1;
+  }
+}
+
+input.invalid {
+  border-color: var(--bad);
+}
+
+.card.drop-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.drop-chosen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.drop-chosen .chip {
+  padding: 3px 9px;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-2);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}

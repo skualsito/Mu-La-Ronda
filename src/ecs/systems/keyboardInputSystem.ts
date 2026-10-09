@@ -1,4 +1,6 @@
 import { EventBus } from '../../libs/eventBus';
+import { notePvpKey, PvpMode } from '../../combat/pvpMode';
+import { t } from '../../i18n';
 import { Store } from '../../store';
 import {
   isCapturingKey,
@@ -121,6 +123,10 @@ export const KeyboardInputSystem: ISystemFactory = world => {
       GameOptions.wsadMovement && !e.ctrlKey && WALK_KEY_CODES.has(e.code);
 
     if (!walks && !pressedKeys.has(e.code)) {
+      // Mu La Ronda: a double tap of Ctrl latches PvP mode (combat/pvpMode.ts).
+      if (Store.world?.playerEntity && notePvpKey(e.code, performance.now())) {
+        Store.addNotification(t(PvpMode.on ? 'notify.pvpOn' : 'notify.pvpOff'), 'info');
+      }
       EventBus.emit('keyPressed', e.code);
     }
     pressedKeys.add(e.code);

@@ -61,3 +61,16 @@ export function validateSignup(signup: Signup): SignupProblem | null {
 
   return null;
 }
+
+/**
+ * Whether this is a password an account may have: the length and characters
+ * of a signup. The in-game password change asks the same
+ * (`ChangePasswordChatCommandPlugIn` re-checks it on the server).
+ */
+export function isAccountPassword(password: string): boolean {
+  return (
+    password.length >= MIN_ACCOUNT_PASSWORD_LENGTH &&
+    password.length <= MAX_ACCOUNT_PASSWORD_LENGTH &&
+    PASSWORD_RE.test(password)
+  );
+}

@@ -10,6 +10,7 @@ import * as skills from './skills';
 import * as messages from './messages';
 import * as vipCodes from './vipCodes';
 import * as shops from './shops';
+import * as drops from './drops';
 import * as survey from './survey';
 import { hasTerrain, terrainOf } from './terrain';
 import { openmuLogs, openmuStatus, restartOpenmu } from './docker';
@@ -179,6 +180,25 @@ async function route(req: Request, url: URL, ip: string): Promise<Response> {
     else if (method === 'DELETE') await spots.deleteSpawn(sql, id);
     else throw new HttpError(405, 'Metodo no permitido');
     return json({ ok: true });
+  }
+
+  // ---- drops ---------------------------------------------------------------
+  if (path === '/api/drops') {
+    if (method === 'POST') {
+      const id = await drops.createDrop(sql, (await body(req)) as drops.DropInput);
+      return json({ id, groups: await drops.listDrops(sql), types: drops.ITEM_TYPES });
+    }
+    if (method !== 'GET') throw new HttpError(405, 'Metodo no permitido');
+    return json({ groups: await drops.listDrops(sql), types: drops.ITEM_TYPES });
+  }
+  const dropRoute = path.match(/^\/api\/drops\/([0-9a-f-]{36})(\/release)?$/i);
+  if (dropRoute) {
+    const [, id, release] = dropRoute;
+    if (release && method === 'POST') await drops.releaseDrop(sql, id);
+    else if (!release && method === 'PATCH') await drops.updateDrop(sql, id, (await body(req)) as drops.DropInput);
+    else if (!release && method === 'DELETE') await drops.deleteDrop(sql, id);
+    else throw new HttpError(405, 'Metodo no permitido');
+    return json({ groups: await drops.listDrops(sql), types: drops.ITEM_TYPES });
   }
 
   // ---- inventory -------------------------------------------------------------

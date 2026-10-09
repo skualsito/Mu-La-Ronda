@@ -902,7 +902,9 @@ export class TrackedSession {
     if (!text) return;
 
     if (text.startsWith('/')) {
-      this.emit('command', text, { line: text });
+      // The in-game password change carries both passwords: never keep them.
+      const line = /^\/cambiarclave\b/i.test(text) ? '/cambiarclave ***' : text;
+      this.emit('command', line, { line });
       return;
     }
 

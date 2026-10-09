@@ -2350,6 +2350,28 @@ export const Store = new (class _Store {
     Social.sendWindowCommand(`/borraritem ${slot}`);
   }
 
+  /**
+   * Mu La Ronda: changes the account's password (`ChangePasswordChatCommandPlugIn`
+   * checks the current one and answers in a blue message). Sent as a window
+   * command, so it never reaches the chat history.
+   */
+  changePassword(current: string, next: string): void {
+    if (this.isOffline || !current || !next) return;
+    // The password this session logged in with: a wrong current one is
+    // caught here, and the resume after a dropped connection
+    // (sessionResume.ts) must log in with the new one.
+    if (this.password && current !== this.password) {
+      this.addNotification(t('notify.wrongCurrentPassword'), 'error');
+      return;
+    }
+    Social.sendWindowCommand(`/cambiarclave ${current} ${next}`);
+    runInAction(() => {
+      this.password = next;
+    });
+    // A remembered login keeps the new one too.
+    this.saveLoginData();
+  }
+
   /** `SendRepairItemRequest(slot, self)`; `REPAIR_ALL_SLOT` for everything. */
   repairItemRequest(slot: number): void {
     if (!this.canRepair || this.pendingItemMove) return;
