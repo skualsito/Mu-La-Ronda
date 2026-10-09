@@ -352,6 +352,8 @@ export const Economy = new (class _Economy {
    * `CNewUIMixInventory`). Decides the storage byte the move packets carry.
    */
   mixKind: 'chaosMachine' | 'chaosCard' = 'chaosMachine';
+  /** Mu La Ronda: the recipe picked from the window's list, to show what it takes (null = the list). */
+  mixRecipe: number | null = null;
 
   // ---- trade (CNewUITrade) -------------------------------------------------
 
@@ -410,6 +412,7 @@ export const Economy = new (class _Economy {
       mixPending: observable,
       mixResult: observable,
       mixKind: observable,
+      mixRecipe: observable,
       tradeOpen: observable,
       myTradeItems: observable,
       yourTradeItems: observable,
@@ -444,6 +447,7 @@ export const Economy = new (class _Economy {
     this.mixPending = false;
     this.mixResult = null;
     this.mixKind = 'chaosMachine';
+    this.mixRecipe = null;
     this.closeTradeState();
     this.myShopOpen = false;
     this.myShopItems = emptyGrid(PERSONAL_SHOP_SLOTS);
@@ -669,6 +673,7 @@ export const Economy = new (class _Economy {
     runInAction(() => {
       this.mixOpen = true;
       this.mixKind = kind;
+      this.mixRecipe = null;
       this.mixItems = emptyGrid(MIX_SLOTS);
       this.mixPending = false;
       this.mixResult = null;
@@ -697,6 +702,13 @@ export const Economy = new (class _Economy {
       this.mixItems = items;
     });
     prefetchItemIcons(this.mixItems);
+  }
+
+  /** Mu La Ronda: picks a recipe from the list (null goes back to it). */
+  pickMixRecipe(recipe: number | null): void {
+    runInAction(() => {
+      this.mixRecipe = recipe;
+    });
   }
 
   setMixType(type: ChaosMachineMixRequestChaosMachineMixTypeEnum): void {

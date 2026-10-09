@@ -336,6 +336,28 @@ export class PlayerObject extends ModelObject {
     );
   }
 
+  /**
+   * Mu La Ronda: the class head (`Helm`, HelmClassNN: face and hair) under a
+   * worn helm. The helm models carry a head of their own (`HideSkin` above),
+   * and the original draws the class head only under the few open helms
+   * (`SetCharacterScale`, ZzzCharacter.cpp:12116-12129) - drawn under every
+   * helm, the Dark Knight's hair stood up through the top of each one.
+   */
+  #headHidden = false;
+
+  setHeadHidden(hidden: boolean) {
+    this.#headHidden = hidden;
+    this.#applyHeadHidden();
+  }
+
+  #applyHeadHidden() {
+    for (const mesh of this.Helm.getMeshes(true)) {
+      mesh.isVisible = !this.#headHidden;
+      mesh.metadata ??= {};
+      mesh.metadata.csmCaster = !this.#headHidden;
+    }
+  }
+
   async setDefaultMask() {
     this.HelmMask.Unload();
   }
@@ -456,6 +478,7 @@ export class PlayerObject extends ModelObject {
       const gltf = await loadGLTF(dir + modelPath, Store.world!);
       if (seq !== part.loadSeq) return;
       part.load(gltf);
+      if (part === this.Helm) this.#applyHeadHidden();
 
       gltf.mesh.isPickable = this.IsInteractable;
       const meshes = part.getMeshes(true);

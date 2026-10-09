@@ -21,6 +21,7 @@ import {
   isCrossbow,
   isShield,
   isPhoenixSoulStar,
+  isSwordformGloves,
   isWeaponItem,
   PHOENIX_SOUL_STAR,
   type Hands,
@@ -322,6 +323,11 @@ function stowed(
   hands: (Hands & { charClass?: CharacterClassNumber }) | undefined,
   bindBack: boolean
 ): item is Item {
+  // Mu La Ronda: a Rage Fighter's glove weapon never goes on the back. The back-item pass
+  // draws it with `RenderSwordformGloves` like everywhere else, on the hands
+  // (ZzzCharacter.cpp, RenderCharacterBackItem); hung off the back bone, a glove floated
+  // beside his head in every town.
+  if (isSwordformGloves(item)) return false;
   return !!item && ((bindBack && isBackItem(item, hands)) || isAmmo(item));
 }
 
@@ -345,14 +351,20 @@ export function applyWeaponAttachments(
     rageFighter && RAGE_FIGHTER_COMMON.has(`${item.group}:${item.num}`);
 
   // Slot 0 (appearance "leftHand") → Weapon1 → right hand (bRightHandItem).
-  if (stowed(main, hands, bindBack)) {
+  // Mu La Ronda: a glove weapon rides the body's own skeleton (appearanceSystem
+  // `LinkParent`), no bone of its own.
+  if (isSwordformGloves(main)) {
+    player.Weapon1.setBoneLink(-1);
+  } else if (stowed(main, hands, bindBack)) {
     player.Weapon1.setBoneLink(BACK_BONE, backLink(main, false, rageCommon(main)));
   } else {
     player.Weapon1.setBoneLink(RIGHT_HAND_BONE);
   }
 
   // Slot 1 (appearance "rightHand") → Weapon2 → left hand.
-  if (stowed(off, hands, bindBack)) {
+  if (isSwordformGloves(off)) {
+    player.Weapon2.setBoneLink(-1);
+  } else if (stowed(off, hands, bindBack)) {
     player.Weapon2.setBoneLink(BACK_BONE, backLink(off, true, rageCommon(off)));
   } else {
     player.Weapon2.setBoneLink(LEFT_HAND_BONE);

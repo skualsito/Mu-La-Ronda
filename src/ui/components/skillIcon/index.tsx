@@ -5,6 +5,7 @@ import {
   MASTER_SKILL_FIRST,
   SKILL_ICON_HEIGHT,
   SKILL_ICON_WIDTH,
+  borrowedMasterIconCell,
   skillIconCell,
 } from '../../../common/skillCasting';
 import { skillDefinition } from '../../../common/skillsDatabase';
@@ -32,7 +33,7 @@ const MASTER_SHEET = ['new_Master_Icon.OZJ', 'new_Master_non_Icon.OZJ'];
  */
 export const SkillIcon = observer(
   ({ number, disabled = false }: { number: number; disabled?: boolean }) => {
-    const master = number >= MASTER_SKILL_FIRST;
+    const master = number >= MASTER_SKILL_FIRST && !borrowedMasterIconCell(number);
     const loaded = masterTreeDataLoaded();
 
     useEffect(() => {
@@ -56,7 +57,7 @@ export const SkillIcon = observer(
       );
     }
 
-    const cell = skillIconCell(number, disabled);
+    const cell = borrowedMasterIconCell(number, disabled) ?? skillIconCell(number, disabled);
 
     if (!cell) {
       return (

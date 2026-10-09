@@ -17,6 +17,7 @@ import {
   MiniGameOpeningStatePacket,
 } from '../common/packets/ServerToClientPackets';
 import type { EventLayer } from './layer';
+import { eventEntryRefusal } from '../common/eventEntryRefusal';
 import { noteOpeningStateRequest, takeOpeningState } from './schedule';
 import {
   BLOOD_CASTLE_LEVELS,
@@ -381,7 +382,8 @@ EventBus.on('BloodCastleEnterResult', packet => {
     case BloodCastleEnterResultEnterResultEnum.Success:
       break;
     case BloodCastleEnterResultEnterResultEnum.Failed:
-      text = EVENT_TEXT.cloakLevelWrong;
+      // Mu La Ronda: the server's reason when it gave one, not the cloak.
+      text = eventEntryRefusal(EVENT_TEXT.bloodCastle) ?? EVENT_TEXT.cloakLevelWrong;
       break;
     case BloodCastleEnterResultEnterResultEnum.NotOpen:
       text = formatText(EVENT_TEXT.timePassed, zone);

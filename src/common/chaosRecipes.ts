@@ -204,6 +204,17 @@ export const CHAOS_RECIPES: readonly MixRecipe[] = [
     ],
   },
   {
+    // Mu La Ronda: the black (weapon), blue (armour) or gold (excellent +11) Fenrir
+    // (marketplace/openmu FenrirUpgradeCrafting.cs).
+    name: 'Fenrir Upgrade', number: 28, money: 10000000,
+    requires: [
+      { items: [[13, 37]], min: 1, max: 1 },
+      { items: [[12, 15]], min: 1, max: 1 },
+      { items: [[14, 16]], min: 5, max: 5 },
+      { items: [], min: 1, max: 1, minLevel: 4, options: ['Option'] },
+    ],
+  },
+  {
     name: '1st Level Wings', number: 11,
     requires: [
       { items: [[4, 6], [2, 6], [5, 7]], min: 1, max: 1, minLevel: 4, options: ['Option'] },

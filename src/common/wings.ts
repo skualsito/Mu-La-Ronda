@@ -131,6 +131,12 @@ export type WingSpec = {
    */
   readonly cloth?: number;
   /**
+   * Mu La Ronda: more than one simulated sheet, each cut finer first
+   * (`subdivide`, capeCloth.ts `subdivideSheet`) and with its own pull back
+   * to the model's cut (`shape`, 0 = hangs by gravity alone).
+   */
+  readonly cloths?: readonly { mesh: number; subdivide?: number; shape?: number }[];
+  /**
    * Clip to play inside a safe zone instead of clip 0 - the Wings of Darkness
    * fold shut in town (`RenderLinkObject`, ZzzCharacter.cpp:6785).
    */
@@ -275,8 +281,18 @@ const WINGS: Readonly<Record<number, WingSpec>> = {
   // bone, Cape of Overrule on bone 19 (ZzzCharacter.cpp:6708-6714, :15421-15427).
   // Mu La Ronda: Cape of Fighter's model is its cloth (capeCloth.ts).
   [CAPE_OF_FIGHTER]: { ...PLAIN, cloth: 0 },
-  // Mu La Ronda: mesh 1 is the cape itself, skinned to one bone in a one-key pose (capeCloth.ts bakes it).
-  [CAPE_OF_OVERRULE]: { blendMesh: -1, cape: 'overrule', cloth: 1 },
+  // Mu La Ronda: mesh 2 is the cape and mesh 1 its two ribbons, each skinned to one bone in a one-key pose
+  // (capeCloth.ts bakes them) and each one quad - the original hangs them as cloth grids (CPhysicsCloth,
+  // ZzzCharacter.cpp:9784-9818: 10 x 10 points for the cape, 2 x 5 for each ribbon). Cut into grids here; the
+  // ribbons hang by gravity alone - drawn to their own cut they stood out from the shoulders like two poles.
+  [CAPE_OF_OVERRULE]: {
+    blendMesh: -1,
+    cape: 'overrule',
+    cloths: [
+      { mesh: 2, subdivide: 8 },
+      { mesh: 1, subdivide: 8, shape: 0 },
+    ],
+  },
 };
 
 const CAPES: Readonly<Record<number, WingSpec>> = {

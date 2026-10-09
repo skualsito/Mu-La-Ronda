@@ -40,20 +40,60 @@ const HEAL_SKILL = 26; // Heal (Elf)
 const DRAIN_LIFE_SKILL = 214; // Drain Life (Summoner)
 
 /**
- * Skill name -> `MagicEffectStatus` id, for the "already buffed" check
+ * Skill number -> `MagicEffectStatus` id, for the "already buffed" check
  * (`BuffTarget`'s `g_isCharacterBuff` calls). Entities carry the active
  * effect ids in their `buffs` set.
+ *
+ * Mu La Ronda: by number, from the server's own skill table. Keyed by name it
+ * missed "Swell Life" and "Increase Critical Damage" (it had other names for
+ * them), every master version (Attack / Defense Increase Str...) and the Rage
+ * Fighter's buffs: for those the helper could not see the buff drop and only
+ * recast it blindly once a minute.
  */
-const BUFF_EFFECT_BY_NAME: Readonly<Record<string, number>> = {
-  'Greater Damage': 1,
-  'Greater Defense': 2,
-  'Soul Barrier': 4,
-  'Critical Damage Increase': 5,
-  'Infinity Arrow': 6,
-  'Greater Fortitude': 8,
-  Berserker: 81,
-  'Expansion of Wizardry': 82,
+const BUFF_EFFECT_BY_SKILL: Readonly<Record<number, number>> = {
+  16: 4, // Soul Barrier
+  27: 2, // Greater Defense
+  28: 1, // Greater Damage
+  48: 8, // Swell Life
+  64: 5, // Increase Critical Damage
+  77: 6, // Infinity Arrow
+  217: 71, // Damage Reflection
+  218: 81, // Berserker
+  233: 82, // Expansion of Wizardry
+  266: 129, // Ignore Defense
+  267: 130, // Increase Health
+  268: 131, // Increase Block
+  356: 8, // Swell Life Strengthener
+  360: 135, // Swell Life Proficiency
+  380: 138, // Expansion of Wizardry Strengthener
+  383: 139, // Expansion of Wizardry Mastery
+  403: 4, // Soul Barrier Strengthener
+  404: 4, // Soul Barrier Proficiency
+  417: 2, // Defense Increase Strengthener
+  420: 1, // Attack Increase Strengthener
+  422: 1, // Attack Increase Mastery
+  423: 2, // Defense Increase Mastery
+  441: 6, // Infinity Arrow Strengthener
+  469: 81, // Berserker Strengthener
+  470: 81, // Berserker Proficiency
+  511: 5, // Critical Damage Increase Power Up
+  515: 5, // Critical Damage Increase Power Up (2)
+  517: 148, // Critical Damage Increase Mastery
+  569: 153, // Increase Block Power Up
+  572: 154, // Increase Block Mastery
+  573: 155, // Increase Health Strengthener
 };
+
+/**
+ * Mu La Ronda: buffs that only ever land on the caster (Infinity Arrow,
+ * Berserker, Expansion of Wizardry, Ignore Defense) and the ones that cover the
+ * whole party in one cast (Swell Life, Critical Damage, Increase Health /
+ * Block): in party mode they are cast on the hero, not once per member.
+ */
+const SELF_CAST_BUFFS: ReadonlySet<number> = new Set([
+  77, 441, 218, 469, 470, 233, 380, 383, 266,
+  48, 356, 360, 64, 511, 515, 517, 267, 268, 569, 572, 573,
+]);
 
 interface Point {
   x: number;
@@ -206,7 +246,7 @@ function buffTarget(world: World, target: Entity, num: number): boolean {
   const def = skillDefinition(num);
   if (!def || !isLearned(num)) return false;
 
-  const effect = BUFF_EFFECT_BY_NAME[def.name];
+  const effect = BUFF_EFFECT_BY_SKILL[num];
   if (effect !== undefined) {
     if (target.buffs?.has(effect) && !timerBuffOngoing) return false;
   } else {
@@ -229,7 +269,9 @@ function buffTarget(world: World, target: Entity, num: number): boolean {
 function buff(world: World, hero: Entity, config: MuHelperConfig): boolean {
   if (!config.buffs.some(n => n > 0)) return true;
 
-  const partyMode = config.supportParty && Social.partyMembers.length > 0;
+  // Mu La Ronda: in a party the buffs go to every member, whether or not "support the party"
+  // is ticked (it still decides the healing). It came unticked, so the party was never buffed.
+  const partyMode = Social.partyMembers.length > 0;
   const duration = partyMode ? config.buffDurationParty : config.buffDuration;
   if (
     !duration &&
@@ -245,7 +287,12 @@ function buff(world: World, hero: Entity, config: MuHelperConfig): boolean {
   const skillNum = config.buffs[buffIndex];
   let busy = false;
 
-  if (partyMode) {
+  if (partyMode && SELF_CAST_BUFFS.has(skillNum)) {
+    busy = buffTarget(world, hero, skillNum);
+    buffIndex = (buffIndex + 1) % config.buffs.length;
+    buffPartyIndex = 0;
+    if (buffIndex === 0) timerBuffOngoing = false;
+  } else if (partyMode) {
     const members = Social.partyMembers;
     const member = members[buffPartyIndex % members.length];
     const target = member ? findPartyEntity(world, member.name) : null;

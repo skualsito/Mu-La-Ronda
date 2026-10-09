@@ -340,6 +340,9 @@ function fixSkinnedLocalBounds(mesh: AbstractMesh): void {
  */
 export const HIDDEN_MESH_ALL = -2;
 
+/** Mu La Ronda: `o->BlendMesh = -2` - every mesh additive, not one index. */
+export const BLEND_EVERY_MESH = -2;
+
 /**
  * The additive shine passes a body carries (`ModelObject.BodyShine`), read
  * per mesh by the item material.
@@ -451,6 +454,13 @@ export class ModelObject {
   BlendMesh = NO_BLEND_MESH;
 
   BlendMeshLight = 1;
+
+  /**
+   * Mu La Ronda: `o->BlendMeshLight` re-read every frame off the original's
+   * `WorldTime` (ms) - the pulse `ItemObjectAttribute` gives a held weapon's
+   * glow (itemObjectAttribute.ts). Wins over `BlendMeshLight`.
+   */
+  BlendMeshLightAt: ((ms: number) => number) | null = null;
 
   /**
    * `RenderMesh(n, RENDER_TEXTURE | RENDER_BRIGHT)` after `RenderBody`: the
@@ -1516,7 +1526,14 @@ export class ModelObject {
   }
 
   private applyBlendMesh() {
-    if (this.BlendMesh < 0 || !this.gltf) return;
+    if (!this.gltf) return;
+    // Mu La Ronda: `o->BlendMesh = -2` is every mesh (ItemObjectAttribute's
+    // Bluewing and Aquagold crossbows, the Staff of Resurrection...).
+    if (this.BlendMesh === BLEND_EVERY_MESH) {
+      for (const mesh of this.gltf.mesh.getChildMeshes(false)) this.applyBlendMeshTo(mesh);
+      return;
+    }
+    if (this.BlendMesh < 0) return;
 
     const mesh = this.getMesh(this.BlendMesh);
 
@@ -1526,7 +1543,10 @@ export class ModelObject {
       );
       return;
     }
+    this.applyBlendMeshTo(mesh);
+  }
 
+  private applyBlendMeshTo(mesh: AbstractMesh) {
     mesh.material = getMaterial(
       mesh.getScene(),
       false,
@@ -1537,7 +1557,16 @@ export class ModelObject {
 
     mesh.metadata ??= {};
     mesh.metadata.brightMesh = true;
-    mesh.metadata.blendMeshLight = this.BlendMeshLight;
+    const lightAt = this.BlendMeshLightAt;
+    if (lightAt) {
+      Object.defineProperty(mesh.metadata, 'blendMeshLight', {
+        get: () => lightAt(performance.now()),
+        configurable: true,
+        enumerable: true,
+      });
+    } else {
+      mesh.metadata.blendMeshLight = this.BlendMeshLight;
+    }
     // The card of an object that throws light is a flame, and a flame is
     // light: the BodyLight bind gives it the map's `keyGain` (F12). Painted
     // glass on a dark object stays at its authored value (F4).

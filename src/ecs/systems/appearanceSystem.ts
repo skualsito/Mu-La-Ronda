@@ -4,7 +4,10 @@ import { heldWeapons, wearsChaosCastleSkin } from '../../common/chaosCastleUnit'
 import type { ModelObject } from '../../common/modelObject';
 import { isPlayerBody, type PlayerObject } from '../../common/playerObject';
 import { applyWeaponAttachments } from '../../common/weaponAttachment';
-import { isBook, swordformGlovesModel } from '../../common/weaponClass';
+import { isBook, isSwordformGloves, swordformGlovesModel } from '../../common/weaponClass';
+import { itemObjectAttribute } from '../../common/itemObjectAttribute';
+import { darkLordMaskModel, rageFighterSetModel, showsClassHead } from '../../common/classPartModels';
+import type { CharacterClassNumber } from '../../common/types';
 import type { ISystemFactory, Item } from '../world';
 
 function loadPart(
@@ -12,18 +15,40 @@ function loadPart(
   playerObject: PlayerObject,
   socket: ModelObject,
   /** Weapon slot, when this socket is one: picks the worn glove model. */
-  slot?: 0 | 1
+  slot?: 0 | 1,
+  charClass?: CharacterClassNumber
 ) {
   if (!part) return;
   const item = ItemsDatabase.getItem(part.group, part.num);
 
   if (!item) return;
 
+  // Mu La Ronda: a held weapon or shield takes `ItemObjectAttribute`'s mesh rules
+  // too - `RenderLinkObject` runs it on every linked item (ZzzCharacter.cpp:6649).
+  // Without them the Bluewing and Aquagold crossbows, all-additive in the
+  // original, were drawn opaque: a near-black sheet, a black silhouette.
+  if (slot !== undefined) {
+    const rule = itemObjectAttribute(part.group, part.num);
+    socket.BlendMesh = rule.blendMesh;
+    socket.HiddenMesh = rule.hiddenMesh;
+    socket.BlendMeshLight = 1;
+    socket.BlendMeshLightAt = rule.blendMeshLight ?? null;
+    // Mu La Ronda: a glove weapon's worn models (SwordR33 / SwordL33...) are rigged
+    // to the character's own skeleton, the way an armour piece is: the original
+    // draws them with `RenderPartObject` on the body's bones (`RenderSwordformGloves`,
+    // MonkSystem.cpp:257). Hung off the hand bone as well, they were posed twice and
+    // floated at head height beside him. Read when the GLB loads.
+    socket.LinkParent = isSwordformGloves(part);
+  }
+
   // A Rage Fighter glove weapon is worn as a left/right pair of its own
   // (`RenderSwordformGloves`, MonkSystem.cpp:248); the model items.json names
   // is the one the inventory draws.
   const worn =
-    (slot !== undefined && swordformGlovesModel(part, slot)) || item.szModelName;
+    (slot !== undefined && swordformGlovesModel(part, slot)) ||
+    rageFighterSetModel(part, charClass) ||
+    darkLordMaskModel(part, charClass) ||
+    item.szModelName;
 
   playerObject.loadPartAsync(
     item.szModelFolder,
@@ -91,15 +116,16 @@ export const AppearanceSystem: ISystemFactory = world => {
             void playerObject.setDefaultHelm();
           }
 
-          loadPart(charAppearance.helm, playerObject, playerObject.HelmMask) ||
+          loadPart(charAppearance.helm, playerObject, playerObject.HelmMask, undefined, charAppearance.charClass) ||
             playerObject.setDefaultMask();
-          loadPart(charAppearance.armor, playerObject, playerObject.Armor) ||
+          playerObject.setHeadHidden(!showsClassHead(charAppearance.helm));
+          loadPart(charAppearance.armor, playerObject, playerObject.Armor, undefined, charAppearance.charClass) ||
             playerObject.setDefaultArmor();
-          loadPart(charAppearance.pants, playerObject, playerObject.Pants) ||
+          loadPart(charAppearance.pants, playerObject, playerObject.Pants, undefined, charAppearance.charClass) ||
             playerObject.setDefaultPants();
-          loadPart(charAppearance.gloves, playerObject, playerObject.Gloves) ||
+          loadPart(charAppearance.gloves, playerObject, playerObject.Gloves, undefined, charAppearance.charClass) ||
             playerObject.setDefaultGloves();
-          loadPart(charAppearance.boots, playerObject, playerObject.Boots) ||
+          loadPart(charAppearance.boots, playerObject, playerObject.Boots, undefined, charAppearance.charClass) ||
             playerObject.setDefaultBoots();
 
           // c->Wing and the body-linked half of c->Helper. Both need their own

@@ -179,6 +179,9 @@ const SHEETS = {
  * is that `else if` chain, `[column, row]`.
  */
 const SHEET2_CELLS: Record<number, readonly [number, number]> = {
+  // Mu La Ronda: the scepter's Force Wave falls on an empty cell of the sheet;
+  // it is Force cast from a scepter, so it borrows Force's icon.
+  66: [3, 0], // Force Wave
   214: [0, 3], // Drain Life
   215: [1, 3], // Chain Lightning
   216: [2, 3], // (Sudden Ice)
@@ -200,6 +203,33 @@ const SHEET2_CELLS: Record<number, readonly [number, number]> = {
   237: [2, 8], // Gigantic Storm
   238: [3, 8], // Chaotic Diseier
 };
+
+/**
+ * Mu La Ronda: the Rage Fighter's master skills, by the base skill they power
+ * up. The Season 6 `Skill.bmd` predates them - it gives them icon 0 or another
+ * class's - so they draw the base skill's own icon instead.
+ */
+const RAGE_FIGHTER_MASTER_BASE: Readonly<Record<number, number>> = {
+  551: 260, // Killing Blow Strengthener
+  552: 261, // Beast Uppercut Strengthener
+  554: 260, // Killing Blow Mastery
+  555: 261, // Beast Uppercut Mastery
+  558: 262, // Chain Drive Strengthener
+  559: 263, // Dark Side Strengthener
+  560: 264, // Dragon Roar Strengthener
+  569: 268, // Increase Block Power Up
+  572: 268, // Increase Block Mastery
+  573: 267, // Increase Health Strengthener
+};
+
+/** The icon cell of a master skill that borrows its base skill's, or null. */
+export function borrowedMasterIconCell(
+  num: number,
+  disabled = false
+): { file: string; x: number; y: number } | null {
+  const base = RAGE_FIGHTER_MASTER_BASE[num];
+  return base ? skillIconCell(base, disabled) : null;
+}
 
 function cell(file: string, column: number, row: number) {
   return { file, x: column * SKILL_ICON_WIDTH, y: row * SKILL_ICON_HEIGHT };

@@ -35,6 +35,7 @@ import {
 } from './common/modelFactoryPerId';
 import { monsterDisplayName, monsterMaxHealth } from './common/monstersDatabase';
 import { isHiddenServerLine, translateServerText } from './i18n/serverText';
+import { noteServerLine } from './common/eventEntryRefusal';
 import { loadNpcNames, onNpcNamesChanged } from './libs/mu/npcNameFile';
 import {
   MonsterActionType,
@@ -3698,6 +3699,8 @@ EventBus.on('ServerMessage', packet => {
       // (SelfDefensePlugIn.cs); keep the state alongside showing it. It reads
       // the server's English, so it has to run before the line is translated.
       Social.trackSelfDefense(text);
+      // Mu La Ronda: an event entry refused right after reads its reason from here.
+      noteServerLine(text);
       // Mu La Ronda: the VIP window's code check is an answer for it, not a line to show.
       if (readVipCodeLine(text)) break;
       readVipLine(text);

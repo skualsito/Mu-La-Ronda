@@ -25,6 +25,12 @@ public static class AttackableExtensions
     /// <summary>Mu La Ronda: the most of its maximum health and shield a player loses to one hit from another player in Chaos Castle.</summary>
     private const float ChaosCastlePvpHitShare = 0.06f;
 
+    /// <summary>
+    /// Mu La Ronda: Sleep, Weakness, Innovation and their strengtheners - skills of the
+    /// <see cref="SkillType.Buff"/> type that are cast on enemies.
+    /// </summary>
+    private static readonly HashSet<short> EnemyCurseSkills = [219, 221, 222, 454, 459, 460];
+
     private static readonly IDictionary<AttributeDefinition, AttributeDefinition> ReductionModifiers =
         new Dictionary<AttributeDefinition, AttributeDefinition>
         {
@@ -532,7 +538,9 @@ public static class AttackableExtensions
 
         // Mu La Ronda: buffs and heals are for players (and the caster's own summon), never for a
         // monster - the "party" restriction below only turned away players outside the party.
+        // The Summoner's curses (Sleep, Weakness, Innovation) are "buffs" too, but for enemies.
         if (skill.SkillType is SkillType.Buff or SkillType.Regeneration
+            && !EnemyCurseSkills.Contains(skill.Number)
             && target != player
             && target is not Player
             && !(target is Monster { SummonedBy: { } owner } && owner == player))

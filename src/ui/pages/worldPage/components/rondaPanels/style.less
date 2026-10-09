@@ -347,10 +347,27 @@
   opacity: 0.55;
 }
 
+// Mu La Ronda: the events window is a column - the events, the invasion counts, the note -
+// and the counts take what is left and scroll in it. With a fixed 190 px cap they ran past
+// the bottom of the window when an invasion had many monsters, and the last rows were hidden.
+.ronda-mu-page .ronda-events-rows {
+  display: flex;
+  flex-direction: column;
+
+  > * {
+    flex: none;
+  }
+
+  > .ronda-invasions {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+}
+
 // Mu La Ronda: the running invasions' counts under the events (index.tsx, InvasionCounts).
 .ronda-invasions {
-  max-height: 190px;
   margin-top: 6px;
+  margin-bottom: 4px;
   overflow-y: auto;
   pointer-events: auto;
 

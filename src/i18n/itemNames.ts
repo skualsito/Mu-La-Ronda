@@ -109,6 +109,9 @@ export const SPANISH_ITEM_NAMES: ItemNameFixes = {
   '15/34': 'Pergamino Ignorar Defensa',
   '15/35': 'Pergamino Aumento de Salud',
   '15/36': 'Pergamino Aumento de Bloqueo',
+  // Mu La Ronda: the Rage Fighter's capes - the pack has them in Korean (mojibake on screen).
+  '12/49': 'Capa de Luchador',
+  '12/50': 'Capa de Dominio',
 
   // --- blank in the pack, so the English name was showing ---------------
   '7/53': 'Yelmo de la Reina',

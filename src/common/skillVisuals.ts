@@ -12038,7 +12038,9 @@ const ourforcesBreathe = (t: number, i: number): number =>
   i < 3 ? (Math.sin(t * 10) + 1) * 0.25 + 0.2 : OURFORCES_SLOW.has(i) ? (Math.sin(t * 5) + 1) * 0.25 + 0.5 : (Math.sin(t * 10) + 1) * 0.3 + 0.3;
 const OURFORCES_GLOW: BoneGlow = { bones: OURFORCES_BONES, texture: TEX.flareRed, colour: RGBS.white, size: 0.96, breathe: ourforcesBreathe };
 /** Swell of Magic Power: BITMAP_LIGHT 1.8 on every bone, `(0.7, 0.3, 0.9) * (|sin t| + 0.2) * 0.5` (ZzzEffect.cpp:9316). */
-const MAGIC_GLOW: BoneGlow = { bones: 'all', texture: TEX.flare, colour: [0.7, 0.3, 0.9], size: 1.15, breathe: t => (Math.abs(Math.sin(t)) + 0.2) * 0.5 };
+// Mu La Ronda: half the size and half the light of the original - a 1.15-tile flare on every one of
+// fifty-odd bones drew the wizard as a violet ball ("muy exagerado"). Still breathes, still violet.
+const MAGIC_GLOW: BoneGlow = { bones: 'all', texture: TEX.flare, colour: [0.7, 0.3, 0.9], size: 0.6, breathe: t => (Math.abs(Math.sin(t)) + 0.2) * 0.25 };
 
 /**
  * Swell of Magic Power's buff look: every bone glows, and every 6 s from 6 s after it lands the hand runes

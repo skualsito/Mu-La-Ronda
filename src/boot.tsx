@@ -42,6 +42,7 @@ import {
 import { drawnFrameRate, installPerfOverlay, recordFrame } from './libs/perfOverlay';
 import { setShedSource } from './common/loadShed';
 import { installAutoManaPotion } from './common/autoManaPotion';
+import { installRequestTimeouts } from './common/requestTimeout';
 import { csmCacheStats } from './scenes/shadows';
 import { refreshServerList } from './common/serverList';
 import { ensureCacheWorker } from './common/assetDownload';
@@ -264,6 +265,8 @@ setShedSource(() => ({
 
 // Mu La Ronda: a mana potion when the mana runs out (common/autoManaPotion.ts).
 installAutoManaPotion(Store);
+// Mu La Ronda: trade / party / guild / duel requests answer themselves after 20 s.
+installRequestTimeouts();
 
 let lastTime = performance.now();
 const runFrame = (now: number) => {

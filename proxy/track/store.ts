@@ -46,6 +46,14 @@ export class SqliteJournal implements Journal {
     mkdirSync(dirname(path), { recursive: true });
     this.db = new Database(path, { create: true });
     this.db.run('PRAGMA journal_mode = WAL');
+    // Mu La Ronda: a DELETE only marks pages free inside the file, so the prune
+    // below never gave a byte back to the disk. In incremental mode the freed
+    // pages can be returned after each prune. Switching an existing file needs
+    // one VACUUM, done here once (a new file pays nothing).
+    if (this.db.query<{ auto_vacuum: number }, []>('PRAGMA auto_vacuum').get()?.auto_vacuum !== 2) {
+      this.db.run('PRAGMA auto_vacuum = INCREMENTAL');
+      this.db.run('VACUUM');
+    }
 
     const applied = migrate(this.db, join(import.meta.dir, '..', 'migrations'));
     if (applied.length > 0) {
@@ -145,6 +153,9 @@ export class SqliteJournal implements Journal {
     if (!(this.retainDays > 0)) return;
     try {
       this.db.run('DELETE FROM character_events WHERE at < ?', [Date.now() - this.retainDays * DAY_MS]);
+      // Hand the freed pages back to the disk, and empty the write-ahead log.
+      this.db.run('PRAGMA incremental_vacuum');
+      this.db.run('PRAGMA wal_checkpoint(TRUNCATE)');
     } catch (error) {
       console.error('track: prune failed:', error);
     }

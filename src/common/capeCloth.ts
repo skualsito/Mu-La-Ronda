@@ -1,4 +1,4 @@
-import { Matrix, Vector3, VertexBuffer, type AbstractMesh, type TransformNode } from '../libs/babylon/exports';
+import { Matrix, Vector3, VertexBuffer, VertexData, type AbstractMesh, type Mesh, type TransformNode } from '../libs/babylon/exports';
 
 /**
  * Mu La Ronda: the cloth of the Dark Lord's and the Rage Fighter's capes.
@@ -98,6 +98,76 @@ export function bakeSkin(mesh: AbstractMesh): void {
   mesh.setVerticesData(VertexBuffer.PositionKind, out, true);
 }
 
+/**
+ * Mu La Ronda: cuts every triangle of a sheet into `n` x `n` smaller ones,
+ * positions, normals, UVs and colours alike. Cape of Overrule's cape and
+ * ribbons are each one quad: four corners cannot fold, and a ribbon swung
+ * from the shoulder like a 1.8 m pole. The original simulates them as grids
+ * of its own (`CPhysicsCloth::Create`, 10 x 10 and 2 x 5 points). Run after
+ * `bakeSkin`: the bone weights are dropped.
+ */
+export function subdivideSheet(mesh: AbstractMesh, n: number): void {
+  if (n <= 1) return;
+  const positions = mesh.getVerticesData(VertexBuffer.PositionKind);
+  if (!positions) return;
+  const kinds: [string, number][] = [
+    [VertexBuffer.PositionKind, 3],
+    [VertexBuffer.NormalKind, 3],
+    [VertexBuffer.UVKind, 2],
+    [VertexBuffer.ColorKind, 4],
+  ];
+  const sources = kinds
+    .map(([kind, size]) => ({ kind, size, data: mesh.getVerticesData(kind) }))
+    .filter((k): k is { kind: string; size: number; data: Float32Array } => !!k.data);
+  const own = mesh.getIndices();
+  const vertexCount = positions.length / 3;
+  const indices = own && own.length > 0 ? own : Array.from({ length: vertexCount }, (_, i) => i);
+  const out = sources.map(() => [] as number[]);
+  const emit = (a: number, b: number, c: number, i: number, j: number) => {
+    const u = i / n;
+    const v = j / n;
+    sources.forEach((src, k) => {
+      for (let d = 0; d < src.size; d++) {
+        const pa = src.data[a * src.size + d];
+        const pb = src.data[b * src.size + d];
+        const pc = src.data[c * src.size + d];
+        out[k].push(pa + (pb - pa) * u + (pc - pa) * v);
+      }
+    });
+  };
+  for (let t = 0; t + 2 < indices.length; t += 3) {
+    const a = indices[t];
+    const b = indices[t + 1];
+    const c = indices[t + 2];
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < n - i; j++) {
+        emit(a, b, c, i, j);
+        emit(a, b, c, i + 1, j);
+        emit(a, b, c, i, j + 1);
+        if (i + j < n - 1) {
+          emit(a, b, c, i + 1, j);
+          emit(a, b, c, i + 1, j + 1);
+          emit(a, b, c, i, j + 1);
+        }
+      }
+    }
+  }
+  const data = new VertexData();
+  sources.forEach((src, k) => data.set(Float32Array.from(out[k]), src.kind));
+  data.indices = Array.from({ length: out[0].length / 3 }, (_, i) => i);
+  mesh.skeleton = null;
+  for (const kind of [VertexBuffer.MatricesIndicesKind, VertexBuffer.MatricesWeightsKind]) {
+    if (mesh.isVerticesDataPresent(kind)) (mesh as Mesh).removeVerticesData(kind);
+  }
+  data.applyToMesh(mesh as Mesh, true);
+}
+
+/** Mu La Ronda: how a cloth differs from the plain cape (wings.ts `cloth`). */
+export type ClothOptions = {
+  /** Pull back toward the model's cut, per step (default SHAPE). 0 hangs by gravity alone. */
+  shape?: number;
+};
+
 export class CapeCloth {
   readonly mesh: AbstractMesh;
 
@@ -123,8 +193,13 @@ export class CapeCloth {
   private accumulator = 0;
   private time = 0;
 
-  constructor(mesh: AbstractMesh, private readonly body: () => TransformNode | null) {
+  /** Particle -> its piece of the sheet (Cape of Overrule's two ribbons are two). */
+  private readonly component: Int32Array;
+  private readonly shape: number;
+
+  constructor(mesh: AbstractMesh, private readonly body: () => TransformNode | null, options: ClothOptions = {}) {
     this.mesh = mesh;
+    this.shape = options.shape ?? SHAPE;
     // Models come out of a shared container: this instance needs its own vertices.
     (mesh as AbstractMesh & { makeGeometryUnique?: () => void }).makeGeometryUnique?.();
     const data = mesh.getVerticesData(VertexBuffer.PositionKind) ?? new Float32Array();
@@ -194,6 +269,24 @@ export class CapeCloth {
     }
     this.bends = Int32Array.from(bends);
     this.bendLengths = new Float32Array(bends.length / 2);
+
+    // Pieces: each hangs from its own top edge.
+    this.component = new Int32Array(this.count).fill(-1);
+    let pieces = 0;
+    for (let start = 0; start < this.count; start++) {
+      if (this.component[start] >= 0) continue;
+      const stack = [start];
+      this.component[start] = pieces;
+      while (stack.length) {
+        const p = stack.pop()!;
+        for (const q of neighbours[p]) {
+          if (this.component[q] >= 0) continue;
+          this.component[q] = pieces;
+          stack.push(q);
+        }
+      }
+      pieces++;
+    }
 
     // Which edge hangs from the bone is decided on the first update, in the world.
     this.pinned = new Uint8Array(this.count);
@@ -316,9 +409,9 @@ export class CapeCloth {
       const i = p * 3;
       tmp.set(this.restParticles[i], this.restParticles[i + 1], this.restParticles[i + 2]);
       Vector3.TransformCoordinatesToRef(tmp, world, tmpB);
-      this.pos[i] += (tmpB.x - this.pos[i]) * SHAPE;
-      this.pos[i + 1] += (tmpB.y - this.pos[i + 1]) * SHAPE;
-      this.pos[i + 2] += (tmpB.z - this.pos[i + 2]) * SHAPE;
+      this.pos[i] += (tmpB.x - this.pos[i]) * this.shape;
+      this.pos[i + 1] += (tmpB.y - this.pos[i + 1]) * this.shape;
+      this.pos[i + 2] += (tmpB.z - this.pos[i + 2]) * this.shape;
       if (this.pos[i + 1] < floor) this.pos[i + 1] = floor;
     }
   }
@@ -338,16 +431,18 @@ export class CapeCloth {
       this.bendLengths[e] = this.distance(this.pos, this.bends[e * 2], this.bends[e * 2 + 1]);
     }
 
-    let low = Infinity;
-    let high = -Infinity;
+    // Per piece: each ribbon hangs from its own top.
+    const low: number[] = [];
+    const high: number[] = [];
     for (let p = 0; p < this.count; p++) {
-      low = Math.min(low, this.pos[p * 3 + 1]);
-      high = Math.max(high, this.pos[p * 3 + 1]);
+      const c = this.component[p];
+      low[c] = Math.min(low[c] ?? Infinity, this.pos[p * 3 + 1]);
+      high[c] = Math.max(high[c] ?? -Infinity, this.pos[p * 3 + 1]);
     }
-    const band = (high - low) * PIN_BAND;
     this.pinned.fill(0);
     for (let p = 0; p < this.count; p++) {
-      if (this.pos[p * 3 + 1] >= high - band) this.pinned[p] = 1;
+      const c = this.component[p];
+      if (this.pos[p * 3 + 1] >= high[c] - (high[c] - low[c]) * PIN_BAND) this.pinned[p] = 1;
     }
   }
 
@@ -387,7 +482,8 @@ export class CapeCloth {
       if (this.pinned[p]) continue;
       const i = p * 3;
       const height = this.pos[i + 1] - origin.y;
-      if (height < BODY_BOTTOM || height > BODY_TOP) continue;
+      // Mu La Ronda: behind him down to the floor - a ribbon that reached the ground slid round in front of his feet.
+      if (height > BODY_TOP) continue;
       let dx = this.pos[i] - origin.x;
       let dz = this.pos[i + 2] - origin.z;
       const behind = dx * back.x + dz * back.z;
@@ -397,6 +493,7 @@ export class CapeCloth {
         this.pos[i] = origin.x + dx;
         this.pos[i + 2] = origin.z + dz;
       }
+      if (height < BODY_BOTTOM) continue;
       const d = Math.hypot(dx, dz);
       if (d >= BODY_RADIUS || d < 1e-5) continue;
       const push = BODY_RADIUS / d;

@@ -427,6 +427,11 @@ export const germanLayer: LanguageLayer = {
       'Nimm deine Gegenstände zuerst aus der Chaos Machine.',
     'chaos.putItemsIn':
       'Lege die zu kombinierenden Gegenstände in die Chaos Machine.',
+    'chaos.recipeList': 'Was möchtest du herstellen?',
+    'chaos.pickHint': 'Wähle eins, um das Rezept zu sehen.',
+    'chaos.backToList': '« Zurück zur Liste',
+    'chaos.rateVip': 'Erfolg: {normal}% (VIP {vip}%)',
+    'chaos.rateLuck': 'Erfolg: {normal}%, mit Luck {luck}%, VIP mit Luck {vip}%',
     'chaos.recipe': "Rezept: {name}",
     'chaos.anyItem': "Gegenstand",
     'chaos.excellentItem': "Exzellenter Gegenstand",
@@ -1044,6 +1049,7 @@ export const germanLayer: LanguageLayer = {
     'event.capacityReached':
       'Die Kapazität von %s ist erreicht. Erlaubt sind höchstens %d.',
     'event.cloakLevelWrong': 'Das Level des Umhangs der Unsichtbarkeit stimmt nicht.',
+    'event.removeItemFirst': 'Leg {0} ab, bevor du {1} betrittst.',
     'event.timesPerDay': 'Du darfst nicht öfter als %d Mal am Tag eintreten.',
     'event.zoneClosing': '%s schließt (in %d Sekunden)',
     'event.zoneInfiltration': '%s Infiltration (in %d Sekunden)',

@@ -77,6 +77,8 @@ services:
       # Sin esto el proxy es un relay abierto a cualquier host.
       ALLOW_TARGETS: "127.0.0.1:44405,127.0.0.1:55901,127.0.0.1:55902,127.0.0.1:55903,127.0.0.1:55904,127.0.0.1:55905,127.0.0.1:55906"
       TRACK_DB_PATH: /data/track.db
+      # Dias de historial en disco (caminar, ataques, skills y exp no se guardan en disco).
+      TRACK_RETAIN_DAYS: ${TRACK_RETAIN_DAYS:-7}
       LOG_PACKETS: ${LOG_PACKETS:-off}
       # Mensajes automaticos (mlr.auto_messages, se editan en el panel admin).
       DATABASE_URL: postgres://postgres:${DB_PASSWORD}@127.0.0.1:${DB_PORT:-5432}/openmu

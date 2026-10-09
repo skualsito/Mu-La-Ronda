@@ -877,6 +877,11 @@ export const EN_TEXT = {
   'chaos.tax': 'Chaos tax: {rate}%',
   'chaos.takeItemsOut': 'Take your items out of the chaos machine first.',
   'chaos.putItemsIn': 'Put the items to combine into the chaos machine.',
+  'chaos.recipeList': 'What do you want to make?',
+  'chaos.pickHint': 'Pick one to see its recipe.',
+  'chaos.backToList': '« Back to the list',
+  'chaos.rateVip': 'Success: {normal}% (VIP {vip}%)',
+  'chaos.rateLuck': 'Success: {normal}%, with Luck {luck}%, VIP with Luck {vip}%',
   'chaos.recipe': "Recipe: {name}",
   'chaos.anyItem': "Item",
   'chaos.excellentItem': "Excellent item",
@@ -1637,6 +1642,7 @@ export const EN_TEXT = {
   'event.capacityReached':
     'The maximum capacity of %s has been reached. The max. number allowed is %d.',
   'event.cloakLevelWrong': 'The level of the Cloak of Invisibility is incorrect.',
+  'event.removeItemFirst': 'Take off {0} before entering {1}.',
   'event.timesPerDay':
     'You are not allowed to enter more than %d times in one day.',
   'event.zoneClosing': '%s Closing (in %d seconds)',

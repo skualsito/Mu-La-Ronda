@@ -7,6 +7,7 @@ import { useEventBus } from '../../../../../hooks/useEventBus';
 import { useWindowStackEntry } from '../../../../components/muWindow/useWindowChrome';
 import { playUiSound } from '../../../../../libs/sfx';
 import { skillDefinition } from '../../../../../common/skillsDatabase';
+import { borrowedMasterIconCell } from '../../../../../common/skillCasting';
 import { t } from '../../../../../i18n';
 import { skills, type MasterTreeEntry } from '../../../../../skills';
 import {
@@ -198,7 +199,9 @@ const Node = observer(
     const { x, y } = nodeOrigin(entry);
     const open = skills.masterSkillOpen(entry);
     const level = skills.masterSkillInfo(entry).level;
-    const cell = masterSkillIconCell(entry.skill);
+    // Mu La Ronda: the Rage Fighter's nodes draw their base skill's icon (Skill.bmd has none for them).
+    const borrowed = borrowedMasterIconCell(entry.skill, !open);
+    const cell = borrowed ?? masterSkillIconCell(entry.skill);
     const arrow = ARROWS[entry.arrow];
 
     return (
@@ -206,7 +209,7 @@ const Node = observer(
         <MuSpriteFrame file={BOX_SPRITE} width={BOX_WIDTH} height={BOX_HEIGHT} />
         <MuSpriteFrame
           className="master-node-icon"
-          file={open ? ICON_SPRITE : ICON_GREY_SPRITE}
+          file={borrowed?.file ?? (open ? ICON_SPRITE : ICON_GREY_SPRITE)}
           x={cell.x}
           y={cell.y}
           width={MASTER_ICON_WIDTH}

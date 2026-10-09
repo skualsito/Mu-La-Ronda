@@ -29,10 +29,16 @@
     cursor: pointer;
   }
 
-  // Mu La Ronda: the recipe the tray is heading for (recipePanel.tsx).
+  // Mu La Ronda: the recipe the tray is heading for, or the list of recipes (recipePanel.tsx).
   .chaos-recipe-panel {
     position: absolute;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
     padding: 4px 5px;
+    pointer-events: auto;
+    overflow-y: auto;
+    scrollbar-width: thin;
     font-size: 10px;
     line-height: 13px;
     color: #dcdcdc;
@@ -67,6 +73,38 @@
     .ready {
       margin-top: 3px;
       color: #ffff30;
+    }
+
+    .hint-line {
+      margin-bottom: 3px;
+      color: #a8a8a8;
+    }
+
+    .back {
+      margin-bottom: 2px;
+      color: #9fc3ff;
+      cursor: pointer;
+
+      &:hover {
+        color: #ffffff;
+      }
+    }
+
+    .recipe-list {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      scrollbar-width: thin;
+    }
+
+    .recipe-entry {
+      padding: 1px 2px;
+      cursor: pointer;
+
+      &:hover {
+        color: #ffd25a;
+        background-color: #ffffff14;
+      }
     }
   }
 

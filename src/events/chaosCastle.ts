@@ -23,6 +23,7 @@ import {
   thunderPillar,
 } from '../maps/chaoscastle/thunder';
 import { strikePillar } from '../maps/chaoscastle/bolt';
+import { eventEntryRefusal } from '../common/eventEntryRefusal';
 import type { EventLayer } from './layer';
 import { noteOpeningStateRequest, takeOpeningState } from './schedule';
 import {
@@ -337,7 +338,8 @@ EventBus.on('ChaosCastleEnterResult', packet => {
     case ChaosCastleEnterResultEnterResultEnum.Success:
       break;
     case ChaosCastleEnterResultEnterResultEnum.Failed:
-      text = EVENT_TEXT.cloakLevelWrong;
+      // Mu La Ronda: the server's reason when it gave one (a Fenrir on), not the cloak.
+      text = eventEntryRefusal(EVENT_TEXT.chaosCastle) ?? EVENT_TEXT.cloakLevelWrong;
       break;
     case ChaosCastleEnterResultEnterResultEnum.NotOpen:
       text = formatText(EVENT_TEXT.timePassed, zone);

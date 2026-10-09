@@ -8,7 +8,7 @@ import {
 } from '../libs/babylon/exports';
 import type { World } from '../ecs/world';
 import { ModelObject } from './modelObject';
-import { bakeSkin, CapeCloth } from './capeCloth';
+import { bakeSkin, CapeCloth, subdivideSheet } from './capeCloth';
 import { storeRef } from './storeRef';
 import { GameOptions } from './gameOptions';
 import { shedLevel } from './loadShed';
@@ -108,7 +108,7 @@ export class WingObject extends ModelObject {
   spec: WingSpec | null = null;
 
   /** Mu La Ronda: the cape's simulated cloth, for the model it was built on. */
-  #cloth: CapeCloth | null = null;
+  #cloths: CapeCloth[] = [];
   #clothOf: ModelObject['gltf'] = null;
 
   /**
@@ -181,7 +181,7 @@ export class WingObject extends ModelObject {
     this.#wake = null;
     this.#wakeSpec = null;
     this.#dropHeld();
-    this.#cloth = null;
+    this.#cloths = [];
     this.#clothOf = null;
   }
 
@@ -208,7 +208,7 @@ export class WingObject extends ModelObject {
     this.#held?.update(true, this.#heldLook);
 
     if (this.#clothOf !== this.gltf) this.#createCloth();
-    this.#cloth?.update(dt);
+    for (const cloth of this.#cloths) cloth.update(dt);
     this.#updateThunder(dt);
 
     if (this.spec?.wakes && this.#wakeSpec !== this.spec) {
@@ -241,18 +241,21 @@ export class WingObject extends ModelObject {
 
   /** The cape's cloth, when this part has one (debug probes read it). */
   get cloth(): CapeCloth | null {
-    return this.#cloth;
+    return this.#cloths[0] ?? null;
   }
 
   #createCloth(): void {
     this.#clothOf = this.gltf;
-    this.#cloth = null;
-    const index = this.spec?.cloth;
-    if (index === undefined) return;
-    const mesh = this.getMesh(index);
-    if (!mesh || mesh.getTotalVertices() === 0) return;
-    bakeSkin(mesh);
-    this.#cloth = new CapeCloth(mesh, () => this.Parent?.node ?? null);
+    this.#cloths = [];
+    const spec = this.spec;
+    const sheets = spec?.cloths ?? (spec?.cloth !== undefined ? [{ mesh: spec.cloth }] : []);
+    for (const sheet of sheets) {
+      const mesh = this.getMesh(sheet.mesh);
+      if (!mesh || mesh.getTotalVertices() === 0) continue;
+      bakeSkin(mesh);
+      if (sheet.subdivide) subdivideSheet(mesh, sheet.subdivide);
+      this.#cloths.push(new CapeCloth(mesh, () => this.Parent?.node ?? null, { shape: sheet.shape }));
+    }
   }
 
   #dropHeld(): void {

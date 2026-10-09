@@ -8,7 +8,7 @@ import { ADMIN_STREAM_PATH, type RefusalReason } from "../src/common/adminProtoc
 import { Tracker } from "./track/tracker";
 import type { TrackedSession } from "./track/session";
 import { AdminHub, type AdminSocket } from "./track/admin";
-import { MemoryJournal, type Journal } from "./track/journal";
+import { MemoryJournal, SplitJournal, type Journal } from "./track/journal";
 import { DEFAULT_TRACK_DB, SqliteJournal } from "./track/store";
 import { startDemo } from "./track/demo";
 import { BandHub, type BandPeer } from "./band/hub";
@@ -73,7 +73,8 @@ const RESERVED_TARGETS: ReservedTarget[] = [
  */
 const TRACK_ENABLED = (process.env.TRACK ?? "on") !== "off";
 const TRACK_DB_PATH = process.env.TRACK_DB_PATH || DEFAULT_TRACK_DB;
-const TRACK_RETAIN_DAYS = Number(process.env.TRACK_RETAIN_DAYS ?? 30);
+// Mu La Ronda: a week, not a month - the journal filled the disk at 30 days.
+const TRACK_RETAIN_DAYS = Number(process.env.TRACK_RETAIN_DAYS ?? 7);
 const TRACK_WHISPERS = (process.env.TRACK_WHISPERS ?? "on") !== "off";
 
 /**
@@ -239,7 +240,8 @@ let hub: AdminHub | null = null;
 function openJournal(): { journal: Journal; where: string } {
   if (TRACK_DB_PATH === "memory") return { journal: new MemoryJournal(), where: "in memory" };
   try {
-    return { journal: new SqliteJournal(TRACK_DB_PATH, TRACK_RETAIN_DAYS), where: TRACK_DB_PATH };
+    // Steps, swings, skills and exp stay in memory; the rest goes to disk (journal.ts).
+    return { journal: new SplitJournal(new SqliteJournal(TRACK_DB_PATH, TRACK_RETAIN_DAYS)), where: TRACK_DB_PATH };
   } catch (error) {
     console.error(`track: cannot open the journal at ${TRACK_DB_PATH}, keeping it in memory:`, error);
     return { journal: new MemoryJournal(), where: "in memory (fallback)" };

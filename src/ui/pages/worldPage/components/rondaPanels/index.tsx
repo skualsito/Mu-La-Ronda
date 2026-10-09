@@ -81,6 +81,7 @@ const Panel = observer(({
   contentKey,
   children,
   noScroll = false,
+  rowsClassName,
 }: {
   id: string;
   title: string;
@@ -94,6 +95,8 @@ const Panel = observer(({
   children: React.ReactNode;
   /** Content that always fits: no scroll bar, and the full width for the content (centred). */
   noScroll?: boolean;
+  /** Mu La Ronda: an extra class on the rows box (the events window lays it out as a column). */
+  rowsClassName?: string;
 }) => {
   const rowsRef = useRef<HTMLDivElement>(null);
   const close = () => {
@@ -144,7 +147,7 @@ const Panel = observer(({
         )}
         <div
           ref={rowsRef}
-          className="ronda-mu-rows"
+          className={rowsClassName ? `ronda-mu-rows ${rowsClassName}` : 'ronda-mu-rows'}
           style={{ left: innerLeft, top: rowsTop, width: noScroll ? innerWidth : innerWidth - SCROLL_WIDTH - 4, height: rowsHeight }}
         >
           {children}
@@ -713,7 +716,7 @@ const EventsWindow = observer(() => {
   }, []);
 
   return (
-    <Panel id="ronda-events" title="Eventos" width={420} height={420} contentKey="events" noScroll>
+    <Panel id="ronda-events" title="Eventos" width={420} height={420} contentKey="events" noScroll rowsClassName="ronda-events-rows">
       <table className="ronda-table ronda-events">
         <tbody>
           {eventSchedule().map(row => (
