@@ -402,6 +402,8 @@ export const MONSTER_MODEL_TABLE: Readonly<
   574: [214, 1.25],
   575: [215, 1.45],
   576: [216, 1.55],
+  // Mu La Ronda: Lord Silvester (deploy/config/35-bosses.sql), the Dark Iron Knight made big.
+  702: [208,  2.4],
 };
 export function monsterModelFile(modelType: number): string {
   return `Monster/Monster${(modelType + 1).toString().padStart(2, '0')}.glb`;

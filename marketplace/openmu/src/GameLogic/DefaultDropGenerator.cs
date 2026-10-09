@@ -39,9 +39,12 @@ public class DefaultDropGenerator : IDropGenerator
     /// <summary>
     /// Mu La Ronda: bosses whose drops come only from their own groups (deploy/config): one of
     /// them, at random, per item, up to their maximum drops (or one less, at random) - never the
-    /// map's general groups, so never zen. Selupan dropped zen and a common item or two.
+    /// map's general groups, so never zen. Selupan dropped zen and a common item or two. A group is
+    /// drawn by its chance against the others; when the chances add up to less than one, the rest
+    /// is no item at all. Also Erohim, Medusa, the Skeleton King and its bones and Lord Silvester
+    /// (deploy/config/35-bosses.sql).
     /// </summary>
-    private static readonly HashSet<short> BossDropTables = [459];
+    private static readonly HashSet<short> BossDropTables = [459, 295, 561, 700, 701, 702];
 
     private readonly AsyncLock _lock = new();
     private readonly IRandomizer _randomizer;
@@ -319,8 +322,8 @@ public class DefaultDropGenerator : IDropGenerator
         var items = new List<Item>(count);
         for (var i = 0; i < count; i++)
         {
-            var group = groups[this._randomizer.NextInt(0, groups.Count)];
-            if (group.PossibleItems?.Count > 0 && this.GenerateItemDrop(group, group.PossibleItems) is { } item)
+            var group = this.SelectRandomGroup(groups, groups.Sum(g => g.Chance));
+            if (group?.PossibleItems?.Count > 0 && this.GenerateItemDrop(group, group.PossibleItems) is { } item)
             {
                 items.Add(item);
             }

@@ -672,6 +672,11 @@ const INVASION_LABEL: Record<string, string> = {
   Golden: 'Invasión dorada',
   RedDragon: 'Invasión del Dragón Rojo',
   WhiteWizard: 'Invasión del Mago Blanco',
+  Medusa: 'Medusa',
+  SkeletonKing: 'Skeleton King',
+  LordSilvester: 'Lord Silvester',
+  Erohim: 'Erohim',
+  LorenDeep: 'Loren Deep',
 };
 
 /** Mu La Ronda: every running invasion, each monster with how many are dead out of how many came. */
@@ -730,7 +735,7 @@ const EventsWindow = observer(() => {
           {FIXED_EVENTS.map(event => (
             <tr key={event.key}>
               <td>{event.label}</td>
-              <td className="ronda-events-clock">{clockText(secondsToNext(event.times, now))}</td>
+              <td className="ronda-events-clock">{clockText(secondsToNext(event.times, now, event.notOn))}</td>
             </tr>
           ))}
         </tbody>

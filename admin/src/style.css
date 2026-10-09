@@ -1910,3 +1910,56 @@ input.invalid {
   font-size: 12px;
   cursor: pointer;
 }
+
+/* Events (pages/events.tsx). */
+.events-table td {
+  vertical-align: top;
+}
+
+.events-table select {
+  height: 32px;
+}
+
+.events-note {
+  max-width: 280px;
+}
+
+.events-note-edit {
+  display: flex;
+  gap: 6px;
+
+  input {
+    flex: 1;
+    min-width: 0;
+    height: 32px;
+  }
+}
+
+.link-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--accent-2);
+  }
+}
+
+/* Monsters (pages/monsters.tsx). */
+.monster-add {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+
+  .combo {
+    flex: 1;
+  }
+}
+
+.drop-filters .drop-map {
+  white-space: nowrap;
+}

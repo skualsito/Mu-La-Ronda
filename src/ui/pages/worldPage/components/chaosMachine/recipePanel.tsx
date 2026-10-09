@@ -12,7 +12,9 @@ const NAMES_SHOWN = 2;
 
 function requirementLabel(requirement: MixRequirement): string {
   let label: string;
-  if (requirement.items.length) {
+  if (requirement.labelKey) {
+    label = t(requirement.labelKey);
+  } else if (requirement.items.length) {
     const names = requirement.items.slice(0, NAMES_SHOWN).map(([group, index]) => itemBaseName(group, index));
     label = names.join(' / ');
     if (requirement.items.length > NAMES_SHOWN) label += ` ${t('chaos.orOthers')}`;
@@ -28,7 +30,7 @@ function requirementLabel(requirement: MixRequirement): string {
   const min = requirement.minLevel ?? 0;
   const max = requirement.maxLevel ?? 15;
   if (min > 0) label += max < 15 && max !== min ? ` +${min}~${max}` : ` +${min}`;
-  if (!requirement.items.length && requirement.options?.includes('Option')) label += ` ${t('chaos.withOption')}`;
+  if ((!requirement.items.length || requirement.labelKey) && requirement.options?.includes('Option')) label += ` ${t('chaos.withOption')}`;
   return label;
 }
 

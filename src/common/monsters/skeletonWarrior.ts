@@ -162,3 +162,15 @@ export class EliteSkeleton extends SkeletonMonster {
   protected override readonly mainHand = TOMAHAWK;
   protected override readonly offHand = SKULL_SHIELD;
 }
+
+// Mu La Ronda: the Skeleton King (700), a mini boss of Lorencia the original
+// client never had (SkeletonKingInvasionPlugIn.cs) - the elite skeleton, big,
+// with the Death King's Bill of Balrog.
+export class SkeletonKing extends SkeletonMonster {
+  static {
+    SkeletonKing.OverrideScale = 1.9;
+  }
+  protected readonly part = 'Skeleton03.glb';
+  protected override readonly mainHand = BILL_OF_BALROG;
+  protected override readonly offHand = SKULL_SHIELD;
+}

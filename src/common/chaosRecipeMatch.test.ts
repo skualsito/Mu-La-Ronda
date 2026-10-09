@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Item } from '../ecs/world';
-import { bestRecipe } from './chaosRecipeMatch';
+import { bestRecipe, matchRecipe } from './chaosRecipeMatch';
+import { CHAOS_RECIPES } from './chaosRecipes';
 
 const item = (group: number, num: number, extra: Partial<Item> = {}): Item => ({ group, num, ...extra });
 const chaos = item(12, 15);
@@ -39,6 +40,17 @@ describe('bestRecipe', () => {
 
     const short = bestRecipe([item(13, 32, { durability: 12 }), chaos, item(13, 33, { durability: 20 })])!;
     expect(short.complete).toBe(false);
+  });
+
+  it('wants ONE level 380 item for the Guardian option, not three', () => {
+    const harmony = item(14, 42);
+    const guardian = item(14, 31);
+    const match = bestRecipe([item(8, 29, { lvl: 7, optionLevel: 1 }), harmony, guardian])!;
+    expect(match.recipe.name).toBe('Guardian Option (Level 380)');
+    expect(match.complete).toBe(true);
+    // A non-380 armour does not take the option.
+    const other = matchRecipe(CHAOS_RECIPES.find(r => r.number === 36)!, [item(8, 0, { lvl: 7, optionLevel: 1 }), harmony, guardian]);
+    expect(other.complete).toBe(false);
   });
 
   it('picks the +N combination by the item level', () => {

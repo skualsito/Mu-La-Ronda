@@ -21,6 +21,9 @@ public class StartKanturuEventChatCommandPlugIn : IChatCommandPlugIn
 {
     private const string Command = "/startkanturu";
 
+    /// <summary>The Refinery Tower, where the event is fought.</summary>
+    private const short KanturuEventMapNumber = 39;
+
     /// <inheritdoc />
     public string Key => Command;
 
@@ -42,6 +45,15 @@ public class StartKanturuEventChatCommandPlugIn : IChatCommandPlugIn
         if (!player.GameContext.Configuration.MiniGameDefinitions.Any(d => d.Type == MiniGameType.Kanturu))
         {
             await player.ShowBlueMessageAsync("Kanturu: falta instalar el evento (panel de OpenMU, Updates: Add Kanturu data).").ConfigureAwait(false);
+            return;
+        }
+
+        // The second update brings Maya, her hands, Nightmare and the monster waves: without it
+        // the event opens and runs, but phase 1 never gets a monster to kill.
+        var eventMap = player.GameContext.Configuration.Maps.FirstOrDefault(m => m.Number == KanturuEventMapNumber);
+        if (eventMap?.MonsterSpawns.Any(s => s.SpawnTrigger == SpawnTrigger.OnceAtWaveStart) is not true)
+        {
+            await player.ShowBlueMessageAsync("Kanturu: faltan los monstruos del evento (panel de OpenMU, Updates: Add Kanturu map content).").ConfigureAwait(false);
             return;
         }
 
@@ -79,5 +91,43 @@ public class StartGoldenInvasionChatCommandPlugIn : IChatCommandPlugIn
 
         golden.ForceStart();
         await player.ShowBlueMessageAsync("Invasion dorada: iniciada.").ConfigureAwait(false);
+    }
+}
+
+/// <summary>
+/// Mu La Ronda: /startmedusa brings Medusa to the Swamp of Calmness now.
+/// </summary>
+[Guid("2C7D9E41-6A8B-4F3C-B1D5-0E9F8A7B6C2C")]
+[PlugIn]
+[Display(Name = "/startmedusa", Description = "Starts the Medusa event now.")]
+[ChatCommandHelp(Command, CharacterStatus.GameMaster)]
+public class StartMedusaChatCommandPlugIn : IChatCommandPlugIn
+{
+    private const string Command = "/startmedusa";
+
+    /// <inheritdoc />
+    public string Key => Command;
+
+    /// <inheritdoc />
+    public CharacterStatus MinCharacterStatusRequirement => CharacterStatus.GameMaster;
+
+    /// <inheritdoc />
+    public async ValueTask HandleCommandAsync(Player player, string command)
+    {
+        var medusa = player.GameContext.PlugInManager.GetActivePlugInsOf<IPeriodicTaskPlugIn>().OfType<MedusaInvasionPlugIn>().FirstOrDefault();
+        if (medusa is null)
+        {
+            await player.ShowBlueMessageAsync("Medusa: el plugin no esta activo.").ConfigureAwait(false);
+            return;
+        }
+
+        if (!player.GameContext.Configuration.Monsters.Any(m => m.Number == MedusaInvasionPlugIn.Medusa))
+        {
+            await player.ShowBlueMessageAsync("Medusa: falta el monstruo (deploy/config/34-medusa.sql).").ConfigureAwait(false);
+            return;
+        }
+
+        medusa.ForceStart();
+        await player.ShowBlueMessageAsync("Medusa: iniciada.").ConfigureAwait(false);
     }
 }

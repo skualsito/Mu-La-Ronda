@@ -24,6 +24,16 @@ const OPTION_TYPES: Record<string, string> = {
   'c3ed45bc-5713-494d-a8c8-dc4afae56223': 'fenrir',
   'ed978695-bd3e-46ea-86d8-f8c30ea99b50': 'fenrir',
   '78e6db0b-ac53-454c-956f-cd2b5467856e': 'fenrir',
+  'aab309d3-cd97-4f77-ae1b-e9f904102502': 'socket',
+  '43da2c68-d6e1-4b94-adb1-8864d92f8fb9': 'socketBonus',
+};
+const SOCKET_TYPE = 'aab309d3-cd97-4f77-ae1b-e9f904102502';
+
+/** Mu La Ronda: the Jewel of Harmony options by name (OpenMU's HarmonyOptions.cs), which have none of their own. */
+const HARMONY_NAMES: Record<string, string[]> = {
+  'Harmony Defense Options': ['', 'Defensa', 'AG máximo', 'Vida máxima', 'Recuperación de vida', 'Recuperación de maná', 'Tasa de defensa (PvP)', 'Reducción de daño', 'Tasa de SD'],
+  'Harmony Physical Attack Options': ['', 'Ataque mínimo', 'Ataque máximo', 'Requisito de fuerza', 'Requisito de agilidad', 'Ataque', 'Daño crítico', 'Ataque de skills', 'Tasa de ataque (PvP)', 'Reducción de SD', 'Ignorar SD'],
+  'Harmony Wizardry Attack Options': ['', 'Magia', 'Requisito de fuerza', 'Requisito de agilidad', 'Ataque de skills', 'Daño crítico', 'Reducción de SD', 'Tasa de ataque (PvP)', 'Ignorar SD'],
 };
 
 /** OpenMU's ItemExtensions.AdditionalDurabilityPerLevel. */
@@ -69,7 +79,8 @@ export async function storageItems(sql: Sql, inv: string) {
     SELECT i."Id" AS id, i."ItemSlot" AS slot, i."Level" AS level, i."Durability" AS durability,
            i."HasSkill" AS "hasSkill", d."Id" AS "definitionId", d."Name" AS name, d."Group" AS "group",
            d."Number" AS number, d."Width" AS width, d."Height" AS height, d."Durability" AS "maxDurability",
-           d."MaximumItemLevel" AS "maxLevel", (d."SkillId" IS NOT NULL) AS "canSkill"
+           d."MaximumItemLevel" AS "maxLevel", (d."SkillId" IS NOT NULL) AS "canSkill",
+           i."SocketCount" AS "socketCount", d."MaximumSockets" AS "maxSockets"
       FROM data."Item" i
       JOIN config."ItemDefinition" d ON d."Id" = i."DefinitionId"
      WHERE i."ItemStorageId" = ${inv}::uuid
@@ -77,8 +88,9 @@ export async function storageItems(sql: Sql, inv: string) {
 
   const links = items.length
     ? await sql`
-        SELECT l."ItemId" AS "itemId", l."ItemOptionId" AS "optionId", l."Level" AS level,
-               o."OptionTypeId"::text AS "typeId", o."Number" AS number, a."Designation" AS name
+        SELECT l."ItemId" AS "itemId", l."ItemOptionId" AS "optionId", l."Level" AS level, l."Index" AS "index",
+               o."OptionTypeId"::text AS "typeId", o."Number" AS number, a."Designation" AS name,
+               (SELECT od."Name" FROM config."ItemOptionDefinition" od WHERE od."Id" = o."ItemOptionDefinitionId") AS "definitionName"
           FROM data."ItemOptionLink" l
           JOIN config."IncreasableItemOption" o ON o."Id" = l."ItemOptionId"
           LEFT JOIN config."PowerUpDefinition" p ON p."Id" = o."PowerUpDefinitionId"
@@ -87,12 +99,25 @@ export async function storageItems(sql: Sql, inv: string) {
          ORDER BY l."Index"`
     : [];
 
-  return items.map(item => ({
-    ...item,
-    options: links
-      .filter(l => l.itemId === item.id)
-      .map(l => ({ optionId: l.optionId, level: l.level, type: OPTION_TYPES[l.typeId] ?? 'other', name: l.name ?? `#${l.number}` })),
-  }));
+  return items.map(item => {
+    const own = links.filter(l => l.itemId === item.id);
+    return {
+      ...item,
+      options: own
+        .filter(l => l.typeId !== SOCKET_TYPE)
+        .map(l => ({
+          optionId: l.optionId,
+          level: l.level,
+          type: OPTION_TYPES[l.typeId] ?? 'other',
+          name: HARMONY_NAMES[String(l.definitionName)]?.[Number(l.number)] || (l.name ?? `#${l.number}`),
+        })),
+      // Mu La Ronda: one entry per socket slot (the link's Index), null while empty.
+      sockets: Array.from({ length: Number(item.socketCount) || 0 }, (_, slot) => {
+        const link = own.find(l => l.typeId === SOCKET_TYPE && Number(l.index) === slot);
+        return link ? { optionId: String(link.optionId), level: Number(link.level) } : null;
+      }),
+    };
+  });
 }
 
 export async function searchDefinitions(sql: Sql, q: string) {
@@ -100,7 +125,8 @@ export async function searchDefinitions(sql: Sql, q: string) {
   return sql`
     SELECT d."Id" AS id, d."Name" AS name, d."Group" AS "group", d."Number" AS number,
            d."Width" AS width, d."Height" AS height, d."Durability" AS durability,
-           d."MaximumItemLevel" AS "maxLevel", (d."SkillId" IS NOT NULL) AS "canSkill"
+           d."MaximumItemLevel" AS "maxLevel", (d."SkillId" IS NOT NULL) AS "canSkill",
+           d."MaximumSockets" AS "maxSockets"
       FROM config."ItemDefinition" d
      WHERE ${q} = '' OR d."Name" ILIKE ${like}
      ORDER BY d."Group", d."Number"
@@ -111,7 +137,10 @@ export async function searchDefinitions(sql: Sql, q: string) {
 export async function definitionOptions(sql: Sql, definitionId: string) {
   const rows = await sql`
     SELECT o."Id" AS "optionId", o."OptionTypeId"::text AS "typeId", o."Number" AS number,
-           a."Designation" AS name, od."Name" AS "definitionName", od."MaximumOptionsPerItem" AS "maxPerItem"
+           a."Designation" AS name, od."Name" AS "definitionName", od."MaximumOptionsPerItem" AS "maxPerItem",
+           o."SubOptionType" AS element,
+           COALESCE((SELECT array_agg(l."Level" ORDER BY l."Level") FROM config."ItemOptionOfLevel" l
+                      WHERE l."IncreasableItemOptionId" = o."Id"), '{}') AS levels
       FROM config."ItemDefinitionItemOptionDefinition" x
       JOIN config."ItemOptionDefinition" od ON od."Id" = x."ItemOptionDefinitionId"
       JOIN config."IncreasableItemOption" o ON o."ItemOptionDefinitionId" = od."Id"
@@ -125,7 +154,9 @@ export async function definitionOptions(sql: Sql, definitionId: string) {
     definitionName: String(r.definitionName),
     maxPerItem: Number(r.maxPerItem),
     type: OPTION_TYPES[r.typeId] ?? 'other',
-    name: (r.name as string | null) ?? `${r.definitionName} #${r.number}`,
+    element: r.element == null ? null : Number(r.element),
+    levels: (r.levels as number[]).map(Number),
+    name: HARMONY_NAMES[String(r.definitionName)]?.[Number(r.number)] || ((r.name as string | null) ?? `${r.definitionName} #${r.number}`),
   }));
 }
 
@@ -136,21 +167,59 @@ export type ItemInput = {
   durability?: number | null;
   hasSkill?: boolean;
   options?: { optionId: string; level?: number }[];
+  /** Mu La Ronda: how many sockets the item has (up to its definition's maximum). */
+  socketCount?: number;
+  /** One entry per socket slot: the seed sphere's option and level, or null for an empty socket. */
+  sockets?: ({ optionId: string; level?: number } | null)[];
   slot?: number;
 };
 
-async function writeOptions(sql: Sql, itemId: string, definitionId: string, options: ItemInput['options']) {
+async function writeOptions(sql: Sql, itemId: string, definitionId: string, options: ItemInput['options'], input?: ItemInput) {
+  // An edit that does not touch the sockets keeps them as they are.
+  const keptSockets =
+    input?.socketCount === undefined && input?.sockets === undefined
+      ? await sql`
+          SELECT l."ItemOptionId" AS "optionId", l."Level" AS level, l."Index" AS "index"
+            FROM data."ItemOptionLink" l JOIN config."IncreasableItemOption" o ON o."Id" = l."ItemOptionId"
+           WHERE l."ItemId" = ${itemId}::uuid AND o."OptionTypeId" = ${SOCKET_TYPE}::uuid`
+      : [];
   await sql`DELETE FROM data."ItemOptionLink" WHERE "ItemId" = ${itemId}::uuid`;
-  if (!options?.length) return;
+  for (const kept of keptSockets) {
+    await sql`
+      INSERT INTO data."ItemOptionLink" ("Id", "ItemId", "ItemOptionId", "Level", "Index")
+      VALUES (gen_random_uuid(), ${itemId}::uuid, ${kept.optionId}::uuid, ${kept.level}, ${kept.index})`;
+  }
+  const possible = await definitionOptions(sql, definitionId);
+  const allowed = new Map(possible.map(o => [o.optionId, o]));
 
-  const allowed = new Set((await definitionOptions(sql, definitionId)).map(o => o.optionId));
   let index = 0;
-  for (const option of options) {
-    if (!allowed.has(option.optionId)) throw new Error('Ese item no admite una de las opciones elegidas');
+  for (const option of options ?? []) {
+    const definition = allowed.get(option.optionId);
+    if (!definition || definition.type === 'socket') throw new Error('Ese item no admite una de las opciones elegidas');
     const level = Math.min(15, Math.max(0, Math.trunc(Number(option.level ?? 0))));
     await sql`
       INSERT INTO data."ItemOptionLink" ("Id", "ItemId", "ItemOptionId", "Level", "Index")
       VALUES (gen_random_uuid(), ${itemId}::uuid, ${option.optionId}::uuid, ${level}, ${index++})`;
+  }
+
+  // Mu La Ronda: the sockets. OpenMU reads a socket's option by the link's Index (its slot) and
+  // sends the item only as many sockets as data."Item"."SocketCount" says.
+  if (input?.socketCount !== undefined || input?.sockets !== undefined) {
+    const [def] = await sql`SELECT "MaximumSockets" AS max FROM config."ItemDefinition" WHERE "Id" = ${definitionId}::uuid`;
+    const count = Math.min(Number(def?.max ?? 0), Math.max(0, Math.trunc(Number(input.socketCount ?? input.sockets?.length ?? 0))));
+    await sql`UPDATE data."Item" SET "SocketCount" = ${count} WHERE "Id" = ${itemId}::uuid`;
+    for (let slot = 0; slot < count; slot++) {
+      const socket = input.sockets?.[slot];
+      if (!socket) continue;
+      const definition = allowed.get(socket.optionId);
+      if (!definition || definition.type !== 'socket') throw new Error('Esa opción de socket no va en este item');
+      const levels = definition.levels.length ? definition.levels : [1];
+      const level = Math.trunc(Number(socket.level ?? levels[0]));
+      if (!levels.includes(level)) throw new Error(`Nivel de esfera inválido (${levels.join(', ')})`);
+      await sql`
+        INSERT INTO data."ItemOptionLink" ("Id", "ItemId", "ItemOptionId", "Level", "Index")
+        VALUES (gen_random_uuid(), ${itemId}::uuid, ${socket.optionId}::uuid, ${level}, ${slot})`;
+    }
   }
 }
 
@@ -232,7 +301,7 @@ export async function addToStorage(sql: Sql, storageId: string, grid: Grid, inpu
         ("Id", "DefinitionId", "Durability", "HasSkill", "ItemSlot", "ItemStorageId", "Level", "PetExperience", "SocketCount", "StorePrice")
       VALUES (gen_random_uuid(), ${def.id}, ${durability}, ${!!input.hasSkill && def.canSkill}, ${slot}, ${storageId}::uuid, ${level}, 0, 0, NULL)
       RETURNING "Id"`;
-    await writeOptions(tx as unknown as Sql, item.Id, def.id, input.options);
+    await writeOptions(tx as unknown as Sql, item.Id, def.id, input.options, input);
   });
   return slot;
 }
@@ -272,7 +341,14 @@ export async function updateInStorage(sql: Sql, storageId: string, grid: Grid | 
     }
     if (input.hasSkill !== undefined) sets.HasSkill = !!input.hasSkill && item.canSkill;
     if (Object.keys(sets).length) await tx`UPDATE data."Item" SET ${tx(sets)} WHERE "Id" = ${itemId}::uuid`;
-    if (input.options) await writeOptions(tx as unknown as Sql, itemId, item.definitionId, input.options);
+    if (input.options || input.sockets !== undefined || input.socketCount !== undefined) {
+      // The options are written whole: an edit that only touches the sockets keeps the others.
+      const options = input.options ?? ((await tx`
+        SELECT l."ItemOptionId"::text AS "optionId", l."Level" AS level
+          FROM data."ItemOptionLink" l JOIN config."IncreasableItemOption" o ON o."Id" = l."ItemOptionId"
+         WHERE l."ItemId" = ${itemId}::uuid AND o."OptionTypeId" <> ${SOCKET_TYPE}::uuid`) as unknown as ItemInput['options']);
+      await writeOptions(tx as unknown as Sql, itemId, item.definitionId, options, input);
+    }
   });
 }
 

@@ -11,6 +11,8 @@ import * as messages from './messages';
 import * as vipCodes from './vipCodes';
 import * as shops from './shops';
 import * as drops from './drops';
+import * as monsters from './monsters';
+import * as events from './events';
 import * as survey from './survey';
 import { hasTerrain, terrainOf } from './terrain';
 import { openmuLogs, openmuStatus, restartOpenmu } from './docker';
@@ -182,6 +184,38 @@ async function route(req: Request, url: URL, ip: string): Promise<Response> {
     return json({ ok: true });
   }
 
+  // ---- monster editor ------------------------------------------------------
+  if (path === '/api/monster-stats' && method === 'GET') {
+    const [rows, attributes] = await Promise.all([monsters.listMonsterRows(sql), monsters.attributeChoices(sql)]);
+    return json({ monsters: rows, attributes, main: monsters.MAIN_ATTRIBUTES });
+  }
+  const monsterRoute = path.match(/^\/api\/monster-stats\/([0-9a-f-]{36})(\/release)?$/i);
+  if (monsterRoute) {
+    const [, id, release] = monsterRoute;
+    if (release && method === 'POST') await monsters.releaseMonster(sql, id);
+    else if (!release && method === 'PATCH') await monsters.updateMonster(sql, id, (await body(req)) as monsters.MonsterInput);
+    else if (release || method !== 'GET') throw new HttpError(405, 'Metodo no permitido');
+    const detail = await monsters.getMonster(sql, id);
+    return detail ? json(detail) : json({ error: 'No existe' }, 404);
+  }
+
+  // ---- events --------------------------------------------------------------
+  if (path === '/api/events' && method === 'GET') return json(await events.listEvents(sql));
+  const eventRoute = path.match(/^\/api\/events\/([0-9a-f-]{36})\/(start|stop|note)$/i);
+  if (eventRoute && method === 'POST') {
+    const [, id, action] = eventRoute;
+    if (action === 'note') await events.saveNote(sql, id, await body(req), user);
+    else {
+      try {
+        if (action === 'start') await events.startEvent(sql, id);
+        else await events.stopEvent(sql, id);
+      } catch (err) {
+        throw new HttpError(409, err instanceof Error ? err.message : String(err));
+      }
+    }
+    return json(await events.listEvents(sql));
+  }
+
   // ---- drops ---------------------------------------------------------------
   if (path === '/api/drops') {
     if (method === 'POST') {
@@ -304,6 +338,10 @@ async function route(req: Request, url: URL, ip: string): Promise<Response> {
         : itemId && method === 'DELETE' ? { op: 'delete', itemId }
         : null;
       if (!operation) throw new HttpError(405, 'Metodo no permitido');
+      // Mu La Ronda: OpenMU's in-game vault edit does not know the sockets (MlrVaultController).
+      if (account.online && input.sockets?.some(Boolean)) {
+        throw new HttpError(409, 'Para poner sockets en un item del baul, la cuenta tiene que estar desconectada.');
+      }
 
       // In the game, OpenMU holds the vault in memory: the change is made there (openmuApi.ts).
       const inGame = account.online ? await vaultInGame(sql, accountId, operation).catch(err => {

@@ -19,6 +19,8 @@ export const SECTIONS = [
   { key: 'spots', label: 'Spots' },
   { key: 'shops', label: 'Shops' },
   { key: 'drops', label: 'Drops' },
+  { key: 'monstruos', label: 'Monstruos' },
+  { key: 'eventos', label: 'Eventos' },
   { key: 'mensajes', label: 'Mensajes' },
   { key: 'vip', label: 'Códigos VIP' },
   { key: 'encuesta', label: 'Encuesta' },
@@ -198,6 +200,8 @@ export function sectionOf(path: string, method: string): Section | 'usuarios' | 
   // Both the spot editor and the drop editor pick monsters.
   if (path === '/api/monsters') return 'monsters';
   if (path.startsWith('/api/drops')) return 'drops';
+  if (path.startsWith('/api/monster-stats')) return 'monstruos';
+  if (path.startsWith('/api/events')) return 'eventos';
   if (path.startsWith('/api/spawns/') || /^\/api\/maps\/[^/]+\/(spawns|terrain)$/.test(path)) return 'spots';
   if (path.startsWith('/api/shops')) return 'shops';
   // The inventory, shop and drop editors search the item catalogue.

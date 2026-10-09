@@ -10,6 +10,8 @@ import { MessagesPage } from './pages/messages';
 import { VipCodesPage } from './pages/vipCodes';
 import { ShopsPage } from './pages/shops';
 import { DropsPage } from './pages/drops';
+import { MonstersPage } from './pages/monsters';
+import { EventsPage } from './pages/events';
 import { UsersPage } from './pages/users';
 import { ServerPage } from './pages/server';
 import { SurveyPage } from './pages/survey';
@@ -34,6 +36,8 @@ const NAV = [
   { path: 'spots', key: 'spots', label: 'Spots', icon: 'M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12zm0-9a3 3 0 1 0 0-6 3 3 0 0 0 0 6z' },
   { path: 'shops', key: 'shops', label: 'Shops', icon: 'M4 9l1.5-5h13L20 9M4 9v11h16V9M4 9h16M9 20v-6h6v6' },
   { path: 'drops', key: 'drops', label: 'Drops', icon: 'M12 3s-6 7-6 11a6 6 0 0 0 12 0c0-4-6-11-6-11zM9.5 15a2.5 2.5 0 0 0 2.5 2.5' },
+  { path: 'monstruos', key: 'monstruos', label: 'Monstruos', icon: 'M12 3c-4 0-7 3-7 7v4l-2 3h4l1 3h8l1-3h4l-2-3v-4c0-4-3-7-7-7zM9 11h.01M15 11h.01' },
+  { path: 'eventos', key: 'eventos', label: 'Eventos', icon: 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4M8 14h3' },
   { path: 'mensajes', key: 'mensajes', label: 'Mensajes', icon: 'M4 5h16v11H8l-4 4zM8 9h8M8 12h5' },
   { path: 'vip', key: 'vip', label: 'Códigos VIP', icon: 'M20 12l-8 8-9-9V4h7zM7.5 7.5h.01' },
   { path: 'encuesta', key: 'encuesta', label: 'Encuesta', icon: 'M9 4h6v3H9zM6 6h12v15H6zM9 11h6M9 15h4' },
@@ -218,6 +222,12 @@ export function App() {
       break;
     case 'drops':
       page = <DropsPage group={id} />;
+      break;
+    case 'monstruos':
+      page = <MonstersPage monster={id} />;
+      break;
+    case 'eventos':
+      page = <EventsPage />;
       break;
     case 'usuarios':
       page = <UsersPage me={me} />;

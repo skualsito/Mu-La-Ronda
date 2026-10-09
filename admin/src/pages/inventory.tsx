@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { api, type DefinitionOption, type InventoryItem, type ItemDefinition } from '../api';
+import { api, type DefinitionOption, type InventoryItem, type ItemDefinition, type SocketChoice } from '../api';
 import { Card, Confirm, ErrorBox, Loading, NumberField, Toggle, useLoad, useToast } from '../ui';
 import { MuGrid } from '../muGrid';
 import { itemIconTransform, itemIconUrl } from '../itemIcon';
@@ -24,6 +24,12 @@ const OPTION_LABEL: Record<string, string> = {
   fenrir: 'Fenrir',
   other: 'Otras',
 };
+
+/** OpenMU's SocketSubOptionType, in order. */
+const SOCKET_ELEMENTS = ['Fuego', 'Agua', 'Hielo', 'Viento', 'Rayo', 'Tierra'];
+
+/** Types with an editor of their own (the sockets), or set by the server (the socket bonus). */
+const NOT_LISTED = new Set(['socket', 'socketBonus']);
 
 type Chosen = Record<string, number>; // optionId -> level (0 for on/off options)
 
@@ -142,7 +148,7 @@ export function ItemEditor({
   const [query, setQuery] = useState('');
   const [definition, setDefinition] = useState<ItemDefinition | null>(
     item
-      ? { id: item.definitionId, name: item.name, group: item.group, number: item.number, width: item.width, height: item.height, durability: item.maxDurability, maxLevel: item.maxLevel, canSkill: item.canSkill }
+      ? { id: item.definitionId, name: item.name, group: item.group, number: item.number, width: item.width, height: item.height, durability: item.maxDurability, maxLevel: item.maxLevel, canSkill: item.canSkill, maxSockets: item.maxSockets ?? 0 }
       : null
   );
   const [level, setLevel] = useState(item?.level ?? 0);
@@ -150,6 +156,9 @@ export function ItemEditor({
   const [hasSkill, setHasSkill] = useState(item?.hasSkill ?? false);
   const [chosen, setChosen] = useState<Chosen>(() => Object.fromEntries((item?.options ?? []).map(o => [o.optionId, o.level])));
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // Mu La Ronda: the sockets, slot by slot (null = empty socket).
+  const [socketCount, setSocketCount] = useState(item?.socketCount ?? 0);
+  const [sockets, setSockets] = useState<(SocketChoice | null)[]>(item?.sockets ?? []);
 
   const results = useLoad(
     () => (item ? Promise.resolve([] as ItemDefinition[]) : api<ItemDefinition[]>(`/item-definitions?q=${encodeURIComponent(query)}`)),
@@ -179,7 +188,8 @@ export function ItemEditor({
     setChosen(c => {
       const next = { ...c };
       if (single) for (const other of groups.get(o.type) ?? []) delete next[other.optionId];
-      if (on) next[o.optionId] = o.type === 'option' ? (c[o.optionId] || 1) : 0;
+      // A harmony option starts at its first level with a value: below it OpenMU adds nothing.
+      if (on) next[o.optionId] = o.type === 'option' ? (c[o.optionId] || 1) : o.type === 'harmony' ? (o.levels?.[0] ?? 0) : 0;
       else delete next[o.optionId];
       return next;
     });
@@ -195,6 +205,7 @@ export function ItemEditor({
         // Empty: the item's maximum for its level and options (server/inventory.ts maxDurability).
         ...(durability !== null ? { durability } : item ? { durability: null } : {}),
         options: Object.entries(chosen).map(([optionId, lvl]) => ({ optionId, level: lvl })),
+        ...(definition.maxSockets ? { socketCount, sockets: sockets.slice(0, socketCount) } : {}),
       },
       item
     );
@@ -210,7 +221,7 @@ export function ItemEditor({
             <input className="search" placeholder="Buscar item… (ej. Jewel of Bless, Dragon, Wings)" value={query} onChange={e => setQuery(e.target.value)} autoFocus />
             <div className="def-results">
               {(results.data ?? []).map(d => (
-                <button key={d.id} className={`def-row ${definition?.id === d.id ? 'active' : ''}`} onClick={() => { setDefinition(d); setChosen({}); setLevel(0); setDurability(null); }}>
+                <button key={d.id} className={`def-row ${definition?.id === d.id ? 'active' : ''}`} onClick={() => { setDefinition(d); setChosen({}); setLevel(0); setDurability(null); setSocketCount(0); setSockets([]); }}>
                   <DefinitionIcon group={d.group} number={d.number} className="def-icon" />
                   <span className="def-name">{d.name}</span>
                   <span className="muted small">
@@ -263,7 +274,10 @@ export function ItemEditor({
             />
 
             {options.data && !options.data.length && <p className="muted small">Este item no admite opciones.</p>}
-            {[...groups.entries()].map(([type, list]) => {
+            {[...groups.entries()]
+              // A socket item carries its socket bonus where the harmony option would go (OpenMU's ItemSerializer).
+              .filter(([type]) => !NOT_LISTED.has(type) && !(type === 'harmony' && definition.maxSockets))
+              .map(([type, list]) => {
               const single = type !== 'excellent' && type !== 'wing' && type !== 'ancient';
               return (
                 <div key={type} className="option-group">
@@ -274,6 +288,15 @@ export function ItemEditor({
                         <input type="checkbox" checked={o.optionId in chosen} onChange={e => toggle(o, e.target.checked, single)} />
                         <span>{o.name}</span>
                       </label>
+                      {type === 'harmony' && o.optionId in chosen && !!o.levels?.length && (
+                        <select value={chosen[o.optionId]} onChange={e => setChosen({ ...chosen, [o.optionId]: Number(e.target.value) })} title="Nivel de harmony">
+                          {o.levels.map(n => (
+                            <option key={n} value={n}>
+                              nivel {n}
+                            </option>
+                          ))}
+                        </select>
+                      )}
                       {type === 'option' && o.optionId in chosen && (
                         <select value={chosen[o.optionId]} onChange={e => setChosen({ ...chosen, [o.optionId]: Number(e.target.value) })}>
                           {[1, 2, 3, 4, 5, 6, 7].map(n => (
@@ -288,6 +311,16 @@ export function ItemEditor({
                 </div>
               );
             })}
+            {!!definition.maxSockets && (
+              <SocketEditor
+                max={definition.maxSockets}
+                count={socketCount}
+                sockets={sockets}
+                options={(options.data ?? []).filter(o => o.type === 'socket')}
+                onCount={setSocketCount}
+                onSockets={setSockets}
+              />
+            )}
           </>
         )}
 
@@ -344,5 +377,74 @@ export function DefinitionIcon({
     <span className={`${className ?? ''} def-icon-box`}>
       <img src={url} alt="" loading="lazy" style={{ transform: itemIconTransform(group, number, level) }} onError={() => setBroken(url)} />
     </span>
+  );
+}
+
+/** Mu La Ronda: how many sockets the item has and the seed sphere in each. */
+function SocketEditor({
+  max,
+  count,
+  sockets,
+  options,
+  onCount,
+  onSockets,
+}: {
+  max: number;
+  count: number;
+  sockets: (SocketChoice | null)[];
+  options: DefinitionOption[];
+  onCount: (count: number) => void;
+  onSockets: (sockets: (SocketChoice | null)[]) => void;
+}) {
+  const byElement = new Map<number, DefinitionOption[]>();
+  for (const o of options) byElement.set(o.element ?? 0, [...(byElement.get(o.element ?? 0) ?? []), o]);
+  const set = (slot: number, value: SocketChoice | null) => {
+    const next = [...sockets];
+    while (next.length <= slot) next.push(null);
+    next[slot] = value;
+    onSockets(next);
+  };
+
+  return (
+    <div className="option-group">
+      <h3 className="subhead">Sockets</h3>
+      <NumberField label={`Cantidad de sockets (hasta ${max})`} value={count} min={0} max={max} onChange={v => onCount(Math.min(max, Math.max(0, v ?? 0)))} />
+      {Array.from({ length: count }, (_, slot) => {
+        const socket = sockets[slot] ?? null;
+        const option = options.find(o => o.optionId === socket?.optionId);
+        return (
+          <div key={slot} className="option-row">
+            <span className="muted small">Socket {slot + 1}</span>
+            <select
+              value={socket?.optionId ?? ''}
+              onChange={e => {
+                const chosen = options.find(o => o.optionId === e.target.value);
+                set(slot, chosen ? { optionId: chosen.optionId, level: chosen.levels?.[0] ?? 1 } : null);
+              }}
+            >
+              <option value="">Vacío (sin esfera)</option>
+              {[...byElement.entries()].map(([element, list]) => (
+                <optgroup key={element} label={SOCKET_ELEMENTS[element] ?? `Elemento ${element}`}>
+                  {list.map(o => (
+                    <option key={o.optionId} value={o.optionId}>
+                      {o.name}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+            {socket && !!option?.levels?.length && (
+              <select value={socket.level} onChange={e => set(slot, { ...socket, level: Number(e.target.value) })} title="Nivel de la esfera">
+                {option.levels.map(n => (
+                  <option key={n} value={n}>
+                    nivel {n}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+        );
+      })}
+    </div>
   );
 }

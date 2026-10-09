@@ -327,8 +327,7 @@ public abstract class BaseInvasionPlugIn<TConfiguration> : PeriodicTaskBasePlugI
             await state.Context.ForEachPlayerAsync(p => this.SendTallyAsync(p, state)).ConfigureAwait(false);
             if (state.AliveCount == 0 && state.State == PeriodicTaskState.Started)
             {
-                // All dead: the next task tick finishes the run instead of waiting its time out.
-                state.NextRunUtc = DateTime.UtcNow;
+                await this.OnAllMonstersKilledAsync(state).ConfigureAwait(false);
             }
         }
         catch (Exception ex)
@@ -336,6 +335,24 @@ public abstract class BaseInvasionPlugIn<TConfiguration> : PeriodicTaskBasePlugI
             state.Context.LoggerFactory.CreateLogger(this.GetType()).LogError(ex, "Error after an invasion monster died.");
         }
     }
+
+    /// <summary>
+    /// Mu La Ronda: called when the last monster of the run died. By default the next task tick
+    /// finishes the run instead of waiting its time out; an event in waves brings the next one.
+    /// </summary>
+    /// <param name="state">The state.</param>
+    protected virtual ValueTask OnAllMonstersKilledAsync(InvasionGameServerState state)
+    {
+        state.NextRunUtc = DateTime.UtcNow;
+        return ValueTask.CompletedTask;
+    }
+
+    /// <summary>
+    /// Mu La Ronda: sends the kill tally of the run to every player (after a new wave came).
+    /// </summary>
+    /// <param name="state">The state.</param>
+    protected async ValueTask SendTallyToAllAsync(InvasionGameServerState state)
+        => await state.Context.ForEachPlayerAsync(p => this.SendTallyAsync(p, state)).ConfigureAwait(false);
 
     /// <inheritdoc />
     protected override async ValueTask OnFinishedAsync(InvasionGameServerState state)

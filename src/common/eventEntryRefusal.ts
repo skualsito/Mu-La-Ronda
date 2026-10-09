@@ -18,6 +18,9 @@ import { ItemsDatabase, itemBaseName } from './itemsDatabase';
 /** The blue line and the result arrive in the same burst; this is generous. */
 const FRESH_MS = 2000;
 
+/** How the server's own refusal reasons start (EnterMiniGameAction.RefuseAsync). */
+const SERVER_REASON_PREFIX = 'Evento: ';
+
 let last: { text: string; at: number } | null = null;
 
 /** Every blue line the server sends passes through here (logic.ts). */
@@ -59,6 +62,8 @@ export function eventEntryRefusal(eventName: string, now = Date.now()): string |
   }
   // A map the event warps to has its own requirement (a Moonstone Pendant for Kanturu).
   if (found?.key === 'serverMessage.missingMapRequirement') return translateServerText(line.text);
+  // Mu La Ronda: the server's own reasons (EnterMiniGameAction.RefuseAsync): "Evento: ...".
+  if (line.text.startsWith(SERVER_REASON_PREFIX)) return line.text.slice(SERVER_REASON_PREFIX.length);
   // Anything else that came before (a drop, a chat line) is not the reason.
   return null;
 }

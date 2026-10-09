@@ -28,6 +28,7 @@ import {
 } from './itemStats';
 import { itemBaseName } from './itemsDatabase';
 import { itemLevelName } from './itemLevelLook';
+import { harmonyOf, socketOf, SOCKET_EMPTY } from './itemExtraOptions';
 import { isStackedMaterial } from './stackedMaterials';
 import { learnableSkill } from './skillItems';
 import { skillDisplayName } from './skillNames';
@@ -679,7 +680,48 @@ function equipmentLines(
   }
 
   if (item.isAncient) ancientLines(out, def, item, equipped);
+
+  extraOptionLines(out, def, item);
 }
+
+/**
+ * Mu La Ronda: the level 380 (Guardian) option, the Jewel of Harmony option
+ * and the sockets (itemExtraOptions.ts) - all sent by OpenMU, none shown
+ * before, so an item given them looked as if it had nothing.
+ */
+function extraOptionLines(out: Lines, def: ItemDef, item: Item) {
+  const raw = item.raw;
+  if (!raw) return;
+
+  if (raw[5] & GUARDIAN_OPTION_FLAG) out.add(t('item.option380'), 'orange');
+
+  const sockets = item.sockets ?? [];
+  if (!(item.socketCount ?? 0)) {
+    const harmony = harmonyOf(def.group, raw[6] ?? 0);
+    if (harmony) {
+      const value = harmony.percent ? `${harmony.value}%` : `${harmony.value}`;
+      out.add(t(harmony.key, { value }), harmony.active ? 'yellow' : 'gray');
+    }
+    return;
+  }
+
+  out.add(t('socket.title'), 'violet');
+  for (let i = 0; i < (item.socketCount ?? 0); i++) {
+    const socket = socketOf(sockets[i] ?? SOCKET_EMPTY);
+    if (socket.empty) {
+      out.add(t('socket.empty', { slot: i + 1 }), 'gray');
+      continue;
+    }
+    const option = socket.key ? t(socket.key) : t('socket.unknown');
+    out.add(
+      t('socket.line', { slot: i + 1, element: t(`socket.element.${socket.element}` as TextKey), option, level: socket.level }),
+      'blue'
+    );
+  }
+}
+
+/** ItemSerializer: byte 5's 0x08 marks the level 380 option. */
+const GUARDIAN_OPTION_FLAG = 0x08;
 
 /**
  * Mu La Ronda: the ancient block - the piece's +5 / +10 bonus by its stat,

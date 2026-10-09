@@ -1,3 +1,5 @@
+import type { TextKey } from '../i18n';
+
 /**
  * Mu La Ronda: the Chaos Goblin's combinations as OpenMU checks them
  * (Persistence/Initialization/VersionSeasonSix/ChaosMixes.cs), so the window
@@ -8,6 +10,9 @@
  * A requirement with no `items` takes any item that passes its level and
  * option checks (the wing's sacrifice, the item being upgraded).
  */
+
+/** The level 380 items: the only ones the Guardian option goes on. */
+const ITEMS_380: readonly (readonly [number, number])[] = [[0,22],[0,23],[0,35],[2,14],[4,21],[5,12],[5,19],[7,29],[7,30],[7,31],[7,33],[7,43],[7,73],[8,29],[8,30],[8,31],[8,32],[8,33],[8,43],[8,73],[9,29],[9,30],[9,31],[9,32],[9,33],[9,43],[9,73],[10,29],[10,30],[10,31],[10,32],[10,33],[10,43],[11,29],[11,30],[11,31],[11,32],[11,33],[11,43],[11,73]];
 
 /** OpenMU item option types a requirement asks for. */
 export type MixOption = 'Option' | 'Excellent' | 'AncientBonus' | 'Luck';
@@ -20,6 +25,8 @@ export type MixRequirement = {
   readonly minLevel?: number;
   readonly maxLevel?: number;
   readonly options?: readonly MixOption[];
+  /** Mu La Ronda: what the recipe panel calls it, instead of naming the items. */
+  readonly labelKey?: TextKey;
 };
 
 export type MixRecipe = {
@@ -267,11 +274,14 @@ export const CHAOS_RECIPES: readonly MixRecipe[] = [
     ],
   },
   {
+    // Mu La Ronda: ONE item, +4 or more with an option - the server's three
+    // requirements (+4~6, +7~9, +10~15, 50/60/70 %) are alternatives, and a
+    // second one is refused (GuardianOptionCrafting: TooManyItems). Only the
+    // level 380 items take the option (the ones with a Guardian option in
+    // their PossibleItemOptions).
     name: 'Guardian Option (Level 380)', number: 36, money: 10000000,
     requires: [
-      { items: [], min: 1, max: 1, minLevel: 4, maxLevel: 6, options: ['Option'] },
-      { items: [], min: 1, max: 1, minLevel: 7, maxLevel: 9, options: ['Option'] },
-      { items: [], min: 1, max: 1, minLevel: 10, options: ['Option'] },
+      { items: ITEMS_380, min: 1, max: 1, minLevel: 4, options: ['Option'], labelKey: 'chaos.item380' },
       { items: [[14, 42]], min: 1, max: 1 },
       { items: [[14, 31]], min: 1, max: 1 },
     ],

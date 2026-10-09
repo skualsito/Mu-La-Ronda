@@ -3,6 +3,7 @@ import { World, type ISystemFactory } from './world';
 import { PathfindingSystem } from './systems/pathfindingSystem';
 import { PlayerControllerSystem } from './systems/playerControllerSystem';
 import { MoveAlongPathSystem } from './systems/moveAlongPathSystem';
+import { KnockbackGlideSystem } from './systems/knockbackGlideSystem';
 import { AnimationSystem } from './systems/animationSystem';
 import { CombatSfxSystem } from './systems/combatSfxSystem';
 import { WeaponTrailSystem } from './systems/weaponTrailSystem';
@@ -103,6 +104,8 @@ const factories: ISystemFactory[] = [
   CalculateVisibilitySystem,
   NetworkSystem,
   MoveAlongPathSystem,
+  // Mu La Ronda: a Chaos Castle blow slides instead of jumping (render-only posOffset).
+  KnockbackGlideSystem,
   HighlightSystem,
   DeathSystem,
   AnimationSystem,

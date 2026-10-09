@@ -275,6 +275,7 @@ import { createAttributeSystem, type MUAttributeSystem } from './libs/attributeS
 import { classWorldScale } from './common/characterScale';
 import { skillDefinition } from './common/skillsDatabase';
 import { traceHeroInstantMove } from './common/heroMoveTrace';
+import { startGlide } from './ecs/systems/knockbackGlideSystem';
 import { advancesSwordCount, chooseSkillAction, isTeleportSkill, TELEPORT } from './common/skillCasting';
 import { skillClip } from './combat/skillClips';
 import { teleportGate } from './common/teleportRules';
@@ -1681,9 +1682,13 @@ EventBus.on('ObjectMoved', packet => {
     );
   }
 
+  const before = { x: obj.transform.pos.x, y: obj.transform.pos.y, z: obj.transform.pos.z };
   obj.transform.pos.x = p.PositionX;
   obj.transform.pos.z = p.PositionY;
   obj.transform.pos.y = world.getTerrainHeight(p.PositionX, p.PositionY);
+  // Mu La Ronda: a Chaos Castle explosion throws the players near it a few
+  // tiles; drawn as a slide, not a teleport (knockbackGlideSystem.ts).
+  if (inChaosCastle(world.mapIndex)) startGlide(obj, before);
 
   if (obj.playerMoveTo) {
     obj.playerMoveTo.point.x = p.PositionX;

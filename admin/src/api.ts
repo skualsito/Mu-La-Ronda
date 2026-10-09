@@ -179,7 +179,13 @@ export type InventoryItem = {
   maxLevel: number;
   canSkill: boolean;
   options: ItemOption[];
+  /** Mu La Ronda: the item's sockets and how many it may have. */
+  socketCount?: number;
+  maxSockets?: number;
+  sockets?: (SocketChoice | null)[];
 };
+
+export type SocketChoice = { optionId: string; level: number };
 
 export type ItemDefinition = {
   id: string;
@@ -191,6 +197,7 @@ export type ItemDefinition = {
   durability: number;
   maxLevel: number;
   canSkill: boolean;
+  maxSockets?: number;
 };
 
 export type DefinitionOption = {
@@ -200,6 +207,10 @@ export type DefinitionOption = {
   maxPerItem: number;
   type: string;
   name: string;
+  /** The socket element (0 fire, 1 water, 2 ice, 3 wind, 4 lightning, 5 earth), else null. */
+  element?: number | null;
+  /** The option's levels with a value (harmony, socket spheres); empty when it has no levels. */
+  levels?: number[];
 };
 
 export type SkillRow = { skillId: string; number: number; name: string; type: number; maxLevel: number | null; rank: number | null };
@@ -229,7 +240,57 @@ export type DropGroup = {
 };
 export type DropList = { groups: DropGroup[]; types: { value: number; label: string }[] };
 
-export type SectionKey = 'inicio' | 'personajes' | 'cuentas' | 'spots' | 'shops' | 'drops' | 'mensajes' | 'vip' | 'encuesta' | 'config' | 'servidor';
+export type MonsterRow = {
+  id: string;
+  number: number;
+  name: string;
+  kind: number;
+  level: number | null;
+  health: number | null;
+  minDamage: number | null;
+  maxDamage: number | null;
+  defense: number | null;
+  spots: number;
+  edited: boolean;
+};
+export type MonsterAttribute = { attributeId: string; designation: string; value: number };
+export type MonsterDetail = MonsterRow & {
+  respawnSeconds: number;
+  attackDelayMs: number;
+  moveDelayMs: number;
+  moveRange: number;
+  attackRange: number;
+  viewRange: number;
+  maxDrops: number;
+  attributes: MonsterAttribute[];
+  maps: string[];
+};
+export type MonsterList = {
+  monsters: MonsterRow[];
+  attributes: { id: string; designation: string }[];
+  main: { designation: string; label: string; hint?: string }[];
+};
+
+export type EventStatus = 'untested' | 'ok' | 'broken';
+export type GameEventRow = {
+  id: string;
+  type: string;
+  name: string;
+  kind: 'minigame' | 'periodic';
+  state: 'NotStarted' | 'Prepared' | 'Started';
+  running: boolean;
+  players: number;
+  lastStartUtc: string | null;
+  nextStepUtc: string;
+  nextStartUtc: string | null;
+  status: EventStatus;
+  note: string;
+  testedAt: string | null;
+  testedBy: string | null;
+};
+export type EventList = { events: GameEventRow[]; error: string | null };
+
+export type SectionKey = 'inicio' | 'personajes' | 'cuentas' | 'spots' | 'shops' | 'drops' | 'monstruos' | 'eventos' | 'mensajes' | 'vip' | 'encuesta' | 'config' | 'servidor';
 
 export type VipCode = {
   id: string;

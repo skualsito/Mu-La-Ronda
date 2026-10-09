@@ -150,3 +150,48 @@ function mapName(map: unknown): string | null {
   }
   return null;
 }
+
+export type GameEvent = {
+  id: string;
+  type: string;
+  name: string;
+  kind: 'minigame' | 'periodic';
+  state: 'NotStarted' | 'Prepared' | 'Started';
+  running: boolean;
+  players: number;
+  lastStartUtc: string | null;
+  nextStepUtc: string;
+  nextStartUtc: string | null;
+};
+
+/**
+ * Mu La Ronda: the periodic events and their state (MlrEventsController). Throws when OpenMU does
+ * not answer, with a reason the panel shows.
+ */
+export async function gameEvents(sql: Sql): Promise<GameEvent[]> {
+  const get = async () =>
+    fetch(`${OPENMU_API_URL}/api/mlr/events/`, {
+      headers: { 'X-Api-Key': await apiKey(sql) },
+      signal: AbortSignal.timeout(5000),
+    });
+  let res: Response;
+  try {
+    res = await get();
+    if (res.status === 401 || res.status === 403) {
+      cachedKey = null;
+      await sql`DELETE FROM mlr.settings WHERE key = ${KEY_SETTING}`;
+      res = await get();
+    }
+  } catch (err) {
+    throw new Error(`No se pudo hablar con OpenMU: ${err instanceof Error ? err.message : String(err)}`);
+  }
+  if (res.status === 404) throw new Error('Este OpenMU todavía no tiene la lista de eventos (falta deployar).');
+  if (!res.ok) throw new Error(`OpenMU respondió ${res.status} a la lista de eventos`);
+  return (await res.json()) as GameEvent[];
+}
+
+/** Starts (or stops) an event on every game server. */
+export async function controlEvent(sql: Sql, id: string, action: 'start' | 'stop'): Promise<void> {
+  const result = await post(sql, `/api/mlr/events/${id}/${action}`, {}, action === 'start' ? 'arrancar el evento' : 'parar el evento');
+  if (result === 'offline') throw new Error('Ese evento no está activo en OpenMU.');
+}

@@ -12,6 +12,15 @@
 --        Red Dragon (invasion)       cada 6 h desde 03:45 (03:45, 09:45, 15:45, 21:45)
 --        Kanturu                     una vez por dia, 22:45
 --
+-- Los jefes por horario y el Loren Deep (35-bosses.sql, 36-loren-deep.sql)
+-- traen su horario de guide.elitemu.net en su plugin; duran 1 hora (Loren
+-- Deep media) o hasta que mueren todos:
+--   Skeleton King (Lorencia)     cada 4 h desde 00:45
+--   Medusa (Swamp of Calmness)   cada 6 h desde 02:00
+--   Lord Silvester (Vulcanus)    cada 6 h desde 02:05
+--   Erohim (Kanturu Relics)      08:25 y 20:25
+--   Loren Deep (Valley of Loren) 08:00 y 20:00, nunca los domingos
+--
 -- Las horas son las del servidor (OpenMU usa su zona horaria). Solo se cambia
 -- el "Timetable" de la configuracion de cada plugin (el resto - duracion,
 -- mensajes, monstruos - queda como este). OpenMU guarda esa configuracion al
@@ -69,6 +78,13 @@ DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM config."MiniGameDefinition" WHERE "Type" = 6) THEN
     RAISE NOTICE 'Kanturu: falta la definicion del evento - instalar las actualizaciones pendientes en el panel de OpenMU (Updates)';
+  END IF;
+  -- Las oleadas (SpawnTrigger 4 = OnceAtWaveStart) en la Refinery Tower (mapa 39)
+  -- las trae otra actualizacion: sin ellas la fase 1 no tiene monstruos.
+  IF NOT EXISTS (SELECT 1 FROM config."MonsterSpawnArea" s
+                   JOIN config."GameMapDefinition" m ON m."Id" = s."GameMapId"
+                  WHERE m."Number" = 39 AND s."SpawnTrigger" = 4) THEN
+    RAISE NOTICE 'Kanturu: faltan los monstruos del evento - instalar "Add Kanturu map content" en el panel de OpenMU (Updates)';
   END IF;
 END $$;
 COMMIT;

@@ -38,6 +38,7 @@ import {
   DeathKing,
   EliteSkeleton,
   SkeletonArcher,
+  SkeletonKing,
   SkeletonWarrior,
 } from './monsters/skeletonWarrior';
 import { Spider } from './monsters/spider';
@@ -98,6 +99,9 @@ export const ModelFactoryPerId: Record<number, typeof ModelObject> = {
   [15]: SkeletonArcher,
   [16]: EliteSkeleton,
   [55]: DeathKing,
+  // Mu La Ronda: the Skeleton King mini boss and its bones (deploy/config/35-bosses.sql).
+  [700]: SkeletonKing,
+  [701]: DeathBone,
   [56]: DeathBone,
   // Death Gorgon burns; the fire is what the floor light comes from.
   [35]: DeathGorgon,
