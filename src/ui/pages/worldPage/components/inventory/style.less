@@ -182,6 +182,48 @@
     }
   }
 
+  // Mu La Ronda: the delete button, a plate like the sprites beside it.
+  .delete-button {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 1px solid #5c4d36;
+    border-radius: 2px;
+    background: linear-gradient(#2e2a24, #16130f);
+    box-shadow: inset 0 0 0 1px #000;
+    cursor: pointer;
+
+    svg {
+      width: 16px;
+      height: 16px;
+      fill: none;
+      stroke: #cbbd9c;
+      stroke-width: 1.4;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    &:hover svg {
+      stroke: #fff;
+    }
+
+    &:active,
+    &.checked {
+      background: linear-gradient(#4a1d18, #241010);
+      border-color: #9c3a2c;
+
+      svg {
+        stroke: #ff8d7a;
+      }
+    }
+  }
+
+  &.delete-mode .inventory-square.used::after {
+    background-color: #b0302699;
+  }
+
 }
 
 // The carried item is portalled onto the body - see the note at its JSX - so

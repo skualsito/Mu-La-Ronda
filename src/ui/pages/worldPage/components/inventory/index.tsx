@@ -43,9 +43,8 @@ import {
   EXIT_BUTTON_X,
   EXIT_SPRITE,
   EXIT_TOOLTIP,
-  EXPAND_BUTTON_X,
-  EXPAND_SPRITE,
-  EXPAND_TOOLTIP,
+  DELETE_BUTTON_X,
+  DELETE_TOOLTIP,
   FIRST_SLOT,
   GRID_FRAME_HEIGHT,
   GRID_FRAME_WIDTH,
@@ -215,6 +214,8 @@ const EquipmentSlot = observer(
               if (item) Store.repairItemRequest(slot);
               return;
             }
+            // Worn gear is not deleted: take it off first.
+            if (Store.deleteMode) return;
             if (item) Store.pickInventoryItem(slot);
             return;
           }
@@ -473,6 +474,12 @@ export const Inventory = observer(() => {
       return;
     }
 
+    // Mu La Ronda: the delete button is pressed - ask before destroying it.
+    if (Store.deleteMode) {
+      Economy.openPrompt({ kind: 'delete-item', slot: entry.slot });
+      return;
+    }
+
     if (event.ctrlKey) {
       QuickItemActions.fromInventory(entry.slot);
       return;
@@ -487,6 +494,10 @@ export const Inventory = observer(() => {
     // Right button puts the hammer down.
     if (Store.repairMode) {
       Store.toggleRepairMode();
+      return;
+    }
+    if (Store.deleteMode) {
+      Store.toggleDeleteMode();
       return;
     }
 
@@ -534,7 +545,7 @@ export const Inventory = observer(() => {
   return (
     <MuItemWindow
       id={WINDOW_ID}
-      className={`inventory${Store.repairMode ? ' repair-mode' : ''}`}
+      className={`inventory${Store.repairMode ? ' repair-mode' : ''}${Store.deleteMode ? ' delete-mode' : ''}`}
       column={Store.characterInfoEnabled ? 1 : 0}
       onClose={() => {
         Store.inventoryEnabled = false;
@@ -718,17 +729,30 @@ export const Inventory = observer(() => {
       <div
         className="window-button"
         data-no-drag="true"
-        style={{ left: EXPAND_BUTTON_X, top: BUTTON_Y }}
+        style={{ left: DELETE_BUTTON_X, top: BUTTON_Y }}
       >
-        <MuButton
-          file={EXPAND_SPRITE}
-          width={BUTTON_WIDTH}
-          height={BUTTON_HEIGHT}
-          frames={BUTTON_FRAMES}
-          disabled
+        <button
+          type="button"
+          className={`delete-button${Store.deleteMode ? ' checked' : ''}`}
+          style={{ width: BUTTON_WIDTH, height: BUTTON_HEIGHT }}
+          onClick={() => {
+            playUiSound('click');
+            // A carried bag item dropped on the button asks for it at once.
+            const carried = Store.pickedItem;
+            if (carried) {
+              if (carried.fromStorage !== StorageKind.Inventory || carried.fromSlot < FIRST_SLOT) return;
+              Store.cancelPickedItem();
+              Economy.openPrompt({ kind: 'delete-item', slot: carried.fromSlot });
+              return;
+            }
+            Store.toggleDeleteMode();
+          }}
         >
-          <span className="button-tooltip">{t(EXPAND_TOOLTIP)}</span>
-        </MuButton>
+          <svg viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M6 1.5h4M2.5 3.5h11M4 3.5l.8 10.5h6.4L12 3.5M6.5 6v5.5M9.5 6v5.5" />
+          </svg>
+          <span className="button-tooltip">{t(DELETE_TOOLTIP)}</span>
+        </button>
       </div>
 
       {}

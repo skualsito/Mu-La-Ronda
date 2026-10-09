@@ -47,17 +47,18 @@ export const BUTTON_FRAMES = { up: 0, down: 1, check: 1 } as const;
 export const EXIT_BUTTON_X = 13;
 export const REPAIR_BUTTON_X = 50;
 export const SHOP_BUTTON_X = 87;
-export const EXPAND_BUTTON_X = 87 + 37;
+// Mu La Ronda: where the original's (never enabled here) expansion button
+// sat, the delete button - drawn in CSS, there is no trash sprite in MU.
+export const DELETE_BUTTON_X = 87 + 37;
 
 export const EXIT_SPRITE = 'newui_exit_00.OZT';
 export const REPAIR_SPRITE = 'newui_repair_00.OZT';
 export const SHOP_SPRITE = 'newui_Bt_openshop.OZT';
-export const EXPAND_SPRITE = 'newui_expansion_btn.OZT';
 
 export const EXIT_TOOLTIP: TextKey = 'inventory.close';
 export const REPAIR_TOOLTIP: TextKey = 'inventory.repair';
 export const SHOP_TOOLTIP: TextKey = 'inventory.personalShop';
-export const EXPAND_TOOLTIP: TextKey = 'inventory.expand';
+export const DELETE_TOOLTIP: TextKey = 'inventory.delete';
 
 export type EquipmentSlotInfo = {
   slot: number;
@@ -178,6 +179,5 @@ export const INVENTORY_SPRITES = [
   EXIT_SPRITE,
   REPAIR_SPRITE,
   SHOP_SPRITE,
-  EXPAND_SPRITE,
   ...EQUIPMENT_SLOTS.map(slot => slot.sprite),
 ];

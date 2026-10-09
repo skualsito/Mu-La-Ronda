@@ -1079,6 +1079,12 @@ export const Store = new (class _Store {
   /** `REPAIR_MODE_ON`: the next inventory click repairs instead of picking. */
   repairMode = false;
 
+  /**
+   * Mu La Ronda: the inventory's delete button is pressed - the next click
+   * on a bag item asks to destroy it instead of picking it up.
+   */
+  deleteMode = false;
+
   /** A buy request is in flight (`BuyCost != 0` blocks a second one). */
   shopBuyPending = false;
 
@@ -1170,6 +1176,7 @@ export const Store = new (class _Store {
       showDropNames: observable,
       npcShop: observable,
       repairMode: observable,
+      deleteMode: observable,
       shopBuyPending: observable,
       shopBuyRefused: observable,
       canRepair: computed,
@@ -1196,6 +1203,7 @@ export const Store = new (class _Store {
         this.closeNpcShop();
         runInAction(() => {
           this.repairMode = false;
+          this.deleteMode = false;
         });
       }
     );
@@ -2320,7 +2328,26 @@ export const Store = new (class _Store {
   toggleRepairMode(): void {
     runInAction(() => {
       this.repairMode = this.canRepair && !this.repairMode;
+      if (this.repairMode) this.deleteMode = false;
     });
+  }
+
+  /** Mu La Ronda: the inventory's delete button. */
+  toggleDeleteMode(): void {
+    runInAction(() => {
+      this.deleteMode = !this.deleteMode;
+      if (this.deleteMode) this.repairMode = false;
+    });
+  }
+
+  /**
+   * Mu La Ronda: destroys a bag item for good, once the player confirmed it
+   * (`DeleteItemChatCommandPlugIn` on the server, which answers with the
+   * usual item-removed packet).
+   */
+  deleteInventoryItem(slot: number): void {
+    if (this.isOffline || this.pendingItemMove || !this.playerData.items[slot]) return;
+    Social.sendWindowCommand(`/borraritem ${slot}`);
   }
 
   /** `SendRepairItemRequest(slot, self)`; `REPAIR_ALL_SLOT` for everything. */

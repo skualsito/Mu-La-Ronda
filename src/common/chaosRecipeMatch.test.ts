@@ -30,6 +30,17 @@ describe('bestRecipe', () => {
     expect(match.complete).toBe(true);
   });
 
+  it('counts the pieces of a stacked Fenrir material, like the server', () => {
+    const tray = [item(13, 32, { durability: 20 }), chaos, item(13, 33, { durability: 20 })];
+    const match = bestRecipe(tray)!;
+    expect(match.recipe.name).toBe('Fenrir Stage 1');
+    expect(match.requirements.map(r => r.have)).toEqual([20, 1, 20]);
+    expect(match.complete).toBe(true);
+
+    const short = bestRecipe([item(13, 32, { durability: 12 }), chaos, item(13, 33, { durability: 20 })])!;
+    expect(short.complete).toBe(false);
+  });
+
   it('picks the +N combination by the item level', () => {
     const tray = [item(0, 0, { lvl: 11 }), chaos, ...[0, 1, 2].flatMap(() => [item(14, 13), item(14, 14)])];
     const match = bestRecipe(tray)!;

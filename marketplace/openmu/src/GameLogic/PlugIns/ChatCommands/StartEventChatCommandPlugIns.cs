@@ -37,6 +37,14 @@ public class StartKanturuEventChatCommandPlugIn : IChatCommandPlugIn
             return;
         }
 
+        // Without the event's definition (OpenMU update "Add Kanturu data") the Gateway Machine
+        // answers nothing at all (KanturuGatewayPlugIn), so the start would look fine and do nothing.
+        if (!player.GameContext.Configuration.MiniGameDefinitions.Any(d => d.Type == MiniGameType.Kanturu))
+        {
+            await player.ShowBlueMessageAsync("Kanturu: falta instalar el evento (panel de OpenMU, Updates: Add Kanturu data).").ConfigureAwait(false);
+            return;
+        }
+
         kanturu.ForceStart();
         await player.ShowBlueMessageAsync("Kanturu: evento iniciado.").ConfigureAwait(false);
     }

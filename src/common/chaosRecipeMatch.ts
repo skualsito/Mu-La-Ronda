@@ -1,5 +1,6 @@
 import type { Item } from '../ecs/world';
 import { CHAOS_RECIPES, type MixRecipe, type MixRequirement } from './chaosRecipes';
+import { piecesOf } from './stackedMaterials';
 
 /**
  * Mu La Ronda: which Chaos Goblin combination the tray is heading for, and
@@ -54,8 +55,15 @@ export function matchRecipe(recipe: MixRecipe, tray: readonly (Item | null)[]): 
         item => (pass === 'any' || listed(item, requirement)) && passes(item, requirement)
       );
       const limit = requirement.max ?? Infinity;
-      const used = taken.slice(0, limit);
-      have.set(requirement, used.length);
+      // A stacked material counts its pieces, like the server's mix does.
+      const used: Item[] = [];
+      let pieces = 0;
+      for (const item of taken) {
+        if (pieces >= limit) break;
+        used.push(item);
+        pieces += piecesOf(item);
+      }
+      have.set(requirement, pieces);
       left = left.filter(item => !used.includes(item));
     }
   }

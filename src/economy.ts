@@ -310,7 +310,9 @@ export type EconomyPrompt =
   | { kind: 'shop-price'; slot: number }
   | { kind: 'shop-buy'; slot: number }
   /** How many of the merchant's stock slot to buy (`quickItemActions.ts`). */
-  | { kind: 'npc-buy-many'; slot: number };
+  | { kind: 'npc-buy-many'; slot: number }
+  /** Mu La Ronda: destroy an inventory item for good (`Store.deleteInventoryItem`). */
+  | { kind: 'delete-item'; slot: number };
 
 const emptyGrid = (size: number) => new Array<Item | null>(size).fill(null);
 

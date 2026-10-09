@@ -28,6 +28,7 @@ import {
 } from './itemStats';
 import { itemBaseName } from './itemsDatabase';
 import { itemLevelName } from './itemLevelLook';
+import { isStackedMaterial } from './stackedMaterials';
 import { learnableSkill } from './skillItems';
 import { skillDisplayName } from './skillNames';
 import { ANCIENT_STAT_KEYS, ancientSetOf, setOptionActive, setOptionValue, wornPiecesOf } from './ancientSets';
@@ -579,7 +580,10 @@ function equipmentLines(
   const hasDurability =
     (def.durability || def.magicDur) &&
     (def.group <= ItemGroup.Boots || def.group === ItemGroup.Helper || isWing(def));
-  if (hasDurability) {
+  if (isStackedMaterial(item)) {
+    // Mu La Ronda: the durability byte is the number of pieces (stackedMaterials.ts).
+    out.add(t('item.pieces', { count: item.durability ?? 1 }));
+  } else if (hasDurability) {
     out.add(
       t('item.durability', {
         current: item.durability ?? stats.maxDurability,

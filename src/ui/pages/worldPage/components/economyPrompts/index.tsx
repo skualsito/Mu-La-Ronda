@@ -162,6 +162,16 @@ function specOf(prompt: EconomyPrompt): Spec {
         amountLabel: t('prompt.quantity'),
       };
     }
+    case 'delete-item': {
+      const item = Store.playerData.items[prompt.slot];
+      return {
+        title: t('prompt.deleteItem'),
+        hint: item
+          ? t('prompt.deleteItemHint', { name: itemDisplayName(item) })
+          : t('prompt.itemGone'),
+        field: 'none',
+      };
+    }
   }
 }
 
@@ -364,6 +374,9 @@ export const EconomyPrompts = observer(() => {
         break;
       case 'npc-buy-many':
         QuickItemActions.startBuyRun(prompt.slot, value);
+        break;
+      case 'delete-item':
+        Store.deleteInventoryItem(prompt.slot);
         break;
     }
 
