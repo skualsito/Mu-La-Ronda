@@ -44,8 +44,24 @@ describe('bestRecipe', () => {
     expect(match.complete).toBe(true);
   });
 
-  it('says Chaos Weapon while the Soul is missing, as the server would mix it then', () => {
+  // Mu La Ronda: the Chaos Weapon stops at +8 (deploy/config/28-chaos-weapon-max-level.sql),
+  // so an upgrade short of a jewel shows what it lacks instead of a chaos weapon.
+  it('keeps heading for +10 while the Soul is missing', () => {
     const tray = [item(0, 0, { lvl: 9, optionLevel: 1 }), chaos, item(14, 13)];
+    const match = bestRecipe(tray)!;
+    expect(match.recipe.name).toBe('+10 Item Combination');
+    expect(match.complete).toBe(false);
+  });
+
+  it('never makes a chaos weapon out of a +10 short of jewels for +11', () => {
+    const tray = [item(0, 0, { lvl: 10, optionLevel: 1 }), chaos, item(14, 13), item(14, 14)];
+    const match = bestRecipe(tray)!;
+    expect(match.recipe.name).toBe('+11 Item Combination');
+    expect(match.complete).toBe(false);
+  });
+
+  it('still makes a chaos weapon out of a +8 with an option', () => {
+    const tray = [item(0, 0, { lvl: 8, optionLevel: 1 }), chaos];
     const match = bestRecipe(tray)!;
     expect(match.recipe.name).toBe('Chaos Weapon');
     expect(match.complete).toBe(true);

@@ -4,6 +4,7 @@ import { Store } from '../../../../../store';
 import { events } from '../../../../../events';
 import {
   bloodCastleImminent,
+  bloodCastleQuestItem,
   bloodCastleScore,
   bloodCastleTimer,
   bloodCastleWindow,
@@ -573,14 +574,21 @@ const EventTimer = observer(() => {
   if (inBloodCastle(map)) {
     const t = bc;
     if (!t.running || t.seconds <= 0) return null;
+    // Mu La Ronda: once the Magic Skeletons are down the server has no count
+    // left to send (0/0) and the castle looked stuck - say what comes next.
+    const afterSkeletons = t.gateDestroyed && t.maxKill === 0;
     const countLine =
       t.maxKill === 65535
         ? null
-        : formatText(
-            t.gateDestroyed ? EVENT_TEXT.skeletonCount : EVENT_TEXT.monsterCount,
-            t.killed,
-            t.maxKill
-          );
+        : afterSkeletons
+          ? bloodCastleQuestItem()
+            ? EVENT_TEXT.bcBringWeapon
+            : EVENT_TEXT.bcBreakStatue
+          : formatText(
+              t.gateDestroyed ? EVENT_TEXT.skeletonCount : EVENT_TEXT.monsterCount,
+              t.killed,
+              t.maxKill
+            );
     return (
       <TimerFigure
         countLine={countLine}

@@ -3,6 +3,7 @@ import { ArrayCopy, castToByte } from '../binaryUtils';
 import { SIZE_OF_WORD, TERRAIN_SIZE } from './consts';
 import { convertBux, decryptMapFile } from './mapFileEncryption';
 import { openArenaPens } from './arenaPenDoors';
+import { openLorenciaRing } from './lorenciaRing';
 
 export async function parseTerrainAttribute(
   file_data: Uint8Array,
@@ -118,6 +119,7 @@ export async function parseTerrainAttribute(
   }
 
   openArenaPens(map, result);
+  openLorenciaRing(map, result);
 
   return result;
 }

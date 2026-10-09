@@ -717,6 +717,17 @@ export class ModelObject {
     if (link) this.BoneLinkMatrix.copyFrom(link);
     else Matrix.IdentityToRef(this.BoneLinkMatrix);
     this._linkedBone = -1;
+    // Mu La Ronda: unlinked, the part goes back under its owner's node the way
+    // it was built. A Rage Fighter glove weapon (bone -1, posed by the body's
+    // skeleton) worn in a hand that had held a mace stayed under the hand's
+    // socket and was posed twice - "the gloves fly", above his head.
+    if (bone < 0 && this._boneSocket && this._node.parent === this._boneSocket) {
+      this._node.parent = this.parent ?? this.Parent?._node ?? null;
+      this._node.position.setAll(0);
+      this._node.rotationQuaternion = null;
+      this._node.rotation.setAll(0);
+      this._node.scaling.setAll(1);
+    }
   }
 
   /**

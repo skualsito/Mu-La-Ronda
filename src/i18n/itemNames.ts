@@ -79,15 +79,26 @@ export const SPANISH_ITEM_NAMES: ItemNameFixes = {
   '13/140': '2º Boleto Armadura de la Suerte',
   '13/141': '2º Boleto Pantalones de la Suerte',
   '14/163': 'Certificado de Expansión de Bóveda',
+  '13/65': 'Espíritu Guardián',
   '15/33': 'Pergamino Aniquilador de Dragón',
 
   // --- typos and wrong words --------------------------------------------
   '0/26': 'Flamberge',
+  // Storm Hard Glove: the pack calls it "Garra de Tormenta Sagrada", taking the
+  // "Sagrada" of its neighbour, the Sacred Glove (0/32).
+  '0/33': 'Guantes de Tormenta Dura',
   '2/18': 'Cetro Ariete',
   '12/9': 'Orbe de Mayor Defensa',
   '13/0': 'Ángel Guardián',
   '13/12': 'Pendiente de Relámpago',
   '14/102': 'Orden de Gaion',
+  '13/24': 'Anillo de la Magia',
+  // The transformation rings, called "Aro ... Traslado" / "Aro Mutación" by turns;
+  // the Transformation Ring itself (13/10) is "Anillo de Transformación".
+  '13/39': 'Anillo de Transformación Esqueleto Élite',
+  '13/41': 'Anillo de Transformación de Navidad',
+  '13/68': 'Anillo de Transformación Hombre de Nieve',
+  '13/122': 'Anillo de Transformación Esqueleto',
 
   // --- one piece of a set spelled unlike the rest of it -----------------
   '4/23': 'Arco Punzón Oscuro',

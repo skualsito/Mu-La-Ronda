@@ -23,6 +23,7 @@ import {
 import { createAttributeSystem } from '../../libs/attributeSystem';
 import { Vector3 } from '../../libs/babylon/exports';
 import { Store } from '../../store';
+import { createLorenciaRing } from './ring';
 import { BeerObject } from './beerObject';
 import { BonfireObject } from './bonfireObject';
 import { BridgeObject } from './bridgeObject';
@@ -127,6 +128,9 @@ export async function createLorencia(world: World) {
   if (!terrain) return;
 
   await createRooms(world);
+
+  // Mu La Ronda: the ring where the fountain was (common/terrain/lorenciaRing.ts).
+  createLorenciaRing(world);
 
   if (DISABLE) return;
 

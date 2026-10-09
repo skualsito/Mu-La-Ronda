@@ -37,7 +37,10 @@ const EXIT_BUTTON = { x: 13, y: 392, width: 36, height: 29 };
 /** `(COMMAND_WINDOW_WIDTH / 2 - 108 / 2)`, `m_Pos.y + 33`, one 29 px button per `29 + 1`. */
 const BUTTON = { width: 108, height: 29 };
 const BUTTON_X = WINDOW_WIDTH / 2 - BUTTON.width / 2;
-const BUTTON_Y = 33;
+// Mu La Ronda: the original's `m_Pos.y + 33` put the first button over the
+// header's ornaments in this frame art; 50 clears them and the last button
+// still ends above the exit button (392).
+const BUTTON_Y = 50;
 const BUTTON_STEP = BUTTON.height + 1;
 /** `RenderBitmap(BITMAP_COMMAND_WINDOW_BEGIN, MouseX + 5, MouseY + 5, 128, 32)`. */
 const ID_TAG = { dx: 5, dy: 5, width: 128, height: 32 };

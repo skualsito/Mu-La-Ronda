@@ -43,7 +43,17 @@ const zen = (value: number) => value.toLocaleString('es-AR');
 /** Mu La Ronda: the recipe's name in the player's language (the old mix menu's labels). */
 function recipeName(recipe: MixRecipe): string {
   const entry = MIX_MENU.find(e => (e.type as number) === recipe.number);
-  return entry ? t(entry.labelKey) : recipe.name;
+  if (entry) return t(entry.labelKey);
+  // The recipes the old menu never listed: named here, or after what they make.
+  switch (recipe.number) {
+    case 15: return t('chaos.recipePotionBless');
+    case 16: return t('chaos.recipePotionSoul');
+    case 17: return t('chaos.recipeLifeStone');
+    case 30: return itemBaseName(14, 35);
+    case 31: return itemBaseName(14, 36);
+    case 32: return itemBaseName(14, 37);
+    default: return recipe.name;
+  }
 }
 
 /** The chance line: the server's table when the recipe is in it, else OpenMU's own. */
@@ -101,7 +111,14 @@ export const RecipePanel = observer(() => {
   const match = picked ? matchRecipe(picked, Economy.mixItems) : bestRecipe(Economy.mixItems);
 
   return (
-    <div className="chaos-recipe-panel" style={{ left: MENU_X, top: MENU_Y, width: MENU_WIDTH, height: MENU_HEIGHT }}>
+    // data-no-drag: a press here must not start dragging the window - the drag
+    // captures the pointer, so the click landed on the window instead of the
+    // recipe and the list never opened one.
+    <div
+      className="chaos-recipe-panel"
+      data-no-drag
+      style={{ left: MENU_X, top: MENU_Y, width: MENU_WIDTH, height: MENU_HEIGHT }}
+    >
       {match ? (
         <Detail match={match} picked={!!picked} />
       ) : (

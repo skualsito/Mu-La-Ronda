@@ -9,6 +9,8 @@ import { i18n, onLanguageChanged } from '../../i18n';
 import { resolveDataUrl } from './dataFolder';
 import { clearSpriteCache, loadMuSprite, type MuSprite } from './sprites';
 import { fetchAssetBytes, prefetchAsset } from '../../common/compressedAssets';
+import { ENUM_WORLD as WORLD } from '../../common/types';
+import { paintLorenciaRingOnMinimap } from './minimapRing';
 
 /**
  * The minimap assets of one world, the way `CNewUIMiniMap::LoadImages` finds
@@ -30,6 +32,9 @@ export type WorldMinimap = {
 };
 
 const cache = new Map<ENUM_WORLD, Promise<WorldMinimap | null>>();
+
+/** Mu La Ronda: pictures repainted here (the Lorencia ring), revoked with their map. */
+const repainted = new Map<ENUM_WORLD, string>();
 
 /**
  * The marker files to try for one world, best first: the active language's
@@ -92,6 +97,9 @@ export function evictWorldMinimaps(keep: ENUM_WORLD): void {
   for (const map of [...cache.keys()]) {
     if (map === keep) continue;
     cache.delete(map);
+    const url = repainted.get(map);
+    if (url) URL.revokeObjectURL(url);
+    repainted.delete(map);
     const key = minimapImagePath(map).toLowerCase();
     clearSpriteCache(path => path === key);
   }
@@ -114,6 +122,16 @@ async function readWorldMinimap(map: ENUM_WORLD): Promise<WorldMinimap | null> {
     image = await loadMuSprite(minimapImagePath(map));
   } catch {
     return null;
+  }
+
+  if (map === WORLD.WD_0LORENCIA) {
+    const painted = await paintLorenciaRingOnMinimap(image);
+    if (painted !== image) {
+      const old = repainted.get(map);
+      if (old) URL.revokeObjectURL(old);
+      repainted.set(map, painted.url);
+    }
+    image = painted;
   }
 
   return { image, markers: await readMarkers(worldNum) };

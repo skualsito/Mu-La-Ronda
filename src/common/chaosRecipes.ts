@@ -42,7 +42,9 @@ export const CHAOS_RECIPES: readonly MixRecipe[] = [
   {
     name: 'Chaos Weapon', number: 1,
     requires: [
-      { items: [], min: 1, minLevel: 4, options: ['Option'] },
+      // Mu La Ronda: up to +8 (deploy/config/28-chaos-weapon-max-level.sql) - a +10 item
+      // short of jewels for +11 was being turned into a chaos weapon.
+      { items: [], min: 1, minLevel: 4, maxLevel: 8, options: ['Option'] },
       { items: [[12, 15]], min: 1 },
       { items: [[14, 13]], min: 0 },
       { items: [[14, 14]], min: 0 },

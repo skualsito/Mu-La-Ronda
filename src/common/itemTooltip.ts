@@ -386,6 +386,9 @@ function consumableLines(out: Lines, def: ItemDef, item: Item) {
     else if (def.index === 8) out.add(t('item.curesPoison', { count }));
     else if (def.index === 9) out.add(t('item.liquor', { count }));
     else if (def.index === 10) out.add(t('item.townScroll', { count }));
+    // Mu La Ronda: the SD and complex potions said nothing at all.
+    else if (def.index >= 35 && def.index <= 37) out.add(t('item.restoresSd', { count }));
+    else if (def.index >= 38 && def.index <= 40) out.add(t('item.restoresHpSd', { count }));
     return;
   }
   // Orbs, scrolls and crystals name the skill they teach.
@@ -489,6 +492,13 @@ export function buildItemTooltip(
   }
 
   equipmentLines(out, item, stats, hero, worn, equipped);
+
+  // Mu La Ronda: worn in a ring slot (it is a pendant only by name), and the
+  // key to the Kanturu event - players took it for a useless ring.
+  if (def.group === 13 && def.index === 38) {
+    out.blank();
+    out.add(t('item.moonstoneKanturu'), 'blue');
+  }
 
   const requirementsFail =
     hero.level < stats.reqLvl ||

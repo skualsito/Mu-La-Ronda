@@ -16,8 +16,18 @@
 
 name: mu-la-ronda
 
+# Logs de Docker con rotacion: sin esto cada contenedor guarda todo lo que
+# imprime para siempre (/var/lib/docker/containers/*/*-json.log) y OpenMU
+# imprime mucho - es una de las formas de llenar el disco.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "20m"
+    max-file: "3"
+
 services:
   database:
+    logging: *logging
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
@@ -37,6 +47,7 @@ services:
   # OpenMU con el plugin de escrow del mercado (marketplace/openmu): se compila
   # en el VPS desde un commit fijo de OpenMU con esos archivos encima.
   openmu:
+    logging: *logging
     image: mu-la-ronda/openmu-escrow:local
     build:
       context: ../marketplace/openmu
@@ -64,6 +75,7 @@ services:
         condition: service_healthy
 
   proxy:
+    logging: *logging
     image: oven/bun:1.2-slim
     restart: unless-stopped
     network_mode: host
@@ -93,6 +105,7 @@ services:
   # X-Forwarded-For de nginx (clientIp solo le cree a un peer loopback), que es
   # lo que usa el limite de cuentas por dia.
   register:
+    logging: *logging
     image: oven/bun:1.2-slim
     restart: unless-stopped
     network_mode: host
@@ -116,6 +129,7 @@ services:
   # (presence) quien se logueo en ese socket, y lee las cajas de escrow en la
   # base de OpenMU; el item lo mueve el plugin del game server.
   marketplace:
+    logging: *logging
     image: oven/bun:1.2-slim
     restart: unless-stopped
     network_mode: host
@@ -141,6 +155,7 @@ services:
   # desde dist-admin/, esto es su API. Escribe en la base de OpenMU y habla
   # con Docker (socket) para ver el estado de OpenMU, sus logs y reiniciarlo.
   panel:
+    logging: *logging
     image: oven/bun:1.2-slim
     restart: unless-stopped
     network_mode: host

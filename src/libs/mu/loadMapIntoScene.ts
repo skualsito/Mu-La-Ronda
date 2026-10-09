@@ -11,7 +11,7 @@ import {
   prepareTerrain,
   type PreparedTerrain,
 } from './getTerrainData';
-import { applyMapObjectFixups } from './mapObjectFixups';
+import { applyMapObjectFixups, removeMapObjects } from './mapObjectFixups';
 import { evictContainers, evictUnusedContainers } from '../../common/modelLoader';
 import { disposeSignPlates } from '../../common/signPlates';
 import { assetWorldNum } from '../../common/worldAssets';
@@ -445,7 +445,7 @@ async function runLoad(
 
     await loadWorld(world);
 
-    const filteredObjects = objects;
+    const filteredObjects = removeMapObjects(map, objects);
 
     applyMapObjectFixups(map, filteredObjects);
 

@@ -1,5 +1,6 @@
 import { ENUM_WORLD } from '../../common';
 import { MODEL_CANDLE, MODEL_FURNITURE01 } from '../../common/objects/enum';
+import { LORENCIA_RING } from '../../common/terrain/lorenciaRing';
 
 export interface MapObjectFixup {
   type: number;
@@ -49,4 +50,32 @@ export function applyMapObjectFixups(
 
     target.pos.z = fixup.z;
   }
+}
+
+/**
+ * Mu La Ronda: map objects taken out, by the tile rectangle they stand in
+ * (`x1..x2`, `y1..y2`, inclusive). Lorencia's fountain - the angel statue,
+ * its spout, the fence round it and the grass in it - makes way for the ring
+ * (`common/terrain/lorenciaRing.ts`), whose cells the server opens.
+ */
+const MAP_OBJECT_REMOVALS: Partial<
+  Record<ENUM_WORLD, readonly { x1: number; y1: number; x2: number; y2: number }[]>
+> = {
+  [ENUM_WORLD.WD_0LORENCIA]: [LORENCIA_RING],
+};
+
+/** The map's objects without the ones standing in a removed area (a new array when any go). */
+export function removeMapObjects<T extends { pos: { x: number; y: number } }>(
+  map: ENUM_WORLD,
+  objs: T[]
+): T[] {
+  const areas = MAP_OBJECT_REMOVALS[map];
+  if (!areas) return objs;
+
+  // Object positions are in the original's centimetres, 100 per tile.
+  return objs.filter(o => {
+    const x = Math.floor(o.pos.x / 100);
+    const y = Math.floor(o.pos.y / 100);
+    return !areas.some(a => x >= a.x1 && x <= a.x2 && y >= a.y1 && y <= a.y2);
+  });
 }

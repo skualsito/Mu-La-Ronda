@@ -87,6 +87,9 @@ export const EVENT_TEXT = textTable({
   monsterCount: 'event.monsterCount',
   timeLeft: 'event.timeLeft',
   skeletonCount: 'event.skeletonCount',
+  /** Ours: the HUD line once the skeletons are down (the server's count is 0/0 from then on). */
+  bcBreakStatue: 'event.bcBreakStatue',
+  bcBringWeapon: 'event.bcBringWeapon',
   /** Ours: the HUD schedule rows say these instead of a clock. */
   timerOpen: 'event.timerOpen',
   timerFarOff: 'event.timerFarOff',

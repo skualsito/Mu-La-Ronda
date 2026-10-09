@@ -342,6 +342,29 @@ export function setMeshFadeBlend(mesh: AbstractMesh, on: boolean): void {
 }
 
 /**
+ * Mu La Ronda: puts a mesh on the double-sided, alpha-tested twin of its
+ * shared material for good. A cape's cloth sheet is a rectangle whose shape is
+ * cut out by its texture's alpha (the original draws `CPhysicsCloth` alpha
+ * tested, double-sided); on the opaque material the cut-away part showed as a
+ * flat black sheet the moment the cape spread out behind a flying hero.
+ */
+export function useAlphaTestMaterial(mesh: AbstractMesh): void {
+  const args = materialArgs.get(mesh.material as ItemMaterial);
+  if (!args) return;
+  const [, transparencyMode, alphaMode, bright, flatLit] = args;
+  if (bright || transparencyMode === ALPHA_TEST_AND_BLEND) return;
+  mesh.material = getMaterial(
+    mesh.getScene(),
+    false,
+    ALPHA_TEST_AND_BLEND,
+    alphaMode,
+    bright,
+    flatLit,
+    mesh.metadata?.characterAsset === true
+  );
+}
+
+/**
  * Re-resolve every mesh on a shared item material against the current
  * `GameOptions.materialQuality` (Classic ⇄ PBR). The cache keeps both
  * variants, so flipping back is a pointer swap, not a recompile.

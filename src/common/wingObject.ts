@@ -12,7 +12,7 @@ import { bakeSkin, CapeCloth, subdivideSheet } from './capeCloth';
 import { storeRef } from './storeRef';
 import { GameOptions } from './gameOptions';
 import { shedLevel } from './loadShed';
-import { getMaterial, getScrollVariant } from './modelLoader';
+import { getMaterial, getScrollVariant, useAlphaTestMaterial } from './modelLoader';
 import { BlendState } from './objects/enum';
 import { loadMuSprite } from '../libs/mu/sprites';
 import {
@@ -254,6 +254,9 @@ export class WingObject extends ModelObject {
       if (!mesh || mesh.getTotalVertices() === 0) continue;
       bakeSkin(mesh);
       if (sheet.subdivide) subdivideSheet(mesh, sheet.subdivide);
+      // Mu La Ronda: the sheet is cut out by its texture's alpha; drawn opaque, the
+      // rest of the rectangle was a black slab behind a flying Rage Fighter.
+      useAlphaTestMaterial(mesh);
       this.#cloths.push(new CapeCloth(mesh, () => this.Parent?.node ?? null, { shape: sheet.shape }));
     }
   }

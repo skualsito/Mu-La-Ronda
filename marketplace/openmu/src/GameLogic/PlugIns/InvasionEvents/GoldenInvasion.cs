@@ -52,6 +52,18 @@ public static class GoldenInvasion
         [LaCleon] = 5,
     };
 
+    /// <summary>
+    /// Mu La Ronda: the golden monsters whose box is their own, not the map's - what players know
+    /// from MU: the Golden Titan (Devias) +2, the Golden Vepar +2 and the Golden Lizard King +3.
+    /// In Atlans the map's +4 had them all dropping +4.
+    /// </summary>
+    private static readonly IReadOnlyDictionary<int, byte> BoxLevelByMonster = new Dictionary<int, byte>
+    {
+        [InvasionMonsters.GoldenTitan] = 2,
+        [InvasionMonsters.GoldenVepar] = 2,
+        [InvasionMonsters.GoldenLizardKing] = 3,
+    };
+
     private static readonly HashSet<int> GoldenMonsters =
     [
         InvasionMonsters.GoldenBudgeDragon,
@@ -91,7 +103,8 @@ public static class GoldenInvasion
         Everywhere(InvasionMonsters.GoldenSoldier, 3, InvasionMaps.Devias),
         Everywhere(InvasionMonsters.GoldenVepar, 3, InvasionMaps.Atlans),
         Everywhere(GoldenKnight, 3, Dungeon),
-        Everywhere(InvasionMonsters.GoldenTitan, 3, InvasionMaps.Atlans),
+        // Mu La Ronda: the Golden Titan is Devias' (it was coming out in Atlans).
+        Everywhere(InvasionMonsters.GoldenTitan, 3, InvasionMaps.Devias),
         Everywhere(GoldenDevil, 3, LostTower),
         Everywhere(InvasionMonsters.GoldenWheel, 3, InvasionMaps.Tarkan),
         Everywhere(InvasionMonsters.GoldenLizardKing, 2, InvasionMaps.Atlans),
@@ -107,7 +120,9 @@ public static class GoldenInvasion
 
     /// <summary>The level (+N) of the Box of Kundun a golden monster drops on a map; null for anything else.</summary>
     public static byte? BoxLevelFor(int monsterNumber, int mapNumber)
-        => GoldenMonsters.Contains(monsterNumber) && BoxLevelByMap.TryGetValue(mapNumber, out var level) ? level : null;
+        => !GoldenMonsters.Contains(monsterNumber) ? null
+           : BoxLevelByMonster.TryGetValue(monsterNumber, out var own) ? own
+           : BoxLevelByMap.TryGetValue(mapNumber, out var level) ? level : null;
 
     private static InvasionSpawnConfiguration Everywhere(ushort monster, ushort count, params ushort[] maps)
         => new(monster, count, maps.ToList(), SpawnMapStrategy.AllMaps);

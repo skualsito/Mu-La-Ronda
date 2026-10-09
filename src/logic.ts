@@ -820,6 +820,18 @@ EventBus.on('MapChanged', packet => {
     return;
   }
 
+  // Mu La Ronda: a lightning hit (Lizard King, the Lost Tower 7 mobs) knocks
+  // the hero one square (`MoveRandomlyAsync`), and OpenMU tells him so with
+  // this same packet. Drawn as a teleport - flash, stop, target dropped - it
+  // looked like the wizard's Teleport. A short unasked move is a shove.
+  if (
+    verdict === 'unasked' &&
+    Math.hypot(playerPos.x - pos.x, playerPos.z - pos.y) <= 2.5
+  ) {
+    placeHero(world, playerEntity, pos);
+    return;
+  }
+
   // Refused, or moved by someone else (Teleport Ally, a GM): Flag 0 of
   // `ReceiveTeleport` (WSclient.cpp:2193-2197, 2300-2304) - position, angle,
   // `CreateTeleportEnd` and the hero stops. No UI is closed: that is the
