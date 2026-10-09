@@ -38,6 +38,7 @@ import { getEmptyTexture } from '../libs/babylon/emptyTexture';
 import { BlendState } from './objects/enum';
 import { isHideTexture, isSkinOrHairTexture } from './skinTexture';
 import { parseTextureScriptFromPath } from './textureScript';
+import { cloneTargetMap, lazyAnimationGroups } from './lazyAnimationGroups';
 
 const reader = new BMDReader();
 const Models: Partial<Record<number, Promise<BMD>>> = {};
@@ -794,7 +795,14 @@ export async function loadGLTF(
   // materials bind `metadata.diffuseTexture` and `metadata.bodyLight` per
   // mesh in `onBindObservable`, and hardware instances draw in one call with
   // one uniform set - every object would take the last one's terrain light.
-  const entries = container.instantiateModelsToScene(name => name, false);
+  //
+  // Mu La Ronda: without the clips - `lazyClips` clones each one the first
+  // time it is played (lazyAnimationGroups.ts).
+  const entries = container.instantiateModelsToScene(name => name, false, {
+    doNotInstantiate: true,
+    predicate: entity => !(entity instanceof AnimationGroup),
+  });
+  const animationGroups = lazyClips(container, entries.rootNodes);
 
   const root = entries.rootNodes[0] as AbstractMesh;
   root.name = fileName;
@@ -818,7 +826,7 @@ export async function loadGLTF(
   // converter leaves every bone node at identity, so an unplayed model sits in
   // the raw, tilted BMD orientation. Instantiated clones do not inherit the
   // auto-play, so reproduce it here.
-  const first = entries.animationGroups[0];
+  const first = animationGroups[0];
 
   if (first) {
     first.play(true);
@@ -831,8 +839,28 @@ export async function loadGLTF(
   return {
     mesh: root,
     skeleton,
-    animationGroups: entries.animationGroups,
+    animationGroups,
   };
+}
+
+/**
+ * A copy's clips, cloned on first use onto its own nodes. Made right after
+ * `instantiateModelsToScene`, before the copy's root is renamed: the nodes
+ * are matched by their name path. A model whose nodes cannot be told apart
+ * that way gets all its clips cloned now, as before.
+ */
+function lazyClips(container: AssetContainer, cloneRoots: readonly Node[]): AnimationGroup[] {
+  const sources = container.animationGroups;
+  if (!sources.length) return [];
+
+  const sourceRoots = [...container.transformNodes, ...container.meshes].filter(node => !node.parent);
+  const { map, ambiguous } = cloneTargetMap(sourceRoots, cloneRoots);
+  const root = cloneRoots[0];
+  const make = (source: AnimationGroup): AnimationGroup | null =>
+    root && !root.isDisposed() ? source.clone(source.name, target => map.get(target) ?? target) : null;
+
+  if (ambiguous) return sources.map(source => make(source)).filter((g): g is AnimationGroup => !!g);
+  return lazyAnimationGroups(sources, make);
 }
 
 /**

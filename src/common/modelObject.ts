@@ -46,6 +46,7 @@ import { BlendState } from './objects/enum';
 // the monster classes that extend this one (B14, see `storeRef.ts`).
 import { storeRef } from './storeRef';
 import { settleStillAnimations } from './staticClips';
+import { animationGroupSource, forEachAnimationGroup } from './lazyAnimationGroups';
 import { requestGlowProbe } from '../scenes/sceneLook';
 import {
   shadowReceiverChanged,
@@ -887,11 +888,15 @@ export class ModelObject {
     const prevAction = this.CurrentAction;
     if (prevAction === actionIndex) return;
 
-    if (prevAction !== -1) {
-      const prevAnimationGroup = this.gltf.animationGroups[prevAction];
-      if (prevAnimationGroup) {
-        prevAnimationGroup.stop();
-      }
+    const animationGroup = this.gltf.animationGroups[actionIndex];
+
+    // Every other clip of the model, not only the previous action: the clip 0
+    // the loader auto-starts went on running under each player's actions -
+    // two full rigs animated per character, half of them for nothing
+    // (2026-10-09, the Lorencia ring). Only cloned clips are walked
+    // (lazyAnimationGroups.ts), so this stays cheap.
+    for (const group of this.gltf.animationGroups) {
+      if (group !== animationGroup && group.isStarted) group.stop();
     }
 
     this.CurrentAction = actionIndex;
@@ -899,7 +904,6 @@ export class ModelObject {
     this.ActionIterationWasFinished = false;
     this.actionSerial++;
 
-    const animationGroup = this.gltf.animationGroups[actionIndex];
     if (animationGroup) {
       this.startGroup(animationGroup, actionIndex, loop);
       // A clip started while off screen must not run; one-shots are exempt
@@ -1001,7 +1005,8 @@ export class ModelObject {
 
   /** Wall-clock seconds of one iteration of an action at the current AnimationSpeed. */
   getActionDuration(actionIndex: number): number {
-    const group = this.gltf?.animationGroups[actionIndex];
+    // The source's range: asking how long a clip lasts does not clone it.
+    const group = this.gltf ? animationGroupSource(this.gltf.animationGroups, actionIndex) : undefined;
     if (!group) return 0;
     const fps = group.targetedAnimations[0]?.animation.framePerSecond ?? 60;
     const speed = Math.max(0.0001, this.speedRatioFor(actionIndex));
@@ -1164,14 +1169,20 @@ export class ModelObject {
     this._bakedKeyDt.clear();
     this._lastRealFrame.clear();
     this._keyFrameStep.clear();
-    gltf.animationGroups.forEach((group, index) => {
-      const anim = group.targetedAnimations[0]?.animation;
+    // Mu La Ronda: the keys are read off every clip, cloned or not (a clone
+    // shares its source's animations); the rest is set on each clip as it is
+    // cloned - the player rig's clips are cloned on first play
+    // (lazyAnimationGroups.ts).
+    for (let index = 0; index < gltf.animationGroups.length; index++) {
+      const anim = animationGroupSource(gltf.animationGroups, index)?.targetedAnimations[0]?.animation;
       const keys = anim?.getKeys();
       if (anim && keys && keys.length > 1) {
         this._bakedKeyDt.set(index, (keys[1].frame - keys[0].frame) / anim.framePerSecond);
         this._lastRealFrame.set(index, keys[keys.length - 2].frame);
         this._keyFrameStep.set(index, keys[1].frame - keys[0].frame);
       }
+    }
+    forEachAnimationGroup(gltf.animationGroups, (group, index) => {
       group.speedRatio = this.speedRatioFor(index);
       const markFinished = () => {
         if (this.gltf === gltf && this.CurrentAction === index) {
@@ -1279,11 +1290,12 @@ export class ModelObject {
 
     this.setStaticCaster(true);
 
-    for (const group of groups) {
+    // Clips cloned later (lazyAnimationGroups.ts) get it as they come.
+    forEachAnimationGroup(groups, group => {
       group.onAnimationGroupPlayObservable.addOnce(() =>
         this.setStaticCaster(false)
       );
-    }
+    });
   }
 
   private setStaticCaster(still: boolean) {

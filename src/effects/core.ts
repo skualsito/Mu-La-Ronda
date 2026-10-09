@@ -281,6 +281,23 @@ function colourKey(c: RGB): string {
 }
 
 /**
+ * Steps a material's tint is rounded to. The cache is keyed by the tint, and
+ * an effect that animates its colour (a flare that flickers, a glow fading
+ * in) asked for a new tint nearly every frame: each one was a new material,
+ * kept for good, so a character left levelling for an hour piled up
+ * thousands of them and the game slowed until it broke (Raklion, 2026-10-09).
+ * A 1/32 step is below what an additive card shows, and bounds the cache to
+ * a few dozen materials per sheet.
+ */
+const TINT_STEPS = 32;
+
+/** The tint a cached material is made with: rounded to `TINT_STEPS`. */
+export function cachedTint(colour: RGB, gain = 1): RGB {
+  const q = (v: number) => Math.round(v * gain * TINT_STEPS) / TINT_STEPS;
+  return [q(colour[0]), q(colour[1]), q(colour[2])];
+}
+
+/**
  * Effects draw after every group-0 mesh, the alpha-keyed ones included.
  * Babylon draws sprites and particles before the transparent queue, and an
  * alpha-tested mesh in that queue writes depth, so a flame in group 0 was
@@ -419,7 +436,7 @@ export function additiveMaterial(
     materials.set(scene, byKey);
   }
   const gain = blend === 'add' ? lightCardGain(scene) : 1;
-  const tint: RGB = gain === 1 ? colour : [colour[0] * gain, colour[1] * gain, colour[2] * gain];
+  const tint = cachedTint(colour, gain);
   const texKey = typeof texture === 'string' ? texture : `#${texture.uniqueId}`;
   const softKey = soft === 'card' ? '|softCard' : soft === true ? '|soft' : soft ? `|soft${soft.w}x${soft.h}` : '';
   const key = `${texKey}|${colourKey(tint)}|${blend}${softKey}`;
