@@ -33,6 +33,9 @@ public class DefaultDropGenerator : IDropGenerator
     private readonly List<DropItemGroup> _chanceDropGroups = new(64);
     private readonly List<DropItemGroup> _guaranteedDropGroups = new(16);
 
+    /// <summary>Mu La Ronda: the drop groups of the map of the drop being generated.</summary>
+    private ICollection<DropItemGroup> _mapDropGroups = [];
+
     /// <summary>
     /// Mu La Ronda: bosses whose drops come only from their own groups (deploy/config): one of
     /// them, at random, per item, up to their maximum drops (or one less, at random) - never the
@@ -88,6 +91,7 @@ public class DefaultDropGenerator : IDropGenerator
         using var l = await this._lock.LockAsync();
         this._guaranteedDropGroups.Clear();
         this._chanceDropGroups.Clear();
+        this._mapDropGroups = map.DropItemGroups ?? [];
 
         if (BossDropTables.Contains(monster.Number) && monster.DropItemGroups?.Count > 0)
         {
@@ -582,7 +586,12 @@ public class DefaultDropGenerator : IDropGenerator
     private Item? GenerateItemFromGroup(MonsterDefinition monster, DropItemGroup selectedGroup)
     {
         var isDropSpecificForMonster = monster.DropItemGroups.Contains(selectedGroup);
-        if (isDropSpecificForMonster)
+
+        // Mu La Ronda: one item put on a map on purpose (the Moonstone Pendant in Kanturu Ruins and
+        // Relics, 21-moonstone-pendant.sql) drops from any monster there, whatever its level - the
+        // gap below left it out on every kill (drop level 21 against monsters of 100 and more).
+        var isPlacedOnMap = this._mapDropGroups.Contains(selectedGroup) && selectedGroup.PossibleItems.Count == 1;
+        if (isDropSpecificForMonster || isPlacedOnMap)
         {
             return this.GenerateItemDrop(selectedGroup, selectedGroup.PossibleItems!);
         }

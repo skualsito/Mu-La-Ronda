@@ -194,6 +194,22 @@ export const MuWindows = new (class _MuWindows {
     return false;
   }
 
+  /**
+   * Mu La Ronda: every window closes, top to bottom - the loading screen of a
+   * warp or a map change (`ui/components/loadingScreen`), where the original
+   * runs `HideAll`. A window that has nothing to close is left as it is.
+   */
+  closeAll(): void {
+    for (const id of [...this.order].reverse()) {
+      if (!this.order.includes(id)) continue;
+      try {
+        this.closers.get(id)?.();
+      } catch (error) {
+        console.error(`[windows] closing ${id} failed`, error);
+      }
+    }
+  }
+
   // ---- placement ----------------------------------------------------------
 
   moveTo(id: string, x: number, y: number): void {

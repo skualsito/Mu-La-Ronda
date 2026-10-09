@@ -132,11 +132,17 @@ internal class EntityFrameworkContextBase : IContext
             var key = entry.Metadata.FindPrimaryKey()?.Properties
                 .Select(p => entry.Property(p.Name).CurrentValue?.ToString())
                 .ToList() ?? [];
+            var foreignKeys = entry.Properties
+                .Where(p => p.Metadata.IsForeignKey())
+                .Select(p => $"{p.Metadata.Name}={p.CurrentValue ?? p.OriginalValue}");
             this._logger.LogWarning(
-                "Save refused for {EntityType} [{Key}] in state {State} ({Error}); dropping it so the rest is saved (recovery {Recovery}/{MaxRecoveries}).",
+                "Save refused for {EntityType} [{Key}] in state {State} - {Entity} ({ForeignKeys}) - saving {Owner} ({Error}); dropping it so the rest is saved (recovery {Recovery}/{MaxRecoveries}).",
                 entry.Metadata.ClrType.Name,
                 string.Join(", ", key),
                 entry.State,
+                entry.Entity,
+                string.Join(", ", foreignKeys),
+                SaveOwner.Current.Value ?? "?",
                 exception.InnerException?.Message ?? exception.Message,
                 recovery,
                 maxRecoveries);

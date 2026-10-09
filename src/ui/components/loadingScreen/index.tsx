@@ -1,6 +1,8 @@
 import { observer } from 'mobx-react-lite';
+import { useEffect } from 'react';
 import { Store, UIState } from '../../../store';
 import { RondaLoadingView } from '../rondaLoading';
+import { MuWindows } from '../muWindow/windowState';
 
 /**
  * The screen over every scene load after the opening one (entering the game,
@@ -8,9 +10,15 @@ import { RondaLoadingView } from '../rondaLoading';
  * upstream's MU artwork (`art.tsx` / `progressBar.tsx`, left in place).
  */
 export const LoadingScreen = observer(() => {
-  if (Store.uiState === UIState.Preloader) return null;
+  const loading = Store.uiState !== UIState.Preloader && Store.isLoading;
 
-  if (!Store.isLoading) return null;
+  // Mu La Ronda: the loader comes up over a warp or a map change - the
+  // inventory, character, party and every other window close with it.
+  useEffect(() => {
+    if (loading) MuWindows.closeAll();
+  }, [loading]);
+
+  if (!loading) return null;
 
   const progress = Math.max(0, Math.min(1, Store.loadingProgress));
 
