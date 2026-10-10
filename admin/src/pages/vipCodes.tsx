@@ -100,11 +100,11 @@ export function VipCodesPage() {
 
   return (
     <>
-      <PageHeader title="VIP" subtitle="Pagos con Mercado Pago (Plata y Oro) y códigos de descuento para el Bronce, que se compra con zen." />
+      <PageHeader title="VIP" subtitle="Bronce se compra con zen; Plata y Oro con Mercado Pago. Los códigos de descuento valen para los tres." />
 
       <VipPaymentsSection />
 
-      <h2 className="section-title">Códigos de descuento (Bronce)</h2>
+      <h2 className="section-title">Códigos de descuento</h2>
 
       <Card title="Nuevo código">
         <CodeForm draft={draft} onChange={setDraft} />

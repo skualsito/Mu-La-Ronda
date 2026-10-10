@@ -10,6 +10,14 @@ export function ServerPage() {
   const status = useLoad(() => api<ServerStatus>('/server'), []);
   const logs = useLoad(() => api<{ lines: string[] }>('/server/logs'), []);
   const [confirm, setConfirm] = useState(false);
+  const [confirmStop, setConfirmStop] = useState<number | null>(null);
+  const [now, setNow] = useState(Date.now());
+
+  // The countdown of a stop with a warning, and the state while it changes.
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
   const [filter, setFilter] = useState('');
   const logRef = useRef<HTMLPreElement>(null);
 
@@ -30,7 +38,23 @@ export function ServerPage() {
     }
   };
 
+  const call = async (path: string, body: unknown, done: string) => {
+    try {
+      await api(path, { method: 'POST', body });
+      toast(done);
+      status.reload();
+      setTimeout(() => {
+        status.reload();
+        logs.reload();
+      }, 4000);
+    } catch (err) {
+      toast(err instanceof Error ? err.message : String(err), 'error');
+    }
+  };
+
   const running = status.data?.state === 'running';
+  const stopAt = status.data?.stopAt ? new Date(status.data.stopAt).getTime() : null;
+  const left = stopAt ? Math.max(0, Math.round((stopAt - now) / 1000)) : 0;
   const lines = (logs.data?.lines ?? []).filter(l => !filter || l.toLowerCase().includes(filter.toLowerCase()));
 
   return (
@@ -59,6 +83,50 @@ export function ServerPage() {
           />
         )}
       </div>
+
+      <Card title="Apagar y prender">
+        {!status.data?.available ? (
+          <p className="muted">Sin acceso a Docker.</p>
+        ) : running ? (
+          <>
+            <p className="muted">
+              Apaga el servidor del juego para hacer cambios sin gente adentro: guarda y desconecta a todos, y nadie puede
+              entrar hasta que lo prendas. Con aviso, los jugadores ven un mensaje dorado antes.
+            </p>
+            {stopAt ? (
+              <div className="row-actions">
+                <span>
+                  Se apaga en <b>{Math.floor(left / 60)}:{String(left % 60).padStart(2, '0')}</b>
+                </span>
+                <button className="btn btn-ghost" onClick={() => call('/server/stop/cancel', {}, 'Apagado cancelado')}>
+                  Cancelar
+                </button>
+              </div>
+            ) : (
+              <div className="row-actions">
+                <button className="btn" onClick={() => setConfirmStop(5)}>
+                  Apagar en 5 min (con aviso)
+                </button>
+                <button className="btn" onClick={() => setConfirmStop(1)}>
+                  Apagar en 1 min (con aviso)
+                </button>
+                <button className="btn btn-danger" onClick={() => setConfirmStop(0)}>
+                  Apagar ya
+                </button>
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            <p className="muted">El servidor del juego está apagado: nadie puede entrar.</p>
+            <div className="row-actions">
+              <button className="btn btn-primary" onClick={() => call('/server/start', {}, 'OpenMU se está prendiendo (tarda un minuto)')}>
+                Prender OpenMU
+              </button>
+            </div>
+          </>
+        )}
+      </Card>
 
       <Card
         title="Reiniciar"
@@ -94,6 +162,24 @@ export function ServerPage() {
           {!lines.length && <div className="muted">Sin líneas.</div>}
         </pre>
       </Card>
+
+      {confirmStop !== null && (
+        <Confirm
+          title="Apagar OpenMU"
+          text={
+            confirmStop === 0
+              ? 'Se desconecta a todos ahora y nadie puede entrar hasta que lo prendas.'
+              : `Los jugadores ven el aviso ahora y el servidor se apaga en ${confirmStop} ${confirmStop === 1 ? 'minuto' : 'minutos'}. Nadie puede entrar hasta que lo prendas.`
+          }
+          confirmLabel="Apagar"
+          danger
+          onAnswer={yes => {
+            const minutes = confirmStop;
+            setConfirmStop(null);
+            if (yes) void call('/server/stop', { minutes }, minutes ? 'Aviso enviado' : 'OpenMU se está apagando');
+          }}
+        />
+      )}
 
       {confirm && (
         <Confirm

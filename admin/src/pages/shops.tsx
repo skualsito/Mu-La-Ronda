@@ -18,6 +18,7 @@ export function ShopsPage({ shop }: { shop?: string }) {
   const list = useLoad(() => api<ShopList>('/shops'), []);
   const [filter, setFilter] = useState('');
   const [newNpc, setNewNpc] = useState('');
+  const [confirmIgc, setConfirmIgc] = useState(false);
 
   if (list.error) return <ErrorBox error={list.error} onRetry={list.reload} />;
   if (!list.data) return <Loading />;
@@ -41,7 +42,30 @@ export function ShopsPage({ shop }: { shop?: string }) {
       <PageHeader
         title="Shops"
         subtitle="Lo que vende cada NPC. Los precios los calcula OpenMU según el item. Los cambios entran en el juego al reiniciar OpenMU (Servidor → Reiniciar)."
+        actions={
+          <button className="btn btn-small" onClick={() => setConfirmIgc(true)}>
+            Cargar tiendas de IGC
+          </button>
+        }
       />
+      {confirmIgc && (
+        <Confirm
+          title="Cargar tiendas de IGC"
+          text="Vacía las tiendas del server IGC (Hanzo, Lumen, Pasi, Amy, Silvia, Rhea…) y las vuelve a llenar con lo de IGC. Lo que se haya cambiado a mano en esas tiendas se pierde. Entra en el juego al reiniciar OpenMU."
+          confirmLabel="Cargar"
+          onAnswer={async yes => {
+            setConfirmIgc(false);
+            if (!yes) return;
+            try {
+              const { shops } = await api<{ shops: { name: string; items: number }[] }>('/shops/igc', { method: 'POST' });
+              list.reload();
+              toast(`${shops.length} tiendas cargadas. Reiniciá OpenMU para que entren en el juego.`);
+            } catch (err) {
+              toast(err instanceof Error ? err.message : String(err), 'error');
+            }
+          }}
+        />
+      )}
       <div className="shops-layout">
         <Card title={`Tiendas (${list.data.shops.length})`} className="shops-list">
           <input className="search" placeholder="Buscar tienda o mapa…" value={filter} onChange={e => setFilter(e.target.value)} />

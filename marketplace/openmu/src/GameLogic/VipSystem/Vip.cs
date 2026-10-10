@@ -61,8 +61,11 @@ public static class Vip
     public static bool CanAutoReset(VipTier tier) => tier.Number >= 2;
 
     /// <summary>
-    /// Adds months of a tier the way a purchase does: on top of what is left of the same tier (or
-    /// from now), or - for a higher tier than the current one - waiting for the current one to end.
+    /// Adds months of a tier the way a purchase does. The same tier adds to what is left of it.
+    /// A higher one starts at once: from bronze (or nothing) to silver or gold it runs from now
+    /// (what was left of bronze is replaced); from silver to gold it is an upgrade that keeps the
+    /// end date of the silver (it was paid as the difference, the months are not used). A lower
+    /// one than the current can't be added.
     /// </summary>
     /// <param name="player">The player of the account.</param>
     /// <param name="tier">The tier.</param>
@@ -71,24 +74,26 @@ public static class Vip
     public static string? AddMonths(Player player, VipTier tier, int months)
     {
         var (current, expires) = Of(player);
-        var (next, nextDays) = NextOf(player);
-        var queue = current.Number > 0 && tier.Number > current.Number;
         if (current.Number > tier.Number)
         {
             return $"tenes VIP {current.Name}, no podes sumar uno mas bajo.";
         }
 
-        if (queue && next.Number > 0 && next.Number != tier.Number)
-        {
-            return $"ya tenes VIP {next.Name} esperando a que termine el {current.Name}.";
-        }
-
         var now = DateTime.UtcNow;
-        var granted = queue
-            ? SetNext(player, tier, (next.Number == tier.Number ? nextDays : 0) + (Duration.TotalDays * months))
-            : Grant(player, tier, (current.Number > 0 && expires > now ? expires : now) + (Duration * months));
+        var end = IsUpgrade(current, tier) ? expires
+            : current.Number == tier.Number && expires > now ? expires + (Duration * months)
+            : now + (Duration * months);
+
+        // A tier that waited for the current one to end (the old way to go up) is not needed any more.
+        var granted = Grant(player, tier, end) && SetNext(player, Tiers[0], 0);
         return granted ? null : "no se pudo activar, avisale a un GM.";
     }
+
+    /// <summary>Whether buying <paramref name="tier"/> on top of <paramref name="current"/> is the silver to gold upgrade.</summary>
+    /// <param name="current">The running tier.</param>
+    /// <param name="tier">The tier bought.</param>
+    /// <returns>True from silver to gold.</returns>
+    public static bool IsUpgrade(VipTier current, VipTier tier) => current.Number == 2 && tier.Number == 3;
 
     /// <summary>The tier and expiry of the player's account; tier 0 when there is none or it ran out.</summary>
     public static (VipTier Tier, DateTime Expires) Of(Player player)

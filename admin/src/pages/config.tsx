@@ -72,6 +72,7 @@ export function ConfigPage({ tab = 'juego' }: { tab?: string }) {
           config={data}
           onSave={body => save('/config/game', body, 'Juego guardado')}
           onSaveRates={body => save('/config/rates', body, 'Rates de drop guardados')}
+          onSaveKit={body => save('/config/starter-kit', body, 'Personajes nuevos guardado')}
         />
       )}
       {tab === 'resets' && (
@@ -120,7 +121,17 @@ function SaveRow({ dirty, onSave, onReset }: { dirty: boolean; onSave: () => voi
   );
 }
 
-function GameTab({ config, onSave, onSaveRates }: { config: Config; onSave: (body: unknown) => void; onSaveRates: (body: unknown) => void }) {
+function GameTab({
+  config,
+  onSave,
+  onSaveRates,
+  onSaveKit,
+}: {
+  config: Config;
+  onSave: (body: unknown) => void;
+  onSaveRates: (body: unknown) => void;
+  onSaveKit: (body: unknown) => void;
+}) {
   const [current, update, reset] = useDraft(config.game, g => g);
   const draft = current ?? config.game;
   type Game = Config['game'];
@@ -207,6 +218,8 @@ function GameTab({ config, onSave, onSaveRates }: { config: Config; onSave: (bod
         </Card>
       </div>
 
+      <StarterKitCard kit={config.starterKit} onSave={onSaveKit} />
+
       <Card title="Combate y desgaste">
         <div className="form-grid">
           <NumberField
@@ -233,6 +246,44 @@ function GameTab({ config, onSave, onSaveRates }: { config: Config; onSave: (bod
         {save}
       </Card>
     </>
+  );
+}
+
+function StarterKitCard({ kit, onSave }: { kit: Config['starterKit']; onSave: (body: unknown) => void }) {
+  const [current, update, reset] = useDraft(kit, k => k);
+  const draft = current ?? kit;
+  const dirty = JSON.stringify(draft) !== JSON.stringify(kit);
+  const set = <K extends keyof Config['starterKit']>(k: K, v: Config['starterKit'][K]) => update(() => ({ ...draft, [k]: v }));
+  return (
+    <Card title="Personajes nuevos">
+      <p className="muted small">
+        Lo que recibe cada personaje al crearse. Se aplica al instante (a los que se creen desde ahora).
+      </p>
+      <Toggle
+        label="Set básico y alas de inicio"
+        hint="El set más bajo de su clase y sus primeras alas (capa para DL y RF), puestos. Vencen solos y no se pueden guardar en el baúl, comerciar, vender ni tirar."
+        checked={draft.kitEnabled}
+        onChange={v => set('kitEnabled', v)}
+      />
+      <div className="form-grid">
+        <NumberField label="Días que dura el set" value={draft.kitDays} min={1} max={365} onChange={v => set('kitDays', v ?? 7)} />
+        <NumberField
+          label="Zen inicial"
+          value={draft.startingZen}
+          min={0}
+          onChange={v => set('startingZen', v ?? 0)}
+          hint={draft.startingZen > 0 ? formatNumber(draft.startingZen) : 'Sin zen inicial'}
+        />
+      </div>
+      <div className="row-actions">
+        {draft.startingZen > 0 && (
+          <button className="btn btn-small btn-ghost" onClick={() => set('startingZen', 0)}>
+            Sacar el zen inicial (fin de la beta)
+          </button>
+        )}
+      </div>
+      <SaveRow dirty={dirty} onSave={() => onSave(draft)} onReset={reset} />
+    </Card>
   );
 }
 
@@ -359,15 +410,30 @@ function GrandResetCard({ grand, onSave }: { grand: Config['grandReset']; onSave
   return (
     <Card title="Grand Reset" className="span-2">
       <p className="muted small">
-        El NPC de Grand Reset (Lorencia, al lado de Leo) vuelve el personaje a nivel 1, sin resets y con los stats de su clase, y le da
-        monedas para la <a href="#/tienda-gr">tienda Grand Reset</a>. Se aplica en el juego al instante.
+        El NPC de Grand Reset (Lorencia, al lado de Leo) vuelve el personaje a nivel 1, sin resets, sin master level y con el árbol
+        master vacío, con los stats de su clase (el inventario queda), y le da monedas por cada reset que tenía para la{' '}
+        <a href="#/tienda-gr">tienda Grand Reset</a>. Se aplica en el juego al instante.
       </p>
       <Toggle label="Grand Reset habilitado" checked={draft.active} onChange={v => set('active', v)} />
       <div className="form-grid">
         <NumberField label="Nivel requerido" value={draft.RequiredLevel} min={1} max={1000} onChange={v => set('RequiredLevel', v ?? 400)} />
         <NumberField label="Resets requeridos" value={draft.RequiredResets} min={0} onChange={v => set('RequiredResets', v ?? 0)} />
         <NumberField label="Zen requerido" value={draft.RequiredMoney} min={0} onChange={v => set('RequiredMoney', v ?? 0)} hint={formatNumber(draft.RequiredMoney)} />
-        <NumberField label="Monedas por Grand Reset" value={draft.CoinsPerGrandReset} min={0} onChange={v => set('CoinsPerGrandReset', v ?? 0)} />
+        <NumberField
+          label="Monedas por reset"
+          value={draft.CoinsPerReset}
+          min={0}
+          onChange={v => set('CoinsPerReset', v ?? 0)}
+          hint={`240 resets = ${formatNumber(240 * (draft.CoinsPerReset ?? 0) + (draft.CoinsPerGrandReset ?? 0))} monedas`}
+        />
+        <NumberField
+          label="Resets por cada grand reset"
+          value={draft.ResetsPerGrandReset}
+          min={1}
+          onChange={v => set('ResetsPerGrandReset', v ?? 10)}
+          hint={`240 resets = ${Math.max(1, Math.floor(240 / Math.max(1, draft.ResetsPerGrandReset ?? 10)))} grand resets`}
+        />
+        <NumberField label="Monedas extra por Grand Reset" value={draft.CoinsPerGrandReset} min={0} onChange={v => set('CoinsPerGrandReset', v ?? 0)} hint="Aparte de las de los resets" />
       </div>
       <SaveRow dirty={dirty} onSave={() => onSave(draft)} onReset={reset} />
     </Card>

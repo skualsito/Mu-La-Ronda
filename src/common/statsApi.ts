@@ -10,7 +10,7 @@ import { registerApiUrl } from './serverServices';
 
 export type RankingType = 'resets' | 'pk' | 'guilds';
 
-export type ResetRow = { name: string; class: string; resets: number; level: number; masterLevel: number };
+export type ResetRow = { name: string; class: string; grandResets: number; resets: number; level: number; masterLevel: number };
 export type PkRow = { name: string; class: string; kills: number; level: number };
 export type GuildRow = { name: string; score: number; members: number; resets: number; master: string | null };
 

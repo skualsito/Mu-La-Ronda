@@ -6857,6 +6857,19 @@ const LAGUL_RIBBONS = [1, 2, 4];
 const LAGUL_ODDS = [5, 4, 3];
 
 /**
+ * Mu La Ronda: Pollution's cost. Each Lagul is an animated model with its own skeleton, a spirit
+ * ribbon, six sparkles, six trails and smoke off its bones every tick, and a cast lasts 160 ticks
+ * while the skill comes back in 4 s - with summoners casting it on the MU Helper, a town fight
+ * stacked dozens of them and the frame rate went. So: at most MAX_LAGULS a cast, and a cast that
+ * comes while POLLUTION_FULL_LIMIT are already showing, or while the same summoner's last one
+ * still is, shows only its smoke and clouds (half as many).
+ */
+const MAX_LAGULS = 2;
+const POLLUTION_FULL_LIMIT = 2;
+const pollutionsShowing = new Set<object>();
+const pollutionCasters = new Set<object>();
+
+/**
  * BITMAP_SMOKE sub57 (smoke01, 64 px): LT 32, Scale `s x (1.48..1.79)` growing 0.05 a tick, rising on a
  * gravity that gains 0.1 cm a tick (53 cm over its life), light (0.5, 0.1, 0.8) x LT / 32 whatever it was
  * made with (ZzzEffectParticle.cpp:1355-1359, :5753-5758).
@@ -6926,8 +6939,16 @@ const pollutionOf = (graded: boolean): Step => (at, c) => {
   if (entityGone(c.caster)) return;
   const tier = bookTier(c.caster);
   const point = at.clone();
-  const odds = LAGUL_ODDS[tier];
-  if (graded) pollutionGrace(c, point);
+  const lite = pollutionsShowing.size >= POLLUTION_FULL_LIMIT || pollutionCasters.has(c.caster);
+  const odds = lite ? LAGUL_ODDS[tier] * 2 : LAGUL_ODDS[tier];
+  const token = {};
+  pollutionsShowing.add(token);
+  pollutionCasters.add(c.caster);
+  delay(ticks(160), () => {
+    pollutionsShowing.delete(token);
+    pollutionCasters.delete(c.caster);
+  });
+  if (graded && !lite) pollutionGrace(c, point);
   repeat(160, TICK, (_p, cc) => {
     if (randInt(odds) !== 0) return;
     pollutionSmoke(cc, new Vector3(point.x + cm(randInt(500) - 250), point.y, point.z + cm(randInt(500) - 250)), 3.5);
@@ -6938,7 +6959,8 @@ const pollutionOf = (graded: boolean): Step => (at, c) => {
 
   const seek = fixedPoint(new Vector3(point.x, point.y + cm(80), point.z));
   const lagulLight = bodyLight(point, [0, 0, 0.1]);
-  for (let i = 0; i < LAGUL_RIBBONS[tier]; i++) {
+  const laguls = lite ? 0 : Math.min(MAX_LAGULS, LAGUL_RIBBONS[tier]);
+  for (let i = 0; i < laguls; i++) {
     const start = new Vector3(point.x + cm(randInt(300) - 150), point.y, point.z + cm(randInt(300) - 150));
     const head = start.clone();
     const heading = new Vector3(Math.sin(rad(i * 90)), 0, Math.cos(rad(i * 90)));

@@ -192,6 +192,7 @@ export const NpcShop = observer(() => {
   return (
     <MuItemWindow
       id={WINDOW_ID}
+      dockLeftOf={Store.inventoryEnabled ? 'inventory' : undefined}
       className="npc-shop"
       column={column}
       onClose={() => Store.closeNpcShop()}

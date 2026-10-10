@@ -59,6 +59,7 @@ export const ChaosMachine = observer(() => {
   return (
     <MuItemWindow
       id={WINDOW_ID}
+      dockLeftOf={Store.inventoryEnabled ? 'inventory' : undefined}
       className="chaos-machine"
       column={column}
       label={title}

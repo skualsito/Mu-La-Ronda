@@ -59,15 +59,16 @@ describe('the Rage Fighter class column', () => {
     expect(classCanUse(def(5, 0), rf)).toBe(false); // Skull Staff
   });
 
-  it('wears a whole armour set, gloves included', () => {
+  it('wears his four armour sets, but no gloves', () => {
     const rf = hero(RAGE_FIGHTER);
-    // Leather, Scale, Brass and Plate: the four sets that are his. The server
-    // has no Rage Fighter parameter on `CreateGloves` at all, so group 10 came
-    // back 0 and each set read as four pieces out of five (#204).
+    // Leather, Scale, Brass and Plate are his. Mu La Ronda: as in the original, he wears no
+    // armour gloves - he fights with the glove weapons (deploy/config/41-rf-gloves.sql takes
+    // them off him on the server too).
     for (const set of [5, 6, 8, 9]) {
-      for (const group of [7, 8, 9, 10, 11]) {
+      for (const group of [7, 8, 9, 11]) {
         expect(classCanUse(def(group, set), rf)).toBe(true);
       }
+      expect(classCanUse(def(10, set), rf)).toBe(false);
     }
   });
 

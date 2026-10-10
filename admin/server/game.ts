@@ -18,6 +18,9 @@ export const STAT = {
   vitality: '6ca5c3a6-b109-45a5-87a7-fdcb107b4982',
   energy: '01b0ef28-f7a0-46b5-97ba-2b624a54cd75',
   leadership: '6af2c9df-3ae4-4721-8462-9a8ec7f56fe4',
+  /** Mu La Ronda: the grand resets and their coins (GameLogic/GrandReset/GrandReset.cs). */
+  grandResets: '4d1c7b2a-9e3f-4a58-8c61-2b7e0f9a3d51',
+  grandCoins: '4d1c7b2a-9e3f-4a58-8c61-2b7e0f9a3d52',
 } as const;
 
 type StatKey = keyof typeof STAT;
@@ -290,13 +293,15 @@ export async function updateCharacter(sql: Sql, id: string, patch: CharacterPatc
       vitality: [1, MAX_STAT],
       energy: [1, MAX_STAT],
       leadership: [0, MAX_STAT],
+      grandResets: [0, 100000],
+      grandCoins: [0, 2_000_000_000],
     };
 
     let statsChanged = false;
     for (const key of Object.keys(STAT) as StatKey[]) {
       const value = clampInt(patch[key], ...statLimits[key]);
       if (value === undefined) continue;
-      if (key !== 'resets') statsChanged = true;
+      if (key !== 'resets' && key !== 'grandResets' && key !== 'grandCoins') statsChanged = true;
       const def = STAT[key];
       const updated = await tx`
         UPDATE data."StatAttribute" SET "Value" = ${value}
@@ -490,7 +495,10 @@ const RESET_TYPE = '6a9d585d-79d7-4674-b6ea-7e87392fa501';
 export const DROP_RATES_TYPE = 'c3f1a2b4-5d6e-4f70-8192-a3b4c5d6e7f8';
 /** Mu La Ronda's grand reset (marketplace/openmu/src/GameLogic/GrandReset/GrandReset.cs). */
 export const GRAND_RESET_TYPE = 'e2b7c4d1-6a3f-4e58-9b0c-1d2e3f4a5b6c';
-const GRAND_RESET_DEFAULTS = { RequiredLevel: 400, RequiredResets: 10, RequiredMoney: 0, CoinsPerGrandReset: 100 };
+const GRAND_RESET_DEFAULTS = { RequiredLevel: 400, RequiredResets: 10, RequiredMoney: 0, CoinsPerReset: 10, CoinsPerGrandReset: 0, ResetsPerGrandReset: 10 };
+/** Mu La Ronda's starter kit and zen of new characters (GameLogic/PlugIns/MlrStarterKitPlugIn.cs). */
+export const STARTER_KIT_TYPE = '6f4c2e1a-8b3d-4f5e-9a7c-2d1e0f3b4a5c';
+const STARTER_KIT_DEFAULTS = { StartingZen: 500_000_000, KitEnabled: true, KitDays: 7 };
 
 /**
  * The game rules the panel edits: config."GameConfiguration" (one row) and, for PvP,
@@ -565,6 +573,8 @@ export async function getConfig(sql: Sql) {
       FROM config."PlugInConfiguration" WHERE "TypeId" = ${RESET_TYPE}::uuid`;
 
   const [rates] = await sql`SELECT "CustomConfiguration" AS config FROM config."PlugInConfiguration" WHERE "TypeId" = ${DROP_RATES_TYPE}::uuid`;
+  const [kit] = await sql`SELECT "CustomConfiguration" AS config FROM config."PlugInConfiguration" WHERE "TypeId" = ${STARTER_KIT_TYPE}::uuid`;
+  const kitConfig = { ...STARTER_KIT_DEFAULTS, ...safeJson(kit?.config) } as Record<string, unknown>;
   const [grand] = await sql`
     SELECT "IsActive" AS active, "CustomConfiguration" AS config FROM config."PlugInConfiguration" WHERE "TypeId" = ${GRAND_RESET_TYPE}::uuid`;
   const rateConfig = safeJson(rates?.config);
@@ -585,6 +595,11 @@ export async function getConfig(sql: Sql) {
     game,
     rates: { itemDropRate: rate('ItemDropRate'), excellentDropRate: rate('ExcellentDropRate'), zenDropRate: rate('ZenDropRate') },
     // No row: OpenMU runs a new plugin active, with its defaults.
+    starterKit: {
+      startingZen: Number(kitConfig.StartingZen) || 0,
+      kitEnabled: kitConfig.KitEnabled !== false,
+      kitDays: Number(kitConfig.KitDays) || 7,
+    },
     grandReset: { active: grand?.active ?? true, ...GRAND_RESET_DEFAULTS, ...pick(safeJson(grand?.config), Object.keys(GRAND_RESET_DEFAULTS)) },
     reset: { active: reset?.active ?? false, config: safeJson(reset?.config) },
     maps,
@@ -715,6 +730,20 @@ function pick(source: Record<string, unknown>, keys: string[]): Record<string, n
   return out;
 }
 
+/** What new characters get: the zen (0 for none) and the kit (on/off, days). Returns what was written, for OpenMU. */
+export async function updateStarterKit(sql: Sql, patch: Record<string, unknown>) {
+  const [row] = await sql`SELECT "CustomConfiguration" AS config FROM config."PlugInConfiguration" WHERE "TypeId" = ${STARTER_KIT_TYPE}::uuid`;
+  const current: Record<string, unknown> = { ...STARTER_KIT_DEFAULTS, ...safeJson(row?.config) };
+  const zen = clampInt(patch.startingZen, 0, 2_000_000_000);
+  if (zen !== undefined) current.StartingZen = zen;
+  const days = clampInt(patch.kitDays, 1, 365);
+  if (days !== undefined) current.KitDays = days;
+  if (typeof patch.kitEnabled === 'boolean') current.KitEnabled = patch.kitEnabled;
+  const config = pluginJson(current);
+  await writePluginConfig(sql, STARTER_KIT_TYPE, true, config);
+  return { typeId: STARTER_KIT_TYPE, active: true, config };
+}
+
 /** The grand reset: on or off, what it asks and the coins it gives. Returns what was written, for OpenMU. */
 export async function updateGrandReset(sql: Sql, patch: Record<string, unknown>) {
   const [row] = await sql`
@@ -724,6 +753,8 @@ export async function updateGrandReset(sql: Sql, patch: Record<string, unknown>)
     RequiredLevel: [1, 1000],
     RequiredResets: [0, 100_000],
     RequiredMoney: [0, 2_000_000_000],
+    CoinsPerReset: [0, 1_000_000],
+    ResetsPerGrandReset: [1, 100_000],
     CoinsPerGrandReset: [0, 1_000_000],
   };
   for (const [key, [min, max]] of Object.entries(limits)) {

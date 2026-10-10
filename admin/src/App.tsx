@@ -40,7 +40,7 @@ const NAV = [
   { path: 'monstruos', key: 'monstruos', label: 'Monstruos', icon: 'M12 3c-4 0-7 3-7 7v4l-2 3h4l1 3h8l1-3h4l-2-3v-4c0-4-3-7-7-7zM9 11h.01M15 11h.01' },
   { path: 'eventos', key: 'eventos', label: 'Eventos', icon: 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4M8 14h3' },
   { path: 'mensajes', key: 'mensajes', label: 'Mensajes', icon: 'M4 5h16v11H8l-4 4zM8 9h8M8 12h5' },
-  { path: 'tienda-gr', key: 'shops', label: 'Tienda Grand Reset', icon: 'M12 3l2.5 5 5.5.8-4 3.9.9 5.5L12 15.6 7.1 18.2l.9-5.5-4-3.9 5.5-.8z' },
+  { path: 'tienda-gr', key: 'tienda-gr', label: 'Tienda Grand Reset', icon: 'M12 3l2.5 5 5.5.8-4 3.9.9 5.5L12 15.6 7.1 18.2l.9-5.5-4-3.9 5.5-.8z' },
   { path: 'vip', key: 'vip', label: 'VIP', icon: 'M20 12l-8 8-9-9V4h7zM7.5 7.5h.01' },
   { path: 'encuesta', key: 'encuesta', label: 'Encuesta', icon: 'M9 4h6v3H9zM6 6h12v15H6zM9 11h6M9 15h4' },
   { path: 'config', key: 'config', label: 'Configuración', icon: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm8-3l2-1-2-4-2 .5-1.5-1.5L16 4h-4l-.5 2L10 7.5 8 7 6 11l2 1-2 1 2 4 2-.5 1.5 1.5.5 2h4l.5-2 1.5-1.5 2 .5 2-4z' },

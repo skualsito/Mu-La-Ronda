@@ -111,9 +111,12 @@ export function VipPaymentsSection() {
                     <td>{formatDate(p.createdAt)}</td>
                     <td>{p.login}</td>
                     <td>
-                      {TIER[p.tier]} · {p.months} {p.months === 1 ? 'mes' : 'meses'}
+                      {p.kind === 'upgrade' ? 'Mejora Plata → Oro' : TIER[p.tier]} · {p.months} {p.months === 1 ? 'mes' : 'meses'}
                     </td>
-                    <td>{pesos(p.amount)}</td>
+                    <td>
+                      {pesos(p.amount)}
+                      {p.discountCode && <div className="muted small">{p.discountCode} (-{p.discountPercent}%)</div>}
+                    </td>
                     <td>
                       <Badge tone={s.tone}>{s.label}</Badge>
                       {p.note && <div className="muted small">{p.note}</div>}

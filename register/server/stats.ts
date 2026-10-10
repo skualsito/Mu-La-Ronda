@@ -19,6 +19,8 @@ const STAT = {
   level: '560931ad-0901-4342-b7f4-fd2e2fcc0563',
   masterLevel: '70cd8c10-391a-4c51-9aa4-a854600e3a9f',
   resets: '89a891a7-f9f9-4ab5-af36-12056e53a5f7',
+  /** Mu La Ronda's grand resets (GameLogic/GrandReset/GrandReset.cs). */
+  grandResets: '4d1c7b2a-9e3f-4a58-8c61-2b7e0f9a3d51',
 } as const;
 
 /**
@@ -61,11 +63,13 @@ async function query(sql: Sql, type: RankingType): Promise<readonly unknown[]> {
       return sql`
         SELECT c."Name" AS name,
                cc."Name" AS class,
+               COALESCE(gr."Value", 0)::int AS "grandResets",
                COALESCE(r."Value", 0)::int AS resets,
                COALESCE(l."Value", 0)::int AS level,
                COALESCE(m."Value", 0)::int AS "masterLevel"
           FROM data."Character" c
           JOIN config."CharacterClass" cc ON cc."Id" = c."CharacterClassId"
+          LEFT JOIN data."StatAttribute" gr ON gr."CharacterId" = c."Id" AND gr."DefinitionId" = ${STAT.grandResets}::uuid
           LEFT JOIN data."StatAttribute" r ON r."CharacterId" = c."Id" AND r."DefinitionId" = ${STAT.resets}::uuid
           LEFT JOIN data."StatAttribute" l ON l."CharacterId" = c."Id" AND l."DefinitionId" = ${STAT.level}::uuid
           LEFT JOIN data."StatAttribute" m ON m."CharacterId" = c."Id" AND m."DefinitionId" = ${STAT.masterLevel}::uuid
@@ -74,7 +78,7 @@ async function query(sql: Sql, type: RankingType): Promise<readonly unknown[]> {
            AND a."State" NOT IN ${sql(ACCOUNT_HIDDEN)}
            AND NOT EXISTS (SELECT 1 FROM data."Character" g
                             WHERE g."AccountId" = c."AccountId" AND g."CharacterStatus" = ${STATUS_GAME_MASTER})
-         ORDER BY resets DESC, level DESC, "masterLevel" DESC, c."Experience" DESC, c."Name"
+         ORDER BY "grandResets" DESC, resets DESC, level DESC, "masterLevel" DESC, c."Experience" DESC, c."Name"
          LIMIT ${RANKING_SIZE}`;
 
     case 'pk':

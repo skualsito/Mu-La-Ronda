@@ -81,6 +81,9 @@ export type VipPaymentRow = {
   status: string;
   mpPaymentId: string | null;
   note: string | null;
+  discountCode?: string | null;
+  discountPercent?: number | null;
+  kind?: string;
   createdAt: string;
   paidAt: string | null;
   grantedAt: string | null;
@@ -92,11 +95,14 @@ export async function vipPayments(sql: Sql) {
   if (!exists.ok) return { payments: [], totals: [], prices: await vipPriceSettings(sql) };
   const payments = await sql<VipPaymentRow[]>`
     SELECT id::text, login, tier, months, amount::float AS amount, status, mp_payment_id AS "mpPaymentId", note,
+           discount_code AS "discountCode", discount_percent AS "discountPercent", kind,
            created_at AS "createdAt", paid_at AS "paidAt", granted_at AS "grantedAt"
       FROM mlr.vip_payments ORDER BY created_at DESC LIMIT 300`;
   const totals = await sql<{ login: string; silverMonths: number; goldMonths: number; amount: number }[]>`
     SELECT login,
-           COALESCE(sum(months) FILTER (WHERE tier = 2), 0)::int AS "silverMonths",
+           -- An upgrade turns that many months of silver into gold.
+           GREATEST(0, COALESCE(sum(months) FILTER (WHERE tier = 2 AND kind = 'buy'), 0)
+                     - COALESCE(sum(months) FILTER (WHERE kind = 'upgrade'), 0))::int AS "silverMonths",
            COALESCE(sum(months) FILTER (WHERE tier = 3), 0)::int AS "goldMonths",
            sum(amount)::float AS amount
       FROM mlr.vip_payments WHERE status IN ('paid', 'granted')

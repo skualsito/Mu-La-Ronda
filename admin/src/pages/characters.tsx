@@ -280,6 +280,15 @@ export function CharacterPage({ id }: { id: string }) {
             <NumberField label="Nivel" value={draft.level} min={1} max={400} disabled={locked} onChange={v => set('level', v)} hint="Ajusta la experiencia sola" />
             <NumberField label="Master level" value={draft.masterLevel} min={0} max={200} disabled={locked} onChange={v => set('masterLevel', v)} />
             <NumberField label="Resets" value={draft.resets} min={0} disabled={locked} onChange={v => set('resets', v)} />
+            <NumberField label="Grand resets" value={draft.grandResets ?? 0} min={0} disabled={locked} onChange={v => set('grandResets', v ?? 0)} />
+            <NumberField
+              label="Monedas de Grand Reset"
+              value={draft.grandCoins ?? 0}
+              min={0}
+              disabled={locked}
+              onChange={v => set('grandCoins', v ?? 0)}
+              hint="Para la tienda del Grand Reset"
+            />
             <NumberField label="Puntos libres" value={draft.points} min={0} disabled={locked} onChange={v => set('points', v ?? 0)} />
             <NumberField label="Puntos master" value={draft.masterPoints} min={0} disabled={locked} onChange={v => set('masterPoints', v ?? 0)} />
             <NumberField label="Zen" value={draft.money} min={0} max={2_000_000_000} disabled={locked} onChange={v => set('money', v ?? 0)} hint={formatNumber(draft.money)} />

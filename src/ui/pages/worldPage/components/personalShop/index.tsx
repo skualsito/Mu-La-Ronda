@@ -104,6 +104,7 @@ export const MyShop = observer(() => {
   return (
     <MuItemWindow
       id={MY_WINDOW_ID}
+      dockLeftOf={Store.inventoryEnabled ? 'inventory' : undefined}
       className="personal-shop"
       column={column}
       label={t(TITLE)}

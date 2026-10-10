@@ -12,8 +12,8 @@ using MUnique.OpenMU.PlugIns;
 /// <summary>
 /// Mu La Ronda: /vip shows the account's VIP; /vip bronce buys 30 days of bronze with
 /// the character's zen (silver and gold are paid with Mercado Pago, from the VIP window). Buying the tier one
-/// already has adds to it; a lower one can't be bought; a higher one waits and
-/// starts when the current one ends (Vip.NextOf). /vip codigo X checks a discount
+/// already has adds to it; it can't be bought on top of silver or gold (Vip.AddMonths has the
+/// rules for going up). /vip codigo X checks a discount
 /// code for the VIP window, which shows the prices with it.
 /// </summary>
 [Guid("2C7D9E41-6A8B-4F3C-B1D5-0E9F8A7B6C24")]
@@ -83,20 +83,11 @@ public class VipChatCommandPlugIn : IChatCommandPlugIn
             return;
         }
 
-        // Which part of the VIP this buys: more of the current tier (or a first one), or more of
-        // the higher tier that waits for the current one to end.
-        var (current, expires) = Vip.Of(player);
-        var (next, nextDays) = Vip.NextOf(player);
-        var queue = current.Number > 0 && tier.Number > current.Number;
+        // With zen only bronze is bought: more of it, or a first one. Not on top of silver or gold.
+        var (current, _) = Vip.Of(player);
         if (current.Number > tier.Number)
         {
             await player.ShowBlueMessageAsync($"VIP: tenes VIP {current.Name}, no podes comprar uno mas bajo.").ConfigureAwait(false);
-            return;
-        }
-
-        if (queue && next.Number > 0 && next.Number != tier.Number)
-        {
-            await player.ShowBlueMessageAsync($"VIP: ya tenes VIP {next.Name} esperando a que termine el {current.Name}; podes sumarle meses a ese.").ConfigureAwait(false);
             return;
         }
 
@@ -142,8 +133,7 @@ public class VipChatCommandPlugIn : IChatCommandPlugIn
             return;
         }
 
-        // The months add up: on top of what is left of the same tier, or - for a higher tier - on
-        // top of what already waits for the current one to end.
+        // The months add up on top of what is left (Vip.AddMonths).
         if (Vip.AddMonths(player, tier, months) is { } notAdded)
         {
             // Nothing was granted: the zen goes back.
@@ -156,11 +146,6 @@ public class VipChatCommandPlugIn : IChatCommandPlugIn
         if (discount is not null)
         {
             await player.ShowBlueMessageAsync($"VIP: codigo {discount.Code} aplicado, {discount.Percent}% de descuento ({price:N0} zen en vez de {fullPrice:N0}).").ConfigureAwait(false);
-        }
-
-        if (queue)
-        {
-            await player.ShowBlueMessageAsync($"VIP: el {tier.Name} empieza cuando termine tu {current.Name}.").ConfigureAwait(false);
         }
 
         player.Logger.LogInformation("VIP {Tier} x{Months} bought by {Account} ({Character}) for {Price} zen.", tier.Name, months, player.Account?.LoginName, player.Name, price);

@@ -41,6 +41,9 @@ export type Stats = {
   vitality: number | null;
   energy: number | null;
   leadership: number | null;
+  /** Mu La Ronda: the grand resets and their coins. */
+  grandResets: number | null;
+  grandCoins: number | null;
 };
 
 export type CharacterRow = {
@@ -130,8 +133,10 @@ export type Config = {
   };
   /** Percent; 100 = the drops as configured. */
   rates: { itemDropRate: number; excellentDropRate: number; zenDropRate: number };
+  /** Mu La Ronda: what new characters get. */
+  starterKit: { startingZen: number; kitEnabled: boolean; kitDays: number };
   /** Mu La Ronda: the grand reset NPC. */
-  grandReset: { active: boolean; RequiredLevel: number; RequiredResets: number; RequiredMoney: number; CoinsPerGrandReset: number };
+  grandReset: { active: boolean; RequiredLevel: number; RequiredResets: number; RequiredMoney: number; CoinsPerReset: number; CoinsPerGrandReset: number; ResetsPerGrandReset: number };
   reset: { active: boolean; config: Record<string, unknown> };
   maps: MapRow[];
   fast: { spawnFactor: number; respawnSeconds: number; available: boolean };
@@ -140,7 +145,14 @@ export type Config = {
   live?: boolean;
 };
 
-export type ServerStatus = { available: boolean; state?: string; status?: string; error?: string };
+export type ServerStatus = {
+  available: boolean;
+  state?: string;
+  status?: string;
+  error?: string;
+  /** Mu La Ronda: when a stop with a warning to the players takes place. */
+  stopAt?: string | null;
+};
 
 export type Dashboard = {
   accounts: number;
@@ -390,6 +402,10 @@ export type VipPayment = {
   status: 'pending' | 'paid' | 'granted' | 'rejected' | 'cancelled';
   mpPaymentId: string | null;
   note: string | null;
+  discountCode?: string | null;
+  discountPercent?: number | null;
+  /** "buy", or "upgrade" (silver to gold, the difference for the months left). */
+  kind?: string;
   createdAt: string;
   paidAt: string | null;
   grantedAt: string | null;

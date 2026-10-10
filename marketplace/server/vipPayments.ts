@@ -116,11 +116,14 @@ async function readVip(tx: postgres.Sql | postgres.TransactionSql, accountId: st
 /** Why the account can't get this tier now (Vip.AddMonths' rules), or null. */
 function refusal(vip: VipRows, tier: number): string | null {
   if (vip.tier > tier) return `Tenés VIP ${TIERS[vip.tier]} activo: no podés sumar uno más bajo.`;
-  if (vip.tier > 0 && tier > vip.tier && vip.nextTier > 0 && vip.nextTier !== tier) {
-    return `Ya tenés VIP ${TIERS[vip.nextTier]} esperando a que termine el ${TIERS[vip.tier]}.`;
-  }
   return null;
 }
+
+/** Silver to gold: it keeps silver's end date and is paid as the difference (Vip.IsUpgrade). */
+const isUpgrade = (vip: VipRows, tier: number) => vip.tier === 2 && tier === 3;
+
+/** The whole months left of the running tier, at least one: what an upgrade is charged for. */
+const monthsLeft = (vip: VipRows) => Math.max(1, Math.ceil((vip.expires - Date.now() / DAY_MS) / VIP_DAYS));
 
 async function writeAttribute(tx: postgres.TransactionSql, accountId: string, definition: string, value: number) {
   const updated = await tx`
@@ -139,20 +142,18 @@ async function grantInDatabase(accountId: string, tier: number, months: number):
     const vip = await readVip(tx, accountId);
     const why = refusal(vip, tier);
     if (why) return why;
-    const days = VIP_DAYS * months;
-    if (vip.tier > 0 && tier > vip.tier) {
-      // Waits for the current one to end.
-      await writeAttribute(tx, accountId, VIP_TIER, vip.tier);
-      await writeAttribute(tx, accountId, VIP_EXPIRES, vip.expires);
-      await writeAttribute(tx, accountId, VIP_NEXT_TIER, tier);
-      await writeAttribute(tx, accountId, VIP_NEXT_DAYS, (vip.nextTier === tier ? vip.nextDays : 0) + days);
-    } else {
-      const from = vip.tier === tier ? vip.expires : Date.now() / DAY_MS;
-      await writeAttribute(tx, accountId, VIP_TIER, tier);
-      await writeAttribute(tx, accountId, VIP_EXPIRES, from + days);
-      await writeAttribute(tx, accountId, VIP_NEXT_TIER, vip.nextTier);
-      await writeAttribute(tx, accountId, VIP_NEXT_DAYS, vip.nextDays);
-    }
+    // The same rules as Vip.AddMonths: the same tier adds up, silver to gold keeps the end date,
+    // any other step up starts now (what was left of bronze is replaced).
+    const today = Date.now() / DAY_MS;
+    const end = isUpgrade(vip, tier)
+      ? vip.expires
+      : vip.tier === tier && vip.expires > today
+        ? vip.expires + VIP_DAYS * months
+        : today + VIP_DAYS * months;
+    await writeAttribute(tx, accountId, VIP_TIER, tier);
+    await writeAttribute(tx, accountId, VIP_EXPIRES, end);
+    await writeAttribute(tx, accountId, VIP_NEXT_TIER, 0);
+    await writeAttribute(tx, accountId, VIP_NEXT_DAYS, 0);
     return null;
   });
 }
@@ -232,6 +233,31 @@ async function grant(order: Order): Promise<void> {
   console.info(`vip: order ${order.id} granted (${order.login}, ${TIERS[order.tier]} x${order.months})`);
 }
 
+/** The code if this account may use it now (the same rules as GameLogic/VipSystem/VipDiscountCodes.cs). */
+async function findCode(code: string, accountId: string): Promise<{ code: string; percent: number } | { refusal: string }> {
+  const [row] = await sql<{ code: string; percent: number; active: boolean; expired: boolean; spent: boolean; used: boolean }[]>`
+    SELECT c.code, c.percent, c.active,
+           (c.expires_at IS NOT NULL AND c.expires_at <= now()) AS expired,
+           (c.max_uses IS NOT NULL AND c.uses >= c.max_uses) AS spent,
+           (c.once_per_account AND EXISTS (SELECT 1 FROM mlr.vip_code_uses u WHERE u.code_id = c.id AND u.account_id = ${accountId}::uuid)) AS used
+      FROM mlr.vip_codes c WHERE lower(c.code) = lower(${code.trim()})`;
+  if (!row) return { refusal: 'ese código no existe.' };
+  if (!row.active) return { refusal: 'ese código está desactivado.' };
+  if (row.expired) return { refusal: 'ese código ya venció.' };
+  if (row.spent) return { refusal: 'ese código ya se usó todas las veces que se podía.' };
+  if (row.used) return { refusal: 'ya usaste ese código.' };
+  return { code: row.code, percent: Math.min(100, Math.max(0, row.percent)) };
+}
+
+/** Counts the code's use once the order is paid (it was charged with the discount either way). */
+async function redeemCode(order: Order & { discount_code?: string | null }): Promise<void> {
+  if (!order.discount_code) return;
+  await sql`
+    WITH taken AS (UPDATE mlr.vip_codes SET uses = uses + 1 WHERE lower(code) = lower(${order.discount_code}) RETURNING id)
+    INSERT INTO mlr.vip_code_uses (code_id, account_id, price, used_at)
+    SELECT id, ${order.account_id}::uuid, ${Math.round(Number(order.amount))}, now() FROM taken`;
+}
+
 type MpPayment = { id: number; status: string; external_reference?: string; transaction_amount?: number; currency_id?: string };
 
 async function mp<T>(path: string, init?: RequestInit): Promise<T> {
@@ -260,7 +286,10 @@ async function settle(payment: MpPayment): Promise<void> {
     const [paid] = await sql<Order[]>`
       UPDATE mlr.vip_payments SET status = 'paid', paid_at = now(), mp_payment_id = ${String(payment.id)}
        WHERE id = ${id}::uuid AND status = 'pending' RETURNING *`;
-    if (paid) await grant(paid);
+    if (paid) {
+      await redeemCode(paid);
+      await grant(paid);
+    }
   } else if ((payment.status === 'rejected' || payment.status === 'cancelled') && order.status === 'pending') {
     await sql`UPDATE mlr.vip_payments SET status = ${payment.status}, mp_payment_id = ${String(payment.id)} WHERE id = ${id}::uuid AND status = 'pending'`;
   }
@@ -303,7 +332,17 @@ export async function handleVipRoute(req: Request, url: URL, cors: Cors): Promis
   }
 
   if (path === '/api/market/vip/prices' && req.method === 'GET') {
-    return json({ prices: await vipPrices(), currency: 'ARS', enabled: !!MP_TOKEN }, 200, cors);
+    // With a ticket, also how many months a silver to gold upgrade would be charged for.
+    let upgradeMonths: number | null = null;
+    const verified = verifyTicket(url.searchParams.get('ticket'));
+    if (verified.ok) {
+      const [account] = await sql<{ id: string }[]>`SELECT "Id"::text AS id FROM data."Account" WHERE lower("LoginName") = ${verified.account}`;
+      if (account) {
+        const vip = await readVip(sql, account.id);
+        if (vip.tier === 2) upgradeMonths = monthsLeft(vip);
+      }
+    }
+    return json({ prices: await vipPrices(), currency: 'ARS', enabled: !!MP_TOKEN, upgradeMonths }, 200, cors);
   }
 
   if (path === '/api/market/vip/webhook' && req.method === 'POST') {
@@ -349,20 +388,35 @@ export async function handleVipRoute(req: Request, url: URL, cors: Cors): Promis
       SELECT "Id"::text AS id, "LoginName" AS login FROM data."Account" WHERE lower("LoginName") = ${verified.account}`;
     if (!account) return json({ error: 'No encontramos tu cuenta.' }, 404, cors);
 
-    const why = refusal(await readVip(sql, account.id), tier);
+    const vip = await readVip(sql, account.id);
+    const why = refusal(vip, tier);
     if (why) return json({ error: why }, 409, cors);
+    // Silver to gold: the difference between the two, for the months silver has left.
+    const upgrade = isUpgrade(vip, tier);
+    const chargedMonths = upgrade ? monthsLeft(vip) : months;
 
     const [{ count }] = await sql<{ count: number }[]>`
       SELECT count(*)::int AS count FROM mlr.vip_payments
        WHERE account_id = ${account.id}::uuid AND status = 'pending' AND created_at > now() - interval '1 hour'`;
     if (count >= 5) return json({ error: 'Tenés varios pagos sin terminar; esperá un rato.' }, 429, cors);
 
+    // The discount codes of the VIP window (mlr.vip_codes, the same as for bronze with zen).
+    let discount: { code: string; percent: number } | null = null;
+    if (typeof body.code === 'string' && body.code.trim()) {
+      const found = await findCode(body.code, account.id);
+      if ('refusal' in found) return json({ error: `Código: ${found.refusal}` }, 409, cors);
+      discount = found;
+    }
+
     const prices = await vipPrices();
-    const amount = Math.round(prices[tier] * months * 100) / 100;
+    const full = (upgrade ? Math.max(0, prices[3] - prices[2]) : prices[tier]) * chargedMonths;
+    // Mercado Pago takes no less than a peso.
+    const amount = Math.max(1, Math.round(full * (100 - (discount?.percent ?? 0))) / 100);
     const id = randomUUID();
     await sql`
-      INSERT INTO mlr.vip_payments (id, account_id, login, tier, months, amount)
-      VALUES (${id}::uuid, ${account.id}::uuid, ${account.login}, ${tier}, ${months}, ${amount})`;
+      INSERT INTO mlr.vip_payments (id, account_id, login, tier, months, amount, discount_code, discount_percent, kind)
+      VALUES (${id}::uuid, ${account.id}::uuid, ${account.login}, ${tier}, ${chargedMonths}, ${amount},
+              ${discount?.code ?? null}, ${discount?.percent ?? null}, ${upgrade ? 'upgrade' : 'buy'})`;
 
     try {
       const preference = await mp<{ id: string; init_point: string }>('/checkout/preferences', {
@@ -371,7 +425,9 @@ export async function handleVipRoute(req: Request, url: URL, cors: Cors): Promis
           items: [
             {
               id: `vip-${tier}`,
-              title: `VIP ${TIERS[tier]} - ${months} ${months === 1 ? 'mes' : 'meses'} - Mu La Ronda`,
+              title: upgrade
+                ? `Mejora de VIP Plata a Oro - ${chargedMonths} ${chargedMonths === 1 ? 'mes' : 'meses'} - Mu La Ronda`
+                : `VIP ${TIERS[tier]} - ${months} ${months === 1 ? 'mes' : 'meses'} - Mu La Ronda`,
               description: `Cuenta ${account.login}`,
               quantity: 1,
               unit_price: amount,

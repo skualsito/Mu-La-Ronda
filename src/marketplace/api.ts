@@ -263,16 +263,24 @@ export function history() {
 // (marketplace/server/vipPayments.ts)
 // ---------------------------------------------------------------------------
 
-export type VipPrices = { prices: Record<number, number>; currency: string; enabled: boolean };
+export type VipPrices = {
+  prices: Record<number, number>;
+  currency: string;
+  enabled: boolean;
+  /** With VIP Plata running: the months a move up to Oro is charged for (the difference). */
+  upgradeMonths?: number | null;
+};
 
 /** The silver and gold prices in pesos, and whether Mercado Pago is set up. */
 export function vipPrices() {
-  return request<VipPrices>('/vip/prices');
+  return withTicket(t => request<VipPrices>(`/vip/prices?ticket=${encodeURIComponent(t.ticket)}`)).catch(() =>
+    request<VipPrices>('/vip/prices')
+  );
 }
 
 /** Makes the order and the Mercado Pago checkout; open `url` to pay. */
-export function vipCheckout(tier: number, months: number) {
-  return post<{ order: string; url: string; amount: number }>('/vip/checkout', { tier, months });
+export function vipCheckout(tier: number, months: number, code?: string) {
+  return post<{ order: string; url: string; amount: number }>('/vip/checkout', { tier, months, code: code || undefined });
 }
 
 export type VipOrder = {

@@ -10,6 +10,7 @@ import * as skills from './skills';
 import * as messages from './messages';
 import * as vipCodes from './vipCodes';
 import * as grandShop from './grandShop';
+import * as maintenance from './maintenance';
 import * as shops from './shops';
 import * as drops from './drops';
 import * as monsters from './monsters';
@@ -415,6 +416,11 @@ async function route(req: Request, url: URL, ip: string): Promise<Response> {
     const live = await configurePluginInGame(sql, written.typeId, written.config, written.active);
     return json({ ...(await game.getConfig(sql)), live });
   }
+  if (path === '/api/config/starter-kit' && method === 'PATCH') {
+    const written = await game.updateStarterKit(sql, await body(req));
+    const live = await configurePluginInGame(sql, written.typeId, written.config, written.active);
+    return json({ ...(await game.getConfig(sql)), live });
+  }
   if (path === '/api/config/grand-reset' && method === 'PATCH') {
     const written = await game.updateGrandReset(sql, await body(req));
     const live = await configurePluginInGame(sql, written.typeId, written.config, written.active);
@@ -434,6 +440,9 @@ async function route(req: Request, url: URL, ip: string): Promise<Response> {
   }
 
   // ---- shops ------------------------------------------------------------------------
+  if (path === '/api/shops/igc' && method === 'POST') {
+    return json({ shops: await shops.reloadIgcShops(sql) });
+  }
   if (path === '/api/shops') {
     if (method === 'POST') {
       const { monsterId } = await body(req);
@@ -509,7 +518,20 @@ async function route(req: Request, url: URL, ip: string): Promise<Response> {
   if (path === '/api/survey' && method === 'GET') return json(await survey.listResponses(sql));
 
   // ---- server --------------------------------------------------------------
-  if (path === '/api/server' && method === 'GET') return json(await openmuStatus());
+  if (path === '/api/server' && method === 'GET') return json({ ...(await openmuStatus()), ...maintenance.maintenanceState() });
+  if (path === '/api/server/stop' && method === 'POST') {
+    const { minutes } = await body(req);
+    return json(await maintenance.scheduleStop(sql, Number(minutes) || 0));
+  }
+  if (path === '/api/server/stop/cancel' && method === 'POST') {
+    maintenance.cancelStop(sql);
+    return json(maintenance.maintenanceState());
+  }
+  if (path === '/api/server/start' && method === 'POST') {
+    maintenance.cancelStop(sql);
+    await maintenance.start();
+    return json({ ok: true });
+  }
   if (path === '/api/server/logs' && method === 'GET') return json({ lines: await openmuLogs(300) });
   if (path === '/api/server/restart' && method === 'POST') {
     await restartOpenmu();

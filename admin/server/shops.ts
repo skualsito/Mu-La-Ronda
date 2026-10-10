@@ -1,3 +1,5 @@
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import type { Sql } from 'postgres';
 import { addToStorage, deleteFromStorage, storageItems, updateInStorage, type Grid, type ItemInput } from './inventory';
 
@@ -89,6 +91,27 @@ export async function updateShopItem(sql: Sql, monsterId: string, itemId: string
 
 export async function deleteShopItem(sql: Sql, monsterId: string, itemId: string) {
   return deleteFromStorage(sql, await storeOf(sql, monsterId), itemId);
+}
+
+/**
+ * Mu La Ronda: puts the shops of the IGC server back (deploy/config/38-igc-shops.sql, which a
+ * deploy runs only once): every shop of that list is emptied and filled again. Takes effect
+ * when OpenMU restarts. Returns how many items each shop got, by NPC number.
+ */
+export async function reloadIgcShops(sql: Sql): Promise<{ number: number; name: string; items: number }[]> {
+  const file = join(process.cwd(), 'deploy', 'config', '38-igc-shops.sql');
+  const script = await readFile(file, 'utf8');
+  // The file opens and closes its own transaction; here it runs inside the panel's.
+  const body = script.replace(/^\s*(BEGIN|COMMIT);\s*$/gm, '');
+  await sql.begin(async tx => {
+    await tx`DELETE FROM mlr.settings WHERE key = 'igc_shops_seeded'`;
+    await tx.unsafe(body);
+  });
+  const numbers = [...script.matchAll(/seed_igc_store\((\d+),/g)].map(m => Number(m[1]));
+  return sql<{ number: number; name: string; items: number }[]>`
+    SELECT m."Number" AS number, m."Designation" AS name,
+           (SELECT count(*)::int FROM data."Item" i WHERE i."ItemStorageId" = m."MerchantStoreId") AS items
+      FROM config."MonsterDefinition" m WHERE m."Number" = ANY(${numbers}::int[]) ORDER BY m."Designation"`;
 }
 
 /** Empties a shop (the NPC stays a shop). */

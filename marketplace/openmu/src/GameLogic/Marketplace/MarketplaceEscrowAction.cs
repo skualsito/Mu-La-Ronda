@@ -228,7 +228,7 @@ public class MarketplaceEscrowAction
             return new EscrowResult(token.Operation, EscrowStatus.NoSuchItem, token.ListingId, token.BoxId, null, 0);
         }
 
-        if (item.Definition is null || item.Definition.IsBoundToCharacter)
+        if (item.Definition is null || item.Definition.IsBoundToCharacter || PlugIns.MlrStarterKitPlugIn.IsKitItem(item))
         {
             return new EscrowResult(token.Operation, EscrowStatus.NotTradable, token.ListingId, token.BoxId, null, 0);
         }

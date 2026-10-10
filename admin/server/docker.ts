@@ -62,3 +62,19 @@ export async function openmuLogs(tail: number): Promise<string[]> {
   // eslint-disable-next-line no-control-regex
   return text.replace(/\x1b\[[0-9;]*m/g, '').split('\n').filter(Boolean);
 }
+
+/** Stops OpenMU (it saves and disconnects everyone on the way out). It stays off until started. */
+export async function stopOpenmu(): Promise<void> {
+  const container = await findOpenmu();
+  if (!container) throw new Error('No se encontro el contenedor de OpenMU');
+  const res = await docker(`/containers/${container.Id}/stop?t=30`, { method: 'POST' });
+  // 304: it was already stopped.
+  if (!res.ok && res.status !== 204 && res.status !== 304) throw new Error(`No se pudo apagar (Docker ${res.status})`);
+}
+
+export async function startOpenmu(): Promise<void> {
+  const container = await findOpenmu();
+  if (!container) throw new Error('No se encontro el contenedor de OpenMU');
+  const res = await docker(`/containers/${container.Id}/start`, { method: 'POST' });
+  if (!res.ok && res.status !== 204 && res.status !== 304) throw new Error(`No se pudo prender (Docker ${res.status})`);
+}

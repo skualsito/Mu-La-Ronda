@@ -72,7 +72,7 @@ public static class GrandReset
         }
 
         var money = configuration.RequiredMoney > 0 ? $" y {configuration.RequiredMoney.ToString("N0", CultureInfo.InvariantCulture)} zen" : string.Empty;
-        return $"Grand Reset: {Count(character)} hechos, {Coins(character)} monedas. Pide nivel {configuration.RequiredLevel} y {configuration.RequiredResets} resets{money}; da {configuration.CoinsPerGrandReset} monedas.";
+        return $"Grand Reset: {Count(character)} hechos, {Coins(character)} monedas. Pide nivel {configuration.RequiredLevel} y {configuration.RequiredResets} resets{money}; da {configuration.CoinsPerReset} monedas por reset{(configuration.CoinsPerGrandReset > 0 ? $" y {configuration.CoinsPerGrandReset} mas" : string.Empty)}. Suma 1 grand reset cada {configuration.ResetsPerGrandReset} resets.";
     }
 
     /// <summary>Changes the character's coins by <paramref name="delta"/>.</summary>
@@ -81,11 +81,12 @@ public static class GrandReset
     /// <returns>False when the attribute definitions are missing.</returns>
     public static bool AddCoins(Player player, int delta) => Add(player, CoinsAttributeId, delta);
 
-    /// <summary>Adds one grand reset and its coins.</summary>
+    /// <summary>Adds grand resets and their coins.</summary>
     /// <param name="player">The player.</param>
+    /// <param name="grandResets">The grand resets.</param>
     /// <param name="coins">The coins.</param>
     /// <returns>False when the attribute definitions are missing.</returns>
-    internal static bool Count(Player player, int coins) => Add(player, CountAttributeId, 1) && Add(player, CoinsAttributeId, coins);
+    internal static bool Count(Player player, int grandResets, int coins) => Add(player, CountAttributeId, grandResets) && Add(player, CoinsAttributeId, coins);
 
     private static bool Add(Player player, Guid definitionId, int delta)
     {
@@ -146,8 +147,24 @@ public class GrandResetConfiguration
     /// <summary>Gets or sets the zen it costs.</summary>
     public int RequiredMoney { get; set; }
 
-    /// <summary>Gets or sets the coins one grand reset gives.</summary>
-    public int CoinsPerGrandReset { get; set; } = 100;
+    /// <summary>Gets or sets the coins one grand reset gives on top of those for its resets.</summary>
+    public int CoinsPerGrandReset { get; set; }
+
+    /// <summary>Gets or sets the coins for each reset the character had (240 resets, 2400 coins).</summary>
+    public int CoinsPerReset { get; set; } = 10;
+
+    /// <summary>Gets or sets how many resets make one grand reset (240 resets, 24 grand resets).</summary>
+    public int ResetsPerGrandReset { get; set; } = 10;
+
+    /// <summary>The grand resets a grand reset with that many resets counts; at least one.</summary>
+    /// <param name="resets">The resets the character has.</param>
+    /// <returns>The grand resets.</returns>
+    public int GrandResetsFor(int resets) => Math.Max(1, ResetsPerGrandReset > 0 ? resets / ResetsPerGrandReset : 1);
+
+    /// <summary>The coins a grand reset with that many resets gives.</summary>
+    /// <param name="resets">The resets the character has.</param>
+    /// <returns>The coins.</returns>
+    public int CoinsFor(int resets) => (int)Math.Min(int.MaxValue, Math.Max(0, CoinsPerGrandReset) + ((long)Math.Max(0, CoinsPerReset) * Math.Max(0, resets)));
 }
 
 /// <summary>Mu La Ronda: the grand reset itself.</summary>
@@ -194,7 +211,9 @@ public static class GrandResetAction
             return false;
         }
 
-        if (!GrandReset.Count(player, configuration.CoinsPerGrandReset))
+        var coins = configuration.CoinsFor(resets);
+        var grandResets = configuration.GrandResetsFor(resets);
+        if (!GrandReset.Count(player, grandResets, coins))
         {
             if (configuration.RequiredMoney > 0)
             {
@@ -214,8 +233,19 @@ public static class GrandResetAction
             .ForEach(s => attributes[s.Attribute] = s.BaseValue);
         character.LevelUpPoints = 0;
 
-        player.Logger.LogInformation("Grand reset {Count} of {Character} ({Account}), {Coins} coins.", GrandReset.Count(character), character.Name, player.Account?.LoginName, configuration.CoinsPerGrandReset);
-        await player.ShowBlueMessageAsync($"Grand Reset {GrandReset.Count(character)} hecho: +{configuration.CoinsPerGrandReset} monedas (tenes {GrandReset.Coins(character)}).").ConfigureAwait(false);
+        // And the master side: master level, its experience and points, and the master skill tree
+        // (its skills; the skills of the scrolls and orbs stay). Only the items stay as they were.
+        attributes[Stats.MasterLevel] = 0;
+        character.MasterExperience = 0;
+        character.MasterLevelUpPoints = 0;
+        foreach (var entry in character.LearnedSkills.Where(e => e.Skill?.MasterDefinition is not null).ToList())
+        {
+            character.LearnedSkills.Remove(entry);
+            await player.PersistenceContext.DeleteAsync(entry).ConfigureAwait(false);
+        }
+
+        player.Logger.LogInformation("Grand reset of {Character} ({Account}) with {Resets} resets: +{GrandResets} grand resets (now {Count}), {Coins} coins.", character.Name, player.Account?.LoginName, resets, grandResets, GrandReset.Count(character), coins);
+        await player.ShowBlueMessageAsync($"Grand Reset hecho: tus {resets} resets dan +{grandResets} grand resets (tenes {GrandReset.Count(character)}) y +{coins} monedas (tenes {GrandReset.Coins(character)}).").ConfigureAwait(false);
 
         // As a reset does (ResetCharacterAction.MoveHomeAsync): to the center of the home spawn gate,
         // and back to the character selection so the client shows it all anew.

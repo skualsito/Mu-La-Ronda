@@ -97,6 +97,7 @@ export const TradeWindow = observer(() => {
   return (
     <MuItemWindow
       id={WINDOW_ID}
+      dockLeftOf={Store.inventoryEnabled ? 'inventory' : undefined}
       className="trade"
       column={column}
       label={t(TITLE)}
