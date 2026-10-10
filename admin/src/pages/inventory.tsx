@@ -221,8 +221,8 @@ export function ItemEditor({
             <input className="search" placeholder="Buscar item… (ej. Jewel of Bless, Dragon, Wings)" value={query} onChange={e => setQuery(e.target.value)} autoFocus />
             <div className="def-results">
               {(results.data ?? []).map(d => (
-                <button key={d.id} className={`def-row ${definition?.id === d.id ? 'active' : ''}`} onClick={() => { setDefinition(d); setChosen({}); setLevel(0); setDurability(null); setSocketCount(0); setSockets([]); }}>
-                  <DefinitionIcon group={d.group} number={d.number} className="def-icon" />
+                <button key={`${d.id}-${d.presetLevel ?? ''}`} className={`def-row ${definition?.id === d.id && level === (d.presetLevel ?? level) ? 'active' : ''}`} onClick={() => { setDefinition(d); setChosen({}); setLevel(d.presetLevel ?? 0); setDurability(null); setSocketCount(0); setSockets([]); }}>
+                  <DefinitionIcon group={d.group} number={d.number} level={d.presetLevel} className="def-icon" />
                   <span className="def-name">{d.name}</span>
                   <span className="muted small">
                     grupo {d.group} · #{d.number} · {d.width}×{d.height}

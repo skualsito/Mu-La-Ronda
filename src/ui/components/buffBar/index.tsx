@@ -6,6 +6,8 @@ import { useUiStageScale } from '../uiStage';
 import { skills, type ActiveBuff } from '../../../skills';
 import { BUFF_ICON_HEIGHT, BUFF_ICON_WIDTH, buffIconCell } from '../../../skills/recipes';
 import { t } from '../../../i18n';
+import { Social } from '../../../social';
+import { requestBuffTimes } from '../../../skills/buffs';
 
 /** `CNewUIBuffWindow::SetPos(640)`: the row starts at (220, 15). */
 const BAR_X = 220;
@@ -32,6 +34,8 @@ function formatRemaining(seconds: number): string {
 const BuffTip = ({ buff, x, y }: { buff: ActiveBuff; x: number; y: number }) => {
   const [, setTick] = useState(0);
   useEffect(() => {
+    // Mu La Ronda: the server knows every effect's time left; asked as the tip opens.
+    requestBuffTimes(command => Social.sendWindowCommand(command));
     const id = window.setInterval(() => setTick(t => t + 1), TICK_MS);
     return () => window.clearInterval(id);
   }, []);

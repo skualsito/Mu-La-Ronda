@@ -17,6 +17,7 @@ import { MuButton } from '../../../../components/muButton';
 import { playUiSound } from '../../../../../libs/sfx';
 import { toggleMasterSkillsWindow } from '../masterSkills/windowState';
 import { togglePetInfoWindow } from '../petInfo/windowState';
+import { characterTotals, setCharacterTotalsOpen } from '../../../../../common/characterTotals';
 import {
   MuItemWindow,
   MuTableFrame,
@@ -74,7 +75,6 @@ import {
   PROBABILITY_Y,
   QUEST_BUTTON_X,
   QUEST_SPRITE,
-  QUEST_TOOLTIP,
   ROW_FIELD_HEIGHT,
   ROW_HEIGHT,
   ROW_SPRITE,
@@ -751,11 +751,12 @@ export const CharacterInfo = observer(() => {
         onClick={close}
       />
       {}
+      {/* Mu La Ronda: the quest button (never wired) opens the character's statistics. */}
       <WindowButton
         x={QUEST_BUTTON_X}
         file={QUEST_SPRITE}
-        tooltip={t(QUEST_TOOLTIP)}
-        disabled
+        tooltip={t('totals.button')}
+        onClick={() => setCharacterTotalsOpen(!characterTotals.open)}
       />
       {/* `m_BtnPet` - `Toggle(INTERFACE_PET)`. */}
       <WindowButton

@@ -69,6 +69,11 @@ export async function vaultInGame(sql: Sql, accountId: string, operation: VaultO
   return post(sql, `/api/mlr/vault/${accountId}`, operation, 'cambiar el baúl');
 }
 
+/** Mu La Ronda: sets (tier 0: takes away) the VIP of an account in the game. 'offline' when it is not. */
+export async function vipInGame(sql: Sql, accountId: string, tier: number, days: number): Promise<'applied' | 'offline'> {
+  return post(sql, `/api/mlr/vip/${accountId}/set`, { tier, days }, 'cambiar el VIP');
+}
+
 /** Disconnects the account's player (OpenMU saves it on the way out). 'offline' when it was not in the game. */
 export async function disconnectAccount(sql: Sql, accountId: string): Promise<'applied' | 'offline'> {
   return post(sql, `/api/mlr/players/${accountId}/disconnect`, {}, 'desconectar al jugador');

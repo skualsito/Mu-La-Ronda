@@ -123,10 +123,13 @@ export type SocketLine =
   | { empty: true }
   | { empty: false; element: SocketElement; key: TextKey | null; level: number };
 
-/** One socket byte, as sent: empty, or the element, option and sphere level. */
+/**
+ * One socket byte, as sent: empty, or the element, option and sphere level (1-5). The byte
+ * carries the level less one (ItemSerializerHelper.SetSocketBytes: `(Level - 1) * 50 + option`).
+ */
 export function socketOf(byte: number): SocketLine {
   if (byte === SOCKET_EMPTY) return { empty: true };
-  const level = Math.floor(byte / OPTIONS_PER_LEVEL);
+  const level = Math.floor(byte / OPTIONS_PER_LEVEL) + 1;
   const index = byte % OPTIONS_PER_LEVEL;
   let element: SocketElement = 'fire';
   let start = 0;

@@ -273,14 +273,13 @@ const RankingTable = ({ type, rows, me }: { type: RankingType; rows: unknown[]; 
     return (
       <table className="ronda-table">
         <thead>
-          <tr><th>#</th><th>Personaje</th><th>Clase</th><th>Kills</th><th>Nivel</th></tr>
+          <tr><th>#</th><th>Personaje</th><th>Clase</th><th>Kills</th></tr>
         </thead>
         <tbody>
           {(rows as PkRow[]).map((row, i) => (
             <tr key={row.name} className={mine(row.name)}>
               <td className="ronda-pos">{i + 1}</td><td>{row.name}</td><td>{row.class}</td>
               <td className="ronda-num ronda-strong">{row.kills}</td>
-              <td className="ronda-num">{row.level}</td>
             </tr>
           ))}
         </tbody>
@@ -291,14 +290,15 @@ const RankingTable = ({ type, rows, me }: { type: RankingType; rows: unknown[]; 
   return (
     <table className="ronda-table">
       <thead>
-        <tr><th>#</th><th>Guild</th><th>Master</th><th>Score</th><th>Miembros</th><th>Resets</th></tr>
+        <tr><th>#</th><th>Guild</th><th>Master</th><th>Score</th><th>Miembros</th><th>GR</th><th>Resets</th></tr>
       </thead>
       <tbody>
         {(rows as GuildRow[]).map((row, i) => (
           <tr key={row.name} className={mine(row.master)}>
             <td className="ronda-pos">{i + 1}</td><td>{row.name}</td><td>{row.master ?? '-'}</td>
             <td className="ronda-num ronda-strong">{row.score}</td>
-            <td className="ronda-num">{row.members}</td><td className="ronda-num">{row.resets}</td>
+            <td className="ronda-num">{row.members}</td><td className="ronda-num">{row.grandResets}</td>
+            <td className="ronda-num">{row.resets}</td>
           </tr>
         ))}
       </tbody>

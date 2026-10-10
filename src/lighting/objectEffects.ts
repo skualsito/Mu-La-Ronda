@@ -39,13 +39,13 @@ export const OBJECT_EFFECT_LIGHTS: Record<ObjectEffect, LightRecipe> = {
     release: 0.7,
     heightOffset: BODY_HEIGHT,
   },
-  /** Mu La Ronda: the master level-up pillar (effects/masterLevelUp.ts), gold and longer. */
+  /** Mu La Ronda: the master level-up, the level-up's light in white (effects/bursts.ts). */
   masterLevelUp: {
-    color: [1, 0.78, 0.3],
-    range: 3.5,
-    seconds: 2.5,
-    attack: 0.15,
-    release: 1,
+    color: [1, 1, 1],
+    range: 3,
+    seconds: 1.6,
+    attack: 0.12,
+    release: 0.7,
     heightOffset: BODY_HEIGHT,
   },
   shieldPotion: {

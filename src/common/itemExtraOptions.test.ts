@@ -25,12 +25,12 @@ describe('harmony option', () => {
 
 describe('socket option', () => {
   it('splits the byte into element, option and sphere level', () => {
-    // Fire option 1 (attack speed) at level 2.
-    expect(socketOf(2 * 50 + 1)).toEqual({ empty: false, element: 'fire', key: 'socket.fire1', level: 2 });
+    // Fire option 1 (attack speed) at level 3: the byte carries the level less one.
+    expect(socketOf(2 * 50 + 1)).toEqual({ empty: false, element: 'fire', key: 'socket.fire1', level: 3 });
     // Water starts at 10: index 11 is water option 1.
-    expect(socketOf(50 + 11)).toMatchObject({ element: 'water', key: 'socket.water1', level: 1 });
-    // Earth at 36.
-    expect(socketOf(36)).toMatchObject({ element: 'earth', key: 'socket.earth0', level: 0 });
+    expect(socketOf(50 + 11)).toMatchObject({ element: 'water', key: 'socket.water1', level: 2 });
+    // Earth at 36, a level 1 sphere.
+    expect(socketOf(36)).toMatchObject({ element: 'earth', key: 'socket.earth0', level: 1 });
     expect(socketOf(SOCKET_EMPTY)).toEqual({ empty: true });
   });
 });

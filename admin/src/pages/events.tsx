@@ -32,7 +32,10 @@ const inMinutes = (iso: string | null) => {
 /** How often the page asks again while open: an event that was just started shows up running. */
 const REFRESH_MS = 10_000;
 
-export function EventsPage() {
+/** Mu La Ronda: the list grew long enough to hide what runs; the running ones get a tab of their own. */
+type EventsTab = 'activos' | 'todos';
+
+export function EventsPage({ tab: tabParam }: { tab?: string }) {
   const toast = useToast();
   const list = useLoad(() => api<EventList>('/events'), []);
   const [busy, setBusy] = useState<string | null>(null);
@@ -49,6 +52,9 @@ export function EventsPage() {
 
   if (list.error) return <ErrorBox error={list.error} onRetry={list.reload} />;
   if (!list.data) return <Loading />;
+
+  const running = list.data.events.filter(e => e.running);
+  const tab: EventsTab = tabParam === 'activos' || tabParam === 'todos' ? tabParam : running.length ? 'activos' : 'todos';
 
   const act = async (event: GameEventRow, path: string, body: unknown, done: string) => {
     setBusy(event.id);
@@ -69,108 +75,139 @@ export function EventsPage() {
         subtitle="Qué eventos corre el servidor, si están en curso y cuándo arrancan. Empezar y Parar actúan en todos los servers al momento (sin reiniciar). El estado de prueba lo anotan ustedes."
       />
       {list.data.error && <div className="notice notice-warn">{list.data.error}</div>}
-      <Card>
-        <div className="table-wrap">
-          <table className="table events-table">
-            <thead>
-              <tr>
-                <th>Evento</th>
-                <th>Ahora</th>
-                <th>Próximo</th>
-                <th>¿Funciona?</th>
-                <th>Nota</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {list.data.events.map(e => (
-                <tr key={e.id}>
-                  <td>
-                    <strong>{e.name}</strong>
-                    <div className="muted small">{e.kind === 'minigame' ? 'minijuego' : 'periódico'}</div>
-                  </td>
-                  <td>
-                    {e.running ? <Badge tone="ok">En curso</Badge> : <span className="muted">{STATE[e.state]}</span>}
-                    {e.running && e.kind === 'minigame' && <div className="muted small">{e.players} jugador{e.players === 1 ? '' : 'es'}</div>}
-                    {e.lastStartUtc && <div className="muted small">último: {formatDate(e.lastStartUtc)}</div>}
-                  </td>
-                  <td>{e.nextStartUtc ? <span title={formatDate(e.nextStartUtc)}>{inMinutes(e.nextStartUtc)}</span> : <span className="muted">sin horario</span>}</td>
-                  <td>
-                    <select
-                      value={e.status}
-                      disabled={busy === e.id}
-                      onChange={ev => void act(e, 'note', { status: ev.target.value, tested: true }, 'Anotado')}
-                    >
-                      {(Object.keys(STATUS) as EventStatus[]).map(s => (
-                        <option key={s} value={s}>
-                          {STATUS[s].label}
-                        </option>
-                      ))}
-                    </select>
-                    {e.testedAt && (
-                      <div className="muted small">
-                        probado {formatDate(e.testedAt)}
-                        {e.testedBy ? ` por ${e.testedBy}` : ''}
-                      </div>
-                    )}
-                  </td>
-                  <td className="events-note">
-                    {editing?.id === e.id ? (
-                      <div className="events-note-edit">
-                        <input
-                          value={editing.note}
-                          autoFocus
-                          maxLength={500}
-                          onChange={ev => setEditing({ id: e.id, note: ev.target.value })}
-                          onKeyDown={ev => {
-                            if (ev.key === 'Enter') {
+      <nav className="tabs">
+        <a href="#/eventos/activos" className={tab === 'activos' ? 'active' : ''}>
+          En curso ({running.length})
+        </a>
+        <a href="#/eventos/todos" className={tab === 'todos' ? 'active' : ''}>
+          Todos los eventos ({list.data.events.length})
+        </a>
+      </nav>
+
+      {tab === 'activos' && !running.length && (
+        <Card>
+          <p className="muted">No hay ningún evento en curso. Los podés arrancar desde la pestaña Todos los eventos.</p>
+        </Card>
+      )}
+      {tab === 'activos' &&
+        running.map(e => (
+          <Card
+            key={e.id}
+            title={e.name}
+            actions={
+              <button className="btn btn-small btn-danger" disabled={busy === e.id} onClick={() => setConfirmStop(e)}>
+                Parar
+              </button>
+            }
+          >
+            <EventDetailsBody event={e} />
+          </Card>
+        ))}
+
+      {tab === 'todos' && (
+        <Card>
+          <div className="table-wrap">
+            <table className="table events-table">
+              <thead>
+                <tr>
+                  <th>Evento</th>
+                  <th>Ahora</th>
+                  <th>Próximo</th>
+                  <th>¿Funciona?</th>
+                  <th>Nota</th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {list.data.events.map(e => (
+                  <tr key={e.id}>
+                    <td>
+                      <strong>{e.name}</strong>
+                      <div className="muted small">{e.kind === 'minigame' ? 'minijuego' : 'periódico'}</div>
+                    </td>
+                    <td>
+                      {e.running ? <Badge tone="ok">En curso</Badge> : <span className="muted">{STATE[e.state]}</span>}
+                      {e.running && e.kind === 'minigame' && <div className="muted small">{e.players} jugador{e.players === 1 ? '' : 'es'}</div>}
+                      {e.lastStartUtc && <div className="muted small">último: {formatDate(e.lastStartUtc)}</div>}
+                    </td>
+                    <td>{e.nextStartUtc ? <span title={formatDate(e.nextStartUtc)}>{inMinutes(e.nextStartUtc)}</span> : <span className="muted">sin horario</span>}</td>
+                    <td>
+                      <select
+                        value={e.status}
+                        disabled={busy === e.id}
+                        onChange={ev => void act(e, 'note', { status: ev.target.value, tested: true }, 'Anotado')}
+                      >
+                        {(Object.keys(STATUS) as EventStatus[]).map(s => (
+                          <option key={s} value={s}>
+                            {STATUS[s].label}
+                          </option>
+                        ))}
+                      </select>
+                      {e.testedAt && (
+                        <div className="muted small">
+                          probado {formatDate(e.testedAt)}
+                          {e.testedBy ? ` por ${e.testedBy}` : ''}
+                        </div>
+                      )}
+                    </td>
+                    <td className="events-note">
+                      {editing?.id === e.id ? (
+                        <div className="events-note-edit">
+                          <input
+                            value={editing.note}
+                            autoFocus
+                            maxLength={500}
+                            onChange={ev => setEditing({ id: e.id, note: ev.target.value })}
+                            onKeyDown={ev => {
+                              if (ev.key === 'Enter') {
+                                void act(e, 'note', { note: editing.note }, 'Nota guardada');
+                                setEditing(null);
+                              } else if (ev.key === 'Escape') setEditing(null);
+                            }}
+                          />
+                          <button
+                            className="btn btn-small"
+                            onClick={() => {
                               void act(e, 'note', { note: editing.note }, 'Nota guardada');
                               setEditing(null);
-                            } else if (ev.key === 'Escape') setEditing(null);
-                          }}
-                        />
-                        <button
-                          className="btn btn-small"
-                          onClick={() => {
-                            void act(e, 'note', { note: editing.note }, 'Nota guardada');
-                            setEditing(null);
-                          }}
-                        >
-                          Guardar
+                            }}
+                          >
+                            Guardar
+                          </button>
+                        </div>
+                      ) : (
+                        <button className="link-button" onClick={() => setEditing({ id: e.id, note: e.note })}>
+                          {e.note || <span className="muted">agregar nota…</span>}
+                        </button>
+                      )}
+                    </td>
+                    <td>
+                      <div className="row-actions">
+                        <button className="btn btn-small" onClick={() => setDetails(e)}>
+                          Detalles
+                        </button>
+                        <button className="btn btn-small btn-primary" disabled={busy === e.id || e.running} onClick={() => void act(e, 'start', {}, `${e.name}: arranca en unos segundos`)}>
+                          Empezar
+                        </button>
+                        <button className="btn btn-small btn-danger" disabled={busy === e.id || !e.running} onClick={() => setConfirmStop(e)}>
+                          Parar
                         </button>
                       </div>
-                    ) : (
-                      <button className="link-button" onClick={() => setEditing({ id: e.id, note: e.note })}>
-                        {e.note || <span className="muted">agregar nota…</span>}
-                      </button>
-                    )}
-                  </td>
-                  <td>
-                    <div className="row-actions">
-                      <button className="btn btn-small" onClick={() => setDetails(e)}>
-                        Detalles
-                      </button>
-                      <button className="btn btn-small btn-primary" disabled={busy === e.id || e.running} onClick={() => void act(e, 'start', {}, `${e.name}: arranca en unos segundos`)}>
-                        Empezar
-                      </button>
-                      <button className="btn btn-small btn-danger" disabled={busy === e.id || !e.running} onClick={() => setConfirmStop(e)}>
-                        Parar
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {!list.data.events.length && !list.data.error && (
-                <tr>
-                  <td colSpan={6} className="muted">
-                    OpenMU no tiene eventos activos.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+                    </td>
+                  </tr>
+                ))}
+                {!list.data.events.length && !list.data.error && (
+                  <tr>
+                    <td colSpan={6} className="muted">
+                      OpenMU no tiene eventos activos.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
 
       {details && <EventDetailsModal event={details} onClose={() => setDetails(null)} />}
 
@@ -236,6 +273,23 @@ function LiveMonsters({ monsters }: { monsters: EventMonster[] }) {
  * map still alive and where it is, so a boss can be found right after starting it.
  */
 function EventDetailsModal({ event, onClose }: { event: GameEventRow; onClose: () => void }) {
+  return (
+    <div className="modal-backdrop" onMouseDown={onClose}>
+      <div className="modal modal-wide" role="dialog" aria-modal="true" onMouseDown={e => e.stopPropagation()}>
+        <h2>{event.name}</h2>
+        <EventDetailsBody event={event} />
+        <div className="modal-actions">
+          <button className="btn" onClick={onClose}>
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** The details themselves, asked again every few seconds: in the modal and on the running events' tab. */
+function EventDetailsBody({ event }: { event: GameEventRow }) {
   const detail = useLoad(() => api<EventDetails>(`/events/${event.id}`), [event.id]);
 
   useEffect(() => {
@@ -245,81 +299,73 @@ function EventDetailsModal({ event, onClose }: { event: GameEventRow; onClose: (
 
   const d = detail.data;
   return (
-    <div className="modal-backdrop" onMouseDown={onClose}>
-      <div className="modal modal-wide" role="dialog" aria-modal="true" onMouseDown={e => e.stopPropagation()}>
-        <h2>{d?.name ?? event.name}</h2>
-        {detail.error && !d && <ErrorBox error={detail.error} onRetry={detail.reload} />}
-        {!d && !detail.error && <Loading />}
-        {d && (
-          <div className="events-details">
-            {d.setup && (
-              <section>
-                <h3 className="subhead">Horario</h3>
-                <div>
-                  {d.setup.timetable.length ? d.setup.timetable.join(' · ') : <span className="muted">sin horario</span>}
-                  <span className="muted small"> (hora del servidor, UTC)</span>
-                </div>
-                <div className="muted small">Dura {Math.round(d.setup.durationMinutes)} min, o hasta que mueren todos.</div>
-              </section>
-            )}
-            {!!d.places?.length && (
-              <section>
-                <h3 className="subhead">Dónde puede aparecer</h3>
-                <div>
-                  {d.places.map((p, i) => (
-                    <code key={i}>
-                      {p.x}, {p.y}
-                    </code>
-                  ))}
-                </div>
-                <div className="muted small">Uno de estos lugares al azar cada vez (o la celda libre más cercana).</div>
-              </section>
-            )}
-            {!!d.setup?.mobs?.length && (
-              <section>
-                <h3 className="subhead">Monstruos que trae</h3>
-                <ul className="events-monsters">
-                  {d.setup.mobs.map(m => (
-                    <li key={m.number}>
-                      <strong>
-                        {m.name} ×{m.count}
-                      </strong>{' '}
-                      — {m.maps.join(', ')}
-                      {m.x !== null && m.y !== null && !d.places?.length && (
-                        <>
-                          {' '}
-                          en <code>{m.x}, {m.y}</code>
-                        </>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
+    <>
+      {detail.error && !d && <ErrorBox error={detail.error} onRetry={detail.reload} />}
+      {!d && !detail.error && <Loading />}
+      {d && (
+        <div className="events-details">
+          {d.setup && (
             <section>
-              <h3 className="subhead">Ahora</h3>
-              {d.servers.map(s => (
-                <div key={s.server} className="events-server">
-                  <div>
-                    <strong>Server {s.server}</strong>
-                    {s.description && s.description !== `Server ${s.server}` && <span className="muted small"> — {s.description}</span>}{' '}
-                    {s.running ? <Badge tone="ok">En curso</Badge> : <span className="muted">{STATE[s.state]}</span>}
-                    {s.running && s.players > 0 && <span className="muted small"> · {s.players} jugador{s.players === 1 ? '' : 'es'}</span>}
-                  </div>
-                  {s.lastStartUtc && <div className="muted small">último: {formatDate(s.lastStartUtc)}</div>}
-                  {s.running && <LiveMonsters monsters={s.monsters} />}
-                  {!s.running && s.nextStartUtc && <div className="muted small">próximo: {inMinutes(s.nextStartUtc)} ({formatDate(s.nextStartUtc)})</div>}
-                </div>
-              ))}
+              <h3 className="subhead">Horario</h3>
+              <div>
+                {d.setup.timetable.length ? d.setup.timetable.join(' · ') : <span className="muted">sin horario</span>}
+                <span className="muted small"> (hora del servidor, UTC)</span>
+              </div>
+              <div className="muted small">Dura {Math.round(d.setup.durationMinutes)} min, o hasta que mueren todos.</div>
             </section>
-          </div>
-        )}
-        <div className="modal-actions">
-          <button className="btn" onClick={onClose}>
-            Cerrar
-          </button>
+          )}
+          {!!d.places?.length && (
+            <section>
+              <h3 className="subhead">Dónde puede aparecer</h3>
+              <div>
+                {d.places.map((p, i) => (
+                  <code key={i}>
+                    {p.x}, {p.y}
+                  </code>
+                ))}
+              </div>
+              <div className="muted small">Uno de estos lugares al azar cada vez (o la celda libre más cercana).</div>
+            </section>
+          )}
+          {!!d.setup?.mobs?.length && (
+            <section>
+              <h3 className="subhead">Monstruos que trae</h3>
+              <ul className="events-monsters">
+                {d.setup.mobs.map(m => (
+                  <li key={m.number}>
+                    <strong>
+                      {m.name} ×{m.count}
+                    </strong>{' '}
+                    — {m.maps.join(', ')}
+                    {m.x !== null && m.y !== null && !d.places?.length && (
+                      <>
+                        {' '}
+                        en <code>{m.x}, {m.y}</code>
+                      </>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+          <section>
+            <h3 className="subhead">Ahora</h3>
+            {d.servers.map(s => (
+              <div key={s.server} className="events-server">
+                <div>
+                  <strong>Server {s.server}</strong>
+                  {s.description && s.description !== `Server ${s.server}` && <span className="muted small"> — {s.description}</span>}{' '}
+                  {s.running ? <Badge tone="ok">En curso</Badge> : <span className="muted">{STATE[s.state]}</span>}
+                  {s.running && s.players > 0 && <span className="muted small"> · {s.players} jugador{s.players === 1 ? '' : 'es'}</span>}
+                </div>
+                {s.lastStartUtc && <div className="muted small">último: {formatDate(s.lastStartUtc)}</div>}
+                {s.running && <LiveMonsters monsters={s.monsters} />}
+                {!s.running && s.nextStartUtc && <div className="muted small">próximo: {inMinutes(s.nextStartUtc)} ({formatDate(s.nextStartUtc)})</div>}
+              </div>
+            ))}
+          </section>
         </div>
-      </div>
-    </div>
+      )}
+    </>
   );
 }

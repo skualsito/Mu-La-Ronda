@@ -4,6 +4,7 @@ import { USER, checkCredentials, issueSession, passwordConfigured, sessionCookie
 import * as users from './users';
 import * as game from './game';
 import * as spots from './spots';
+import * as npcs from './npcs';
 import * as inventory from './inventory';
 import * as vip from './vip';
 import * as skills from './skills';
@@ -18,7 +19,7 @@ import * as events from './events';
 import * as survey from './survey';
 import { hasTerrain, terrainOf } from './terrain';
 import { openmuLogs, openmuStatus, restartOpenmu } from './docker';
-import { configurePluginInGame, disconnectAccount, onlinePlayers, setPluginInGame, vaultInGame, type VaultOperation } from './openmuApi';
+import { configurePluginInGame, disconnectAccount, onlinePlayers, setPluginInGame, vaultInGame, vipInGame, type VaultOperation } from './openmuApi';
 
 /**
  * Mu La Ronda's admin panel API (admin.<DOMAIN>/api). nginx serves the page
@@ -182,6 +183,22 @@ async function route(req: Request, url: URL, ip: string): Promise<Response> {
     const id = idFrom(path, '/api/spawns/');
     if (method === 'PATCH') await spots.updateSpawn(sql, id, (await body(req)) as spots.SpawnInput);
     else if (method === 'DELETE') await spots.deleteSpawn(sql, id);
+    else throw new HttpError(405, 'Metodo no permitido');
+    return json({ ok: true });
+  }
+
+  // ---- NPC editor --------------------------------------------------------------
+  if (path === '/api/npcs' && method === 'GET') {
+    const [definitions, places] = await Promise.all([npcs.listNpcDefinitions(sql), npcs.listNpcPlaces(sql)]);
+    return json({ definitions, places });
+  }
+  if (path === '/api/npcs/places' && method === 'POST') {
+    return json(await npcs.createNpcPlace(sql, (await body(req)) as npcs.NpcPlaceInput));
+  }
+  if (path.startsWith('/api/npcs/places/')) {
+    const id = idFrom(path, '/api/npcs/places/');
+    if (method === 'PATCH') await npcs.updateNpcPlace(sql, id, (await body(req)) as npcs.NpcPlaceInput);
+    else if (method === 'DELETE') await npcs.deleteNpcPlace(sql, id);
     else throw new HttpError(405, 'Metodo no permitido');
     return json({ ok: true });
   }
@@ -372,9 +389,17 @@ async function route(req: Request, url: URL, ip: string): Promise<Response> {
     if (method === 'PATCH') {
       const account = await game.getAccount(sql, accountId, await onlineAccounts());
       if (!account) throw new HttpError(404, 'No existe');
-      if (account.online) throw new HttpError(409, 'La cuenta esta conectada: que salga primero (OpenMU pisaria el VIP).');
       const input = await body(req);
-      await vip.setVip(sql, accountId, Number(input.tier), Number(input.days));
+      const tier = Number(input.tier);
+      const days = Number(input.days);
+      // Mu La Ronda: an account in the game gets it there (OpenMU saves its own copy on logout and
+      // would undo a database write). Asked to OpenMU itself, not the presence list - that one
+      // can be empty when it fails, and the database write was then lost. The database when OpenMU
+      // says the account is not in, or cannot be reached (then nobody is in).
+      const inGame = await vipInGame(sql, accountId, tier, Number.isFinite(days) ? days : 0).catch(() => 'offline' as const);
+      if (inGame === 'offline') {
+        await vip.setVip(sql, accountId, tier, days);
+      }
     } else if (method !== 'GET') {
       throw new HttpError(405, 'Metodo no permitido');
     }

@@ -239,6 +239,7 @@ import { GmPanel } from './gmPanel';
 import { Messenger } from './messenger';
 import { ChatRooms } from './chatRooms';
 import { FRIEND_OFFLINE } from './common/messenger';
+import { SEED_MASTER_WIRE_STORAGE, SEED_RESEARCHER_WIRE_STORAGE } from './common/seedCrafting';
 import {
   CHAOS_CARD_WIRE_STORAGE,
   PERSONAL_SHOP_SLOTS,
@@ -248,6 +249,8 @@ import {
 import { NetStats } from './common/netStats';
 import { readVipCodeLine, readVipLine } from './common/vip';
 import { readGrandResetLine } from './common/grandReset';
+import { readCharacterTotalsLine } from './common/characterTotals';
+import { readBuffsLine } from './skills/buffs';
 import { pointsFromWire, readPointsLine } from './common/widePoints';
 import { readSpotsLine } from './common/mapSpots';
 import { clearInvasions, readInvasionLine } from './common/invasionTally';
@@ -3752,6 +3755,10 @@ EventBus.on('ServerMessage', packet => {
       readVipLine(text);
       // Mu La Ronda: the grand reset window's state (common/grandReset.ts).
       readGrandResetLine(text);
+      // Mu La Ronda: the character's statistics window (common/characterTotals.ts), never shown.
+      if (readCharacterTotalsLine(text)) break;
+      // Mu La Ronda: the buff bar's time left (skills/buffs.ts), never shown.
+      if (readBuffsLine(text)) break;
       // Mu La Ronda: the map's monster spots, for the TAB map (common/mapSpots.ts).
       if (readSpotsLine(text)) break;
       // Mu La Ronda: the running invasion's counts, for the events window (common/invasionTally.ts).
@@ -3825,8 +3832,10 @@ EventBus.on('ItemMoved', packet => {
 
   // The Chaos Card Master's tray is the same local grid as the chaos
   // machine; only the wire byte differs (itemStorage.ts).
+  // Mu La Ronda: and so are the seed NPCs' (seedCrafting.ts: 11-14).
   const storage = (
-    p.TargetStorageType === CHAOS_CARD_WIRE_STORAGE
+    p.TargetStorageType === CHAOS_CARD_WIRE_STORAGE ||
+    (p.TargetStorageType >= SEED_MASTER_WIRE_STORAGE && p.TargetStorageType <= SEED_RESEARCHER_WIRE_STORAGE + 1)
       ? StorageKind.ChaosMachine
       : p.TargetStorageType
   ) as StorageKind;
@@ -3973,6 +3982,15 @@ EventBus.on('NpcWindowResponse', packet => {
     case NpcWindowResponseNpcWindowEnum.ChaosCardCombination:
       Store.dropNpcTalk();
       Economy.openMix('chaosCard');
+      break;
+    // Mu La Ronda: the socket system's NPCs, on the chaos machine's tray (seedCrafting.ts).
+    case NpcWindowResponseNpcWindowEnum.SeedMaster:
+      Store.dropNpcTalk();
+      Economy.openMix('seedMaster');
+      break;
+    case NpcWindowResponseNpcWindowEnum.SeedResearcher:
+      Store.dropNpcTalk();
+      Economy.openMix('seedResearcher');
       break;
     case NpcWindowResponseNpcWindowEnum.DevilSquare:
       Store.dropNpcTalk();

@@ -48,6 +48,7 @@ import type { CharacterClassNumber } from '../common/types';
 import { EventBus } from '../libs/eventBus';
 import { playUiSound } from '../libs/sfx';
 import { showObjectEffect } from '../ecs/systems/objectEffectSystem';
+import { playClassEvolution } from '../effects/classEvolution';
 import { MAX_QUESTS, QuestActKind, type QuestDefinition } from '../libs/mu/questFiles';
 import { Store } from '../store';
 import type { QuestLayer } from './layer';
@@ -790,7 +791,16 @@ EventBus.on('LegacyQuestReward', packet => {
   // whoever got it (WSclient.cpp:10408-10521); not SOUND_LEVEL_UP, so the
   // burst is shown directly rather than through the level-up event.
   const target = isHero ? hero : world?.getByNetId(p.PlayerId & 0x7fff);
-  if (world && target?.transform) showObjectEffect(world.scene, target, 'levelUp');
+  if (world && target?.transform) {
+    // Mu La Ronda: the final evolution gets its own column of light (effects/classEvolution.ts)
+    // with the white burst; every other reward keeps the flare.
+    if ((p.Reward as number) === Reward.CharacterEvolutionSecondToThird) {
+      playClassEvolution(world.scene, target);
+      showObjectEffect(world.scene, target, 'masterLevelUp');
+    } else {
+      showObjectEffect(world.scene, target, 'levelUp');
+    }
+  }
   playUiSound('changeUp');
 });
 

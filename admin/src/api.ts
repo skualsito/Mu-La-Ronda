@@ -178,6 +178,20 @@ export type MapInfo = MapRow & { hasTerrain: boolean };
 
 export type Monster = { id: string; number: number; name: string; kind: number };
 
+export type NpcDefinition = { id: string; number: number; name: string; kind: number; window: number; shop: boolean };
+export type NpcPlace = {
+  id: string;
+  mapId: string;
+  mapNumber: number;
+  mapName: string;
+  npcId: string;
+  number: number;
+  name: string;
+  x: number;
+  y: number;
+  direction: number;
+};
+
 export type Spawn = {
   id: string;
   monsterId: string;
@@ -232,6 +246,8 @@ export type ItemDefinition = {
   maxLevel: number;
   canSkill: boolean;
   maxSockets?: number;
+  /** Mu La Ronda: an item named by its level (Box of Kundun +1 = Box of Luck +8) - that level. */
+  presetLevel?: number;
 };
 
 export type DefinitionOption = {

@@ -920,6 +920,7 @@ function gmSign(scene: Scene, o: AuraOptions, p: NonNullable<AuraOptions['gmSign
     blendMesh: -1,
     colour: [1, 1, 1],
     // The bind pose lays the emblem flat, its face up: tipped over until that face looks at the camera.
+    // Tipped back and turned half round, so the top of the emblem (the MU) ends up, not down.
     rotate: r => {
       const cam = scene.activeCamera?.globalPosition;
       if (!cam) return r;
@@ -927,7 +928,7 @@ function gmSign(scene: Scene, o: AuraOptions, p: NonNullable<AuraOptions['gmSign
       const dx = cam.x - at.x;
       const dy = cam.y - (at.y + GM_SIGN_HEIGHT * s);
       const dz = cam.z - at.z;
-      return r.set(Math.PI / 2 - Math.atan2(dy, Math.hypot(dx, dz)), Math.atan2(dx, dz), 0);
+      return r.set(Math.atan2(dy, Math.hypot(dx, dz)) - Math.PI / 2, Math.atan2(dx, dz) + Math.PI, 0);
     },
   }) as ModelHandle;
   return {

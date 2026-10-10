@@ -12,6 +12,7 @@ import { MoveCommandWindow } from './components/moveCommandWindow';
 import { BottomBar } from './components/bottomBar';
 import { CharacterInfo } from './components/characterInfo';
 import { PetInfoWindow } from './components/petInfo';
+import { CharacterTotalsWindow } from './components/characterTotals';
 import { MuHelperWindow } from './components/muHelper';
 import { CashShop } from './components/cashShop';
 import { MarketplaceWindow } from './components/marketplace';
@@ -93,6 +94,7 @@ const HUD = observer(() => {
       <ShopBrowser />
       <CharacterInfo />
       <PetInfoWindow />
+      <CharacterTotalsWindow />
       <MuHelperWindow />
       <CashShop />
       <MarketplaceWindow />

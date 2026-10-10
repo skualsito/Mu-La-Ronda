@@ -75,7 +75,7 @@ type BurstRow = {
   ground?: BurstGround;
 };
 
-export type BurstKind = 'levelUp' | 'shieldPotion' | 'shieldLost' | 'swirl';
+export type BurstKind = 'levelUp' | 'masterLevelUp' | 'shieldPotion' | 'shieldLost' | 'swirl';
 
 /** Keyed by the `objectEffect` event's name. */
 export const BURSTS: Record<BurstKind, BurstRow> = {
@@ -103,6 +103,29 @@ export const BURSTS: Record<BurstKind, BurstRow> = {
       height: 0.1,
     },
     ground: { colour: [0.4, 0.6, 1], scale: 3, seconds: 0.8 },
+  },
+  // Mu La Ronda: a master level is the same burst, white - told apart from a level, not louder.
+  masterLevelUp: {
+    colour: [1, 1, 1],
+    count: 60,
+    seconds: 1.6,
+    radius: 0.6,
+    rise: 1.8,
+    size: 0.35,
+    height: 0.1,
+    rings: {
+      count: 15,
+      colour: [1, 1, 1],
+      radius: 0.4,
+      rise: 0.8,
+      riseJitter: 0.4,
+      spin: 12.5,
+      seconds: 2,
+      width: 0.4,
+      tails: 20,
+      height: 0.1,
+    },
+    ground: { colour: [0.85, 0.85, 0.85], scale: 3, seconds: 0.8 },
   },
   shieldPotion: { colour: [0.4, 0.7, 1], count: 24, seconds: 0.8, radius: 0.5, rise: 0.8, size: 0.25, height: 0.8 },
   shieldLost: { colour: [0.8, 0.3, 0.3], count: 24, seconds: 0.8, radius: 0.5, rise: 0.4, size: 0.25, height: 0.8 },

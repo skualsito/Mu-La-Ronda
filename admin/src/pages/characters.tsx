@@ -367,7 +367,7 @@ export function CharacterPage({ id }: { id: string }) {
 
       {data.accountId && (
         <Boundary resetKey={id}>
-          <VipCard accountId={data.accountId} locked={locked} />
+          <VipCard accountId={data.accountId} online={locked} />
         </Boundary>
       )}
 

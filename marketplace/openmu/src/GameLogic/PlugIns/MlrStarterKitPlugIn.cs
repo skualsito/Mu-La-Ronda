@@ -8,6 +8,7 @@ using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using MUnique.OpenMU.DataModel.Configuration.Items;
+using MUnique.OpenMU.GameLogic.Attributes;
 using MUnique.OpenMU.GameLogic.Views;
 using MUnique.OpenMU.Interfaces;
 using MUnique.OpenMU.Pathfinding;
@@ -43,6 +44,12 @@ public class MlrStarterKitPlugIn : ICharacterCreatedPlugIn, IItemMovingPlugIn, I
         [20] = (39, true, 12, 41), // Summoner: Mistery, Wings of Curse
         [24] = (5, true, 12, 49),  // Rage Fighter: Leather, Cape of Fighter
     };
+
+    /// <summary>The set pieces' level (the wings stay +0).</summary>
+    private const byte SetLevel = 9;
+
+    /// <summary>The set pieces' option level: +4 defense.</summary>
+    private const int SetOptionLevel = 1;
 
     private readonly ConcurrentDictionary<GameContext, DateTime> _lastSweep = new();
 
@@ -86,7 +93,7 @@ public class MlrStarterKitPlugIn : ICharacterCreatedPlugIn, IItemMovingPlugIn, I
         var marker = -(int)Math.Min((end - DateTime.UnixEpoch).TotalMinutes, int.MaxValue);
         var items = player.GameContext.Configuration.Items;
 
-        void Add(byte group, short number, byte slot)
+        void Add(byte group, short number, byte slot, bool setPiece = true)
         {
             if (items.FirstOrDefault(d => d.Group == group && d.Number == number) is not { } definition)
             {
@@ -96,6 +103,28 @@ public class MlrStarterKitPlugIn : ICharacterCreatedPlugIn, IItemMovingPlugIn, I
             var item = player.PersistenceContext.CreateNew<Item>();
             item.Definition = definition;
             item.ItemSlot = slot;
+            if (setPiece)
+            {
+                // Excellent +9 with option, luck and the "more zen after hunting" excellent option.
+                item.Level = SetLevel;
+                var possible = definition.PossibleItemOptions.SelectMany(o => o.PossibleOptions).ToList();
+                void Link(IncreasableItemOption? option, int level = 0)
+                {
+                    if (option is not null)
+                    {
+                        var link = player.PersistenceContext.CreateNew<ItemOptionLink>();
+                        link.ItemOption = option;
+                        link.Level = level;
+                        item.ItemOptions.Add(link);
+                    }
+                }
+
+                Link(possible.FirstOrDefault(o => o.OptionType == ItemOptionTypes.Option), SetOptionLevel);
+                Link(possible.FirstOrDefault(o => o.OptionType == ItemOptionTypes.Luck));
+                Link(possible.FirstOrDefault(o => o.OptionType == ItemOptionTypes.Excellent
+                                                  && o.PowerUpDefinition?.TargetAttribute == Stats.MoneyAmountRate));
+            }
+
             item.Durability = item.GetMaximumDurabilityOfOnePiece();
             item.StorePrice = marker;
             inventory.Items.Add(item);
@@ -114,7 +143,7 @@ public class MlrStarterKitPlugIn : ICharacterCreatedPlugIn, IItemMovingPlugIn, I
             Add(10, kit.Set, InventoryConstants.GlovesSlot);
         }
         Add(11, kit.Set, InventoryConstants.BootsSlot);
-        Add(kit.WingsGroup, kit.Wings, InventoryConstants.WingsSlot);
+        Add(kit.WingsGroup, kit.Wings, InventoryConstants.WingsSlot, setPiece: false);
     }
 
     /// <inheritdoc />

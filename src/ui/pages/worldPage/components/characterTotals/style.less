@@ -1,0 +1,62 @@
+// Mu La Ronda: the character's statistics window (index.tsx), in the pet window's look.
+.character-totals-window {
+  font-size: 11px;
+
+  .totals-title {
+    position: absolute;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-weight: bold;
+    text-shadow: 1px 1px 0 #000;
+  }
+
+  .head-close {
+    position: absolute;
+    cursor: pointer;
+  }
+
+  .totals-list {
+    position: absolute;
+    box-sizing: border-box;
+    padding: 2px 4px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    pointer-events: auto;
+    font-size: 10px;
+    line-height: 14px;
+    color: #dcdcdc;
+    text-shadow: 1px 1px 0 #000;
+  }
+
+  .totals-loading {
+    margin-top: 8px;
+    text-align: center;
+    color: #a8a8a8;
+  }
+
+  .totals-section + .totals-section {
+    margin-top: 6px;
+  }
+
+  .totals-section-title {
+    margin-bottom: 2px;
+    font-weight: bold;
+    color: #ffd25a;
+  }
+
+  .totals-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 6px;
+  }
+
+  .totals-value {
+    flex: none;
+    color: #9fc3ff;
+  }
+
+  .window-button {
+    position: absolute;
+  }
+}

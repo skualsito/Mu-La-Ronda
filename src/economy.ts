@@ -8,6 +8,15 @@ import type { Item } from './ecs/world';
 import { playUiSound } from './libs/sfx';
 import { Notices } from './common/notices';
 import {
+  MOUNT_SEED_SPHERE,
+  REMOVE_SEED_SPHERE,
+  SEED_MASTER_WIRE_STORAGE,
+  SEED_RESEARCHER_WIRE_STORAGE,
+  isSeedSphere,
+  socketItemOf,
+  socketToUse,
+} from './common/seedCrafting';
+import {
   CHAOS_CARD_WIRE_STORAGE,
   MIX_SLOTS,
   PERSONAL_SHOP_SLOTS,
@@ -329,6 +338,9 @@ const emptyGrid = (size: number) => new Array<Item | null>(size).fill(null);
  * `StorageKind` to one of them, so the pick / place / move code is written
  * once and knows nothing about which window is up.
  */
+/** Who owns the mix tray: the goblin, the Chaos Card Master, or (Mu La Ronda) the seed NPCs. */
+export type MixKind = 'chaosMachine' | 'chaosCard' | 'seedMaster' | 'seedResearcher';
+
 export const Economy = new (class _Economy {
   // ---- vault (CNewUIStorageInventory) --------------------------------------
 
@@ -355,7 +367,9 @@ export const Economy = new (class _Economy {
    * Card Master (`MIXTYPE_CHAOS_CARD`, same window in the original's
    * `CNewUIMixInventory`). Decides the storage byte the move packets carry.
    */
-  mixKind: 'chaosMachine' | 'chaosCard' = 'chaosMachine';
+  mixKind: MixKind = 'chaosMachine';
+  /** Mu La Ronda: the Seed Researcher's socket to mount on or take off (0-based). */
+  seedSocket = 0;
   /** Mu La Ronda: the recipe picked from the window's list, to show what it takes (null = the list). */
   mixRecipe: number | null = null;
 
@@ -416,6 +430,7 @@ export const Economy = new (class _Economy {
       mixPending: observable,
       mixResult: observable,
       mixKind: observable,
+      seedSocket: observable,
       mixRecipe: observable,
       tradeOpen: observable,
       myTradeItems: observable,
@@ -702,10 +717,11 @@ export const Economy = new (class _Economy {
   // =========================================================================
 
   /** `NpcWindowResponse(ChaosMachine / ChaosCardCombination)` → `OpeningProcess`. */
-  openMix(kind: 'chaosMachine' | 'chaosCard' = 'chaosMachine'): void {
+  openMix(kind: MixKind = 'chaosMachine'): void {
     runInAction(() => {
       this.mixOpen = true;
       this.mixKind = kind;
+      this.seedSocket = 0;
       this.mixRecipe = null;
       this.mixItems = emptyGrid(MIX_SLOTS);
       this.mixPending = false;
@@ -721,9 +737,29 @@ export const Economy = new (class _Economy {
    * 9 while the ChaosCardCombination window is the open one).
    */
   get mixWireStorage(): number {
-    return this.mixKind === 'chaosCard'
-      ? CHAOS_CARD_WIRE_STORAGE
-      : StorageKind.ChaosMachine;
+    switch (this.mixKind) {
+      case 'chaosCard':
+        return CHAOS_CARD_WIRE_STORAGE;
+      // Mu La Ronda: the seed NPCs' trays (seedCrafting.ts).
+      case 'seedMaster':
+        return SEED_MASTER_WIRE_STORAGE;
+      case 'seedResearcher':
+        return SEED_RESEARCHER_WIRE_STORAGE;
+      default:
+        return StorageKind.ChaosMachine;
+    }
+  }
+
+  /** Mu La Ronda: the socket the Seed Researcher will work on (seedCrafting.ts socketToUse). */
+  get seedSocketInUse(): number {
+    return socketToUse(this.mixItems, this.seedSocket);
+  }
+
+  /** Mu La Ronda: the Seed Researcher's socket, picked in its window. */
+  pickSeedSocket(slot: number): void {
+    runInAction(() => {
+      this.seedSocket = slot;
+    });
   }
 
   setMixItems(entries: { slot: number; item: Item }[]): void {
@@ -798,7 +834,19 @@ export const Economy = new (class _Economy {
       return;
     }
 
-    if (this.mixKind === 'chaosMachine') {
+    if (this.mixKind === 'seedResearcher') {
+      // Mu La Ronda: mounting or taking off names the socket, so the mix type goes with it:
+      // a seed sphere in the tray mounts it, an item alone has one taken off.
+      const item = socketItemOf(this.mixItems);
+      if (!item) {
+        Social.errorMessage(t('seed.needSocketItem'));
+        return;
+      }
+      const packet = ChaosMachineMixRequestPacket.createPacket();
+      packet.MixType = (this.mixItems.some(isSeedSphere) ? MOUNT_SEED_SPHERE : REMOVE_SEED_SPHERE) as ChaosMachineMixRequestChaosMachineMixTypeEnum;
+      packet.SocketSlot = this.seedSocketInUse;
+      Store.sendToGS(packet.buffer);
+    } else if (this.mixKind === 'chaosMachine' || this.mixKind === 'seedMaster') {
       // Mu La Ronda: like the original, the goblin works out the recipe from
       // what is in the tray - no menu. A 3-byte request (no MixType) makes
       // OpenMU's ChaosMixHandlerPlugIn infer it with

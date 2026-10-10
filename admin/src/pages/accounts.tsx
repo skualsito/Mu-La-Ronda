@@ -252,7 +252,7 @@ export function AccountPage({ id }: { id: string }) {
         </Card>
       </div>
 
-      <VipCard accountId={id} locked={data.online} />
+      <VipCard accountId={id} online={data.online} />
 
       <VaultCard accountId={id} online={data.online} />
 
@@ -453,7 +453,7 @@ const VIP_OPTIONS = [
 ];
 
 /** The account's VIP: what it has and until when, and a way to give one by hand. */
-export function VipCard({ accountId, locked }: { accountId: string; locked: boolean }) {
+export function VipCard({ accountId, online }: { accountId: string; online: boolean }) {
   const toast = useToast();
   const { data, error, reload, setData } = useLoad(() => api<Vip>(`/accounts/${accountId}/vip`), [accountId]);
   const [tier, setTier] = useState<number | null>(null);
@@ -491,20 +491,20 @@ export function VipCard({ accountId, locked }: { accountId: string; locked: bool
         )}
       </p>
       <div className="form-grid">
-        <SelectField label="Nivel" value={chosen} disabled={locked} options={VIP_OPTIONS} onChange={v => setTier(v)} />
+        <SelectField label="Nivel" value={chosen} options={VIP_OPTIONS} onChange={v => setTier(v)} />
         <label className="field">
           <span className="field-label">Días desde hoy</span>
-          <input type="number" min={1} max={3650} value={days} disabled={locked || chosen === 0} onChange={e => setDays(Number(e.target.value) || 0)} />
+          <input type="number" min={1} max={3650} value={days} disabled={chosen === 0} onChange={e => setDays(Number(e.target.value) || 0)} />
         </label>
       </div>
       <div className="row-actions">
-        <button className="btn btn-primary" disabled={locked || (chosen !== 0 && days < 1)} onClick={save}>
+        <button className="btn btn-primary" disabled={chosen !== 0 && days < 1} onClick={save}>
           {chosen === 0 ? 'Quitar VIP' : 'Dar VIP'}
         </button>
       </div>
       <p className="muted small">
         Los jugadores lo compran en el juego (menú Esc → VIP, o /vip oro). Se aplica cuando entra con un personaje.
-        {locked && ' La cuenta está conectada: que salga primero.'}
+        {online && ' La cuenta está conectada: se le aplica en el juego al instante.'}
       </p>
     </Card>
   );

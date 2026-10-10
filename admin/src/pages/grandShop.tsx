@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { api, type GrandShopRow, type ItemDefinition } from '../api';
-import { Badge, Card, Confirm, ErrorBox, Loading, NumberField, PageHeader, SelectField, TextField, Toggle, formatNumber, useLoad, useToast } from '../ui';
+import { aliasName } from '../../server/itemAliases';
+import { DefinitionIcon } from './inventory';
+import { Badge, Card, Confirm, ErrorBox, Loading, NumberField, PageHeader, SelectField, Toggle, formatNumber, useLoad, useToast } from '../ui';
 
 /**
  * Mu La Ronda: the grand reset shop. Its items are paid with grand reset coins only (the NPC
@@ -51,21 +53,42 @@ function ItemForm({ draft, onChange, fixedItem }: { draft: Draft; onChange: (d: 
           <strong>{fixedItem}</strong>
         </p>
       ) : (
-        <div className="form-grid">
-          <TextField label="Buscar item" value={query} placeholder="Ej.: Dragon, Wings, Jewel" onChange={setQuery} />
-          <SelectField
-            label="Item"
-            value={draft.definition?.id ?? ''}
-            options={[
-              { value: '', label: draft.definition ? draft.definition.name : '— elegí uno —' },
-              ...(results.data ?? []).filter(d => d.id !== draft.definition?.id).map(d => ({ value: d.id, label: `${d.name} (${d.group}/${d.number})` })),
-            ]}
-            onChange={id => {
-              const picked = (results.data ?? []).find(d => d.id === id);
-              if (picked) onChange({ ...draft, definition: picked, level: Math.min(draft.level, picked.maxLevel || 15) });
-            }}
+        <>
+          <input
+            className="search"
+            placeholder="Buscar item… (ej. Box of Kundun, Dragon, Wings, Jewel)"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
           />
-        </div>
+          {draft.definition && (
+            <div className="def-row active">
+              <DefinitionIcon group={draft.definition.group} number={draft.definition.number} level={draft.level} className="def-icon" />
+              <span className="def-name">{aliasName(draft.definition.group, draft.definition.number, draft.level) ?? draft.definition.name}</span>
+              <span className="muted small">elegido</span>
+            </div>
+          )}
+          {!!results.data?.length && (
+            <div className="def-results">
+              {results.data.map(d => (
+                <button
+                  key={`${d.id}-${d.presetLevel ?? ''}`}
+                  className="def-row"
+                  onClick={() => {
+                    onChange({ ...draft, definition: d, level: d.presetLevel ?? Math.min(draft.level, d.maxLevel || 15) });
+                    setQuery('');
+                  }}
+                >
+                  <DefinitionIcon group={d.group} number={d.number} level={d.presetLevel} className="def-icon" />
+                  <span className="def-name">{d.name}</span>
+                  <span className="muted small">
+                    grupo {d.group} · #{d.number}
+                    {d.presetLevel !== undefined ? ` · +${d.presetLevel}` : ''} · {d.width}×{d.height}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </>
       )}
       <div className="form-grid">
         <NumberField label="Precio (monedas)" value={draft.price} min={1} onChange={v => onChange({ ...draft, price: v })} />
@@ -149,8 +172,13 @@ export function GrandShopPage() {
                 {data.map(row => (
                   <tr key={row.id}>
                     <td>
-                      <strong>{row.name}</strong>
-                      <div className="muted small">{details(row)}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <DefinitionIcon group={row.group} number={row.number} level={row.level} excellent={row.excellent > 0} className="def-icon" />
+                        <span>
+                          <strong>{aliasName(row.group, row.number, row.level) ?? row.name}</strong>
+                          <div className="muted small">{details(row)}</div>
+                        </span>
+                      </div>
                     </td>
                     <td>{formatNumber(row.price)} monedas</td>
                     <td>
@@ -184,7 +212,7 @@ export function GrandShopPage() {
         <div className="modal-backdrop" onMouseDown={() => setEditing(null)}>
           <div className="modal" role="dialog" aria-modal="true" onMouseDown={e => e.stopPropagation()}>
             <h2>Editar item</h2>
-            <ItemForm draft={editing.draft} fixedItem={editing.row.name} onChange={d => setEditing({ ...editing, draft: d })} />
+            <ItemForm draft={editing.draft} fixedItem={aliasName(editing.row.group, editing.row.number, editing.row.level) ?? editing.row.name} onChange={d => setEditing({ ...editing, draft: d })} />
             <div className="modal-actions">
               <button className="btn btn-ghost" onClick={() => setEditing(null)}>
                 Cancelar

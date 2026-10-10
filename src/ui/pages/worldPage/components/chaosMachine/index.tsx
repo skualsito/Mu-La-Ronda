@@ -10,6 +10,7 @@ import { ItemGrid } from '../../../../components/itemGrid';
 import { QuickItemActions } from '../../../../../common/quickItemActions';
 import { useEventBus } from '../../../../../hooks/useEventBus';
 import { RecipePanel } from './recipePanel';
+import { SeedPanel } from './seedPanel';
 import {
   COLUMNS,
   GRID_X,
@@ -52,7 +53,22 @@ export const ChaosMachine = observer(() => {
   // The Chaos Card Master shares this window (`MIXTYPE_CHAOS_CARD` in the
   // original's CNewUIMixInventory): its own title and hint.
   const cardMode = Economy.mixKind === 'chaosCard';
-  const title = cardMode ? t('chaosCard.title') : t(TITLE);
+  // Mu La Ronda: and so do the seed NPCs (seedPanel.tsx).
+  const title =
+    Economy.mixKind === 'chaosCard'
+      ? t('chaosCard.title')
+      : Economy.mixKind === 'seedMaster'
+        ? t('seed.masterTitle')
+        : Economy.mixKind === 'seedResearcher'
+          ? t('seed.researcherTitle')
+          : t(TITLE);
+  const hint = cardMode
+    ? `${t('chaosCard.hint1')} ${t('chaosCard.hint2')}`
+    : Economy.mixKind === 'seedMaster'
+      ? t('seed.masterHint')
+      : Economy.mixKind === 'seedResearcher'
+        ? t('seed.researcherHint')
+        : t('chaos.putItemsIn');
 
   const column = 1 + (Store.inventoryEnabled ? 1 : 0) + (Store.characterInfoEnabled ? 1 : 0);
 
@@ -96,11 +112,7 @@ export const ChaosMachine = observer(() => {
         {Economy.mixResult === 'success' && <div>{t('chaos.succeeded')}</div>}
         {Economy.mixResult === 'failed' && <div>{t('chaos.failed')}</div>}
         {!Economy.mixResult && (
-          <div className="hint">
-            {cardMode
-              ? `${t('chaosCard.hint1')} ${t('chaosCard.hint2')}`
-              : t('chaos.putItemsIn')}
-          </div>
+          <div className="hint">{hint}</div>
         )}
       </div>
 
@@ -127,6 +139,7 @@ export const ChaosMachine = observer(() => {
       />
 
       <RecipePanel />
+      <SeedPanel />
 
 
       <div

@@ -38,6 +38,26 @@ const ACCOUNT_HIDDEN = [2, 3, 4, 5];
 const GUILD_MASTER = 128;
 
 const RANKING_SIZE = 50;
+
+/** Mu La Ronda's grand reset plugin (GameLogic/GrandReset/GrandReset.cs) and its default resets per grand reset. */
+const GRAND_RESET_TYPE = 'e2b7c4d1-6a3f-4e58-9b0c-1d2e3f4a5b6c';
+const DEFAULT_RESETS_PER_GRAND_RESET = 10;
+
+/**
+ * How many resets one grand reset stands for, as the grand reset gives them (240 resets, 24 grand
+ * resets): the rankings count each character's grand resets that many times over its resets, so
+ * 260 resets (26 grand resets' worth) stand above 1 grand reset and 10 resets (20).
+ */
+async function resetsPerGrandReset(sql: Sql): Promise<number> {
+  try {
+    const [row] = await sql<{ config: string | null }[]>`
+      SELECT "CustomConfiguration" AS config FROM config."PlugInConfiguration" WHERE "TypeId" = ${GRAND_RESET_TYPE}::uuid`;
+    const value = Number(JSON.parse(row?.config || '{}').ResetsPerGrandReset);
+    return Number.isFinite(value) && value >= 1 ? Math.trunc(value) : DEFAULT_RESETS_PER_GRAND_RESET;
+  } catch {
+    return DEFAULT_RESETS_PER_GRAND_RESET;
+  }
+}
 const CACHE_MS = 60_000;
 
 const NAME_RE = /^[A-Za-z0-9]{1,10}$/;
@@ -58,6 +78,7 @@ function reply(body: unknown, status = 200): Response {
 }
 
 async function query(sql: Sql, type: RankingType): Promise<readonly unknown[]> {
+  const perGrandReset = await resetsPerGrandReset(sql);
   switch (type) {
     case 'resets':
       return sql`
@@ -78,25 +99,23 @@ async function query(sql: Sql, type: RankingType): Promise<readonly unknown[]> {
            AND a."State" NOT IN ${sql(ACCOUNT_HIDDEN)}
            AND NOT EXISTS (SELECT 1 FROM data."Character" g
                             WHERE g."AccountId" = c."AccountId" AND g."CharacterStatus" = ${STATUS_GAME_MASTER})
-         ORDER BY "grandResets" DESC, resets DESC, level DESC, "masterLevel" DESC, c."Experience" DESC, c."Name"
+         ORDER BY COALESCE(gr."Value", 0) * ${perGrandReset} + COALESCE(r."Value", 0) DESC, level DESC, "masterLevel" DESC, c."Experience" DESC, c."Name"
          LIMIT ${RANKING_SIZE}`;
 
     case 'pk':
       return sql`
         SELECT c."Name" AS name,
                cc."Name" AS class,
-               c."PlayerKillCount" AS kills,
-               COALESCE(l."Value", 0)::int AS level
+               c."PlayerKillCount" AS kills
           FROM data."Character" c
           JOIN config."CharacterClass" cc ON cc."Id" = c."CharacterClassId"
-          LEFT JOIN data."StatAttribute" l ON l."CharacterId" = c."Id" AND l."DefinitionId" = ${STAT.level}::uuid
           JOIN data."Account" a ON a."Id" = c."AccountId"
          WHERE c."CharacterStatus" NOT IN (${STATUS_BANNED}, ${STATUS_GAME_MASTER})
            AND a."State" NOT IN ${sql(ACCOUNT_HIDDEN)}
            AND NOT EXISTS (SELECT 1 FROM data."Character" g
                             WHERE g."AccountId" = c."AccountId" AND g."CharacterStatus" = ${STATUS_GAME_MASTER})
            AND c."PlayerKillCount" > 0
-         ORDER BY kills DESC, level DESC, c."Name"
+         ORDER BY kills DESC, c."Name"
          LIMIT ${RANKING_SIZE}`;
 
     case 'guilds':
@@ -104,14 +123,16 @@ async function query(sql: Sql, type: RankingType): Promise<readonly unknown[]> {
         SELECT g."Name" AS name,
                g."Score" AS score,
                COUNT(gm."Id")::int AS members,
+               COALESCE(SUM(gr."Value"), 0)::int AS "grandResets",
                COALESCE(SUM(r."Value"), 0)::int AS resets,
                MAX(CASE WHEN gm."Status" = ${GUILD_MASTER} THEN c."Name" END) AS master
           FROM guild."Guild" g
           LEFT JOIN guild."GuildMember" gm ON gm."GuildId" = g."Id"
           LEFT JOIN data."Character" c ON c."Id" = gm."Id"
           LEFT JOIN data."StatAttribute" r ON r."CharacterId" = c."Id" AND r."DefinitionId" = ${STAT.resets}::uuid
+          LEFT JOIN data."StatAttribute" gr ON gr."CharacterId" = c."Id" AND gr."DefinitionId" = ${STAT.grandResets}::uuid
          GROUP BY g."Id", g."Name", g."Score"
-         ORDER BY score DESC, resets DESC, members DESC, g."Name"
+         ORDER BY score DESC, COALESCE(SUM(gr."Value"), 0) * ${perGrandReset} + COALESCE(SUM(r."Value"), 0) DESC, members DESC, g."Name"
          LIMIT ${RANKING_SIZE}`;
   }
 }

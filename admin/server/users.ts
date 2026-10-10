@@ -17,6 +17,7 @@ export const SECTIONS = [
   { key: 'personajes', label: 'Personajes' },
   { key: 'cuentas', label: 'Cuentas' },
   { key: 'spots', label: 'Spots' },
+  { key: 'npcs', label: 'NPCs' },
   { key: 'shops', label: 'Shops' },
   { key: 'tienda-gr', label: 'Tienda Grand Reset' },
   { key: 'drops', label: 'Drops' },
@@ -203,6 +204,7 @@ export function sectionOf(path: string, method: string): Section | 'usuarios' | 
   if (path.startsWith('/api/drops')) return 'drops';
   if (path.startsWith('/api/monster-stats')) return 'monstruos';
   if (path.startsWith('/api/events')) return 'eventos';
+  if (path.startsWith('/api/npcs')) return 'npcs';
   if (path.startsWith('/api/spawns/') || /^\/api\/maps\/[^/]+\/(spawns|terrain)$/.test(path)) return 'spots';
   if (path.startsWith('/api/shops')) return 'shops';
   if (path.startsWith('/api/grand-shop')) return 'tienda-gr';
@@ -231,6 +233,8 @@ export function allowed(access: Access, path: string, method: string): boolean {
     return ['personajes', 'shops', 'drops', 'tienda-gr'].some(p => access.permissions.includes(p as Section));
   }
   if (section === 'monsters') return access.permissions.includes('spots') || access.permissions.includes('drops');
+  // The NPC editor draws the maps' ground too.
+  if (section === 'spots' && /^\/api\/maps\/\d+\/terrain$/.test(path) && access.permissions.includes('npcs')) return true;
   if (section === 'vault') return access.permissions.includes('personajes') || access.permissions.includes('cuentas');
   return access.permissions.includes(section);
 }

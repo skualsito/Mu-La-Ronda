@@ -1,4 +1,4 @@
-// <copyright file="MlrVipController.cs" company="MUnique">
+﻿// <copyright file="MlrVipController.cs" company="MUnique">
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 // </copyright>
 
@@ -75,6 +75,49 @@ public class MlrVipController : Controller
         return this.Ok(new { applied = true });
     }
 
+    /// <summary>
+    /// Mu La Ronda: the panel's "Dar VIP" / "Quitar VIP" for an account in the game. Written to the
+    /// player's own account object, which the game saves on logout - the database alone would be
+    /// overwritten then. 404 when the account is not in the game: the panel writes the database.
+    /// </summary>
+    /// <param name="accountId">The account.</param>
+    /// <param name="request">The tier (0 takes it away) and for how many days from now.</param>
+    /// <returns>The result.</returns>
+    [HttpPost("{accountId:guid}/set")]
+    public async Task<IActionResult> SetAsync(Guid accountId, [FromBody] SetRequest request)
+    {
+        if (request.Tier is < 0 or > 3 || request.Days is < 0 or > 3650)
+        {
+            return this.BadRequest(new { error = "Nivel o dias invalidos." });
+        }
+
+        if (await this.FindPlayerAsync(accountId).ConfigureAwait(false) is not { } player)
+        {
+            return this.NotFound(new { online = false });
+        }
+
+        var tier = Vip.Tiers[request.Tier];
+        var expires = request.Tier == 0 ? DateTime.UnixEpoch : DateTime.UtcNow.AddDays(request.Days);
+        var granted = false;
+        await player.RunPersistenceExclusiveAsync(async () =>
+        {
+            granted = Vip.Grant(player, tier, expires) && Vip.SetNext(player, Vip.Tiers[0], 0);
+            if (granted)
+            {
+                await player.PersistenceContext.SaveChangesAsync().ConfigureAwait(false);
+            }
+        }).ConfigureAwait(false);
+
+        if (!granted)
+        {
+            return this.Conflict(new { error = "No se pudo cambiar el VIP en el juego." });
+        }
+
+        Vip.Apply(player);
+        await player.ShowBlueMessageAsync(Vip.StatusLine(player)).ConfigureAwait(false);
+        return this.Ok(new { applied = true });
+    }
+
     private async ValueTask<Player?> FindPlayerAsync(Guid accountId)
     {
         foreach (var server in this._gameServers.Values.OfType<GameServer>())
@@ -94,4 +137,9 @@ public class MlrVipController : Controller
     /// <param name="Months">How many months (1-12).</param>
     /// <param name="Message">A line to show the player, if any.</param>
     public record GrantRequest(int Tier, int Months, string? Message = null);
+
+    /// <summary>The panel's VIP for an account: tier 0-3 and days from now.</summary>
+    /// <param name="Tier">The tier.</param>
+    /// <param name="Days">The days.</param>
+    public record SetRequest(int Tier, double Days);
 }

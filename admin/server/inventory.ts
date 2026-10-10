@@ -1,3 +1,4 @@
+import { aliasesMatching } from './itemAliases';
 import type { Sql } from 'postgres';
 
 /**
@@ -122,7 +123,7 @@ export async function storageItems(sql: Sql, inv: string) {
 
 export async function searchDefinitions(sql: Sql, q: string) {
   const like = `%${q}%`;
-  return sql`
+  const rows = await sql`
     SELECT d."Id" AS id, d."Name" AS name, d."Group" AS "group", d."Number" AS number,
            d."Width" AS width, d."Height" AS height, d."Durability" AS durability,
            d."MaximumItemLevel" AS "maxLevel", (d."SkillId" IS NOT NULL) AS "canSkill",
@@ -131,7 +132,28 @@ export async function searchDefinitions(sql: Sql, q: string) {
      WHERE ${q} = '' OR d."Name" ILIKE ${like}
      ORDER BY d."Group", d."Number"
      LIMIT 60`;
+
+  // Mu La Ronda: the items named by their level (Box of Kundun = Box of Luck +8..+12), first,
+  // with that level to start from.
+  const aliases = aliasesMatching(q);
+  if (!aliases.length) return rows;
+  const keys = aliases.map(a => `${a.group}/${a.number}`);
+  const defs = await sql`
+    SELECT d."Id" AS id, d."Group" AS "group", d."Number" AS number,
+           d."Width" AS width, d."Height" AS height, d."Durability" AS durability,
+           d."MaximumItemLevel" AS "maxLevel", (d."SkillId" IS NOT NULL) AS "canSkill",
+           d."MaximumSockets" AS "maxSockets"
+      FROM config."ItemDefinition" d
+     WHERE (d."Group"::text || '/' || d."Number"::text) IN ${sql(keys)}`;
+  const named = aliases.flatMap(a => {
+    const def = defs.find(d => d.group === a.group && d.number === a.number);
+    return def ? [{ ...def, name: a.name, presetLevel: a.level }] : [];
+  });
+  return [...named, ...rows];
 }
+
+/** Mu La Ronda: the highest seed sphere level (MountSeedSphereCrafting.MaximumSphereLevel). */
+const MAX_SPHERE_LEVEL = 3;
 
 /** Options an item of this definition can carry, grouped by type. */
 export async function definitionOptions(sql: Sql, definitionId: string) {
@@ -155,7 +177,8 @@ export async function definitionOptions(sql: Sql, definitionId: string) {
     maxPerItem: Number(r.maxPerItem),
     type: OPTION_TYPES[r.typeId] ?? 'other',
     element: r.element == null ? null : Number(r.element),
-    levels: (r.levels as number[]).map(Number),
+    // Mu La Ronda: seed spheres go up to level 3 (deploy/config/43-socket-limits.sql).
+    levels: (r.levels as number[]).map(Number).filter(l => OPTION_TYPES[r.typeId] !== 'socket' || l <= MAX_SPHERE_LEVEL),
     name: HARMONY_NAMES[String(r.definitionName)]?.[Number(r.number)] || ((r.name as string | null) ?? `${r.definitionName} #${r.number}`),
   }));
 }

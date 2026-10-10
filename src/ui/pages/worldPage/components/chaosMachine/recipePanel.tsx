@@ -107,7 +107,7 @@ const Detail = ({ match, picked }: { match: RecipeMatch; picked: boolean }) => {
  * red, then the chance and the cost.
  */
 export const RecipePanel = observer(() => {
-  if (Economy.mixKind === 'chaosCard' || Economy.mixResult) return null;
+  if (Economy.mixKind !== 'chaosMachine' || Economy.mixResult) return null;
 
   const picked = Economy.mixRecipe !== null ? CHAOS_RECIPES.find(r => r.number === Economy.mixRecipe) : undefined;
   const match = picked ? matchRecipe(picked, Economy.mixItems) : bestRecipe(Economy.mixItems);

@@ -318,10 +318,11 @@ function wingLines(out: Lines, def: ItemDef, level: number) {
 }
 
 /**
- * Mu La Ronda: what each pet gives, as OpenMU applies it
- * (`VersionSeasonSix/Items/Pets.cs`). The original only names most pets, so
- * the Imp or the Panda read as doing nothing. Dark Horse and Fenrir options
- * (their own option lines) are left to the item's options.
+ * Mu La Ronda: what each pet and transformation ring gives, as OpenMU applies it
+ * (`VersionSeasonSix/Items/Pets.cs`, `Jewelery.cs`). The original only names most of them, so
+ * the Imp, the Panda or the Panda Ring read as doing nothing. Dark Horse and Fenrir options
+ * (their own option lines) are left to the item's options. The pets that collect Zen are the
+ * client's (`pets.ts`, `collects`).
  */
 type PetBonus = { key: TextKey; value?: number };
 
@@ -332,14 +333,21 @@ const PET_BONUSES: Record<number, readonly PetBonus[]> = {
   3: [{ key: 'item.pet.mount' }, { key: 'item.increaseDamage', value: 15 }, { key: 'item.absorbDamage', value: 10 }],
   4: [{ key: 'item.pet.mount' }],
   37: [{ key: 'item.pet.mount' }, { key: 'item.ableToFly' }],
+  // Transformation rings.
+  39: [{ key: 'item.ring.defensePct', value: 10 }, { key: 'item.ring.hpPerLevel' }],
+  41: [{ key: 'item.ring.damage', value: 20 }],
+  76: [{ key: 'item.ring.damage', value: 30 }, { key: 'item.pet.zen', value: 50 }, { key: 'item.ring.finalDamage', value: 30 }],
+  122: [{ key: 'item.ring.damage', value: 40 }, { key: 'item.ring.skeletonExp', value: 30 }],
+  67: [{ key: 'item.pet.collectsZen' }],
   64: [{ key: 'item.increaseDamage', value: 40 }, { key: 'item.pet.attackSpeed', value: 10 }],
   65: [{ key: 'item.absorbDamage', value: 30 }, { key: 'item.pet.maxHp', value: 50 }],
-  80: [{ key: 'item.pet.experience', value: 50 }, { key: 'item.pet.defense', value: 50 }],
-  106: [{ key: 'item.pet.zen', value: 50 }, { key: 'item.pet.defense', value: 50 }],
+  80: [{ key: 'item.pet.experience', value: 50 }, { key: 'item.pet.defense', value: 50 }, { key: 'item.pet.collectsZen' }],
+  106: [{ key: 'item.pet.zen', value: 50 }, { key: 'item.pet.defense', value: 50 }, { key: 'item.pet.collectsZen' }],
   123: [
     { key: 'item.increaseDamage', value: 20 },
     { key: 'item.pet.attackSpeed', value: 10 },
     { key: 'item.pet.experience', value: 30 },
+    { key: 'item.pet.collectsZen' },
   ],
 };
 
@@ -708,7 +716,10 @@ function extraOptionLines(out: Lines, def: ItemDef, item: Item) {
   const raw = item.raw;
   if (!raw) return;
 
-  if (raw[5] & GUARDIAN_OPTION_FLAG) out.add(t('item.option380'), 'orange');
+  if (raw[5] & GUARDIAN_OPTION_FLAG) {
+    out.add(t('item.option380'), 'orange');
+    for (const [key, value] of guardianOptionLines(def.group)) out.add(t(key, { value }), 'violet');
+  }
 
   const sockets = item.sockets ?? [];
   if (!(item.socketCount ?? 0)) {
@@ -737,6 +748,23 @@ function extraOptionLines(out: Lines, def: ItemDef, item: Item) {
 
 /** ItemSerializer: byte 5's 0x08 marks the level 380 option. */
 const GUARDIAN_OPTION_FLAG = 0x08;
+
+/**
+ * What the level 380 option gives, by the item's group - OpenMU's GuardianOptions.cs
+ * (Persistence/Initialization/VersionSeasonSix/Items): weapons (0-5) attack rate and
+ * damage in PvP, the armour pieces defense rate in PvP plus one thing each.
+ */
+function guardianOptionLines(group: number): [TextKey, number][] {
+  if (group <= 5) return [['item.option380.attackRatePvp', 10], ['item.option380.damagePvp', 200]];
+  switch (group) {
+    case 7: return [['item.option380.defenseRatePvp', 10], ['item.option380.sdRecovery', 20]];
+    case 8: return [['item.option380.defenseRatePvp', 10], ['item.option380.sdAuto', 0]];
+    case 9: return [['item.option380.defenseRatePvp', 10], ['item.option380.defensePvp', 100]];
+    case 10: return [['item.option380.defenseRatePvp', 10], ['item.option380.maxHp', 200]];
+    case 11: return [['item.option380.defenseRatePvp', 10], ['item.option380.maxSd', 200]];
+    default: return [];
+  }
+}
 
 /**
  * Mu La Ronda: the ancient block - the piece's +5 / +10 bonus by its stat,
