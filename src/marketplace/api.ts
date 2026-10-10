@@ -257,3 +257,55 @@ export function history() {
     request<{ history: HistoryEntry[] }>(`/history?ticket=${encodeURIComponent(t.ticket)}`)
   );
 }
+
+// ---------------------------------------------------------------------------
+// Mu La Ronda: VIP with Mercado Pago and the grand reset shop
+// (marketplace/server/vipPayments.ts)
+// ---------------------------------------------------------------------------
+
+export type VipPrices = { prices: Record<number, number>; currency: string; enabled: boolean };
+
+/** The silver and gold prices in pesos, and whether Mercado Pago is set up. */
+export function vipPrices() {
+  return request<VipPrices>('/vip/prices');
+}
+
+/** Makes the order and the Mercado Pago checkout; open `url` to pay. */
+export function vipCheckout(tier: number, months: number) {
+  return post<{ order: string; url: string; amount: number }>('/vip/checkout', { tier, months });
+}
+
+export type VipOrder = {
+  id: string;
+  tier: number;
+  months: number;
+  amount: number;
+  status: 'pending' | 'paid' | 'granted' | 'rejected' | 'cancelled';
+  createdAt: string;
+  grantedAt: string | null;
+  note: string | null;
+};
+
+/** The account's last orders. */
+export function vipOrders() {
+  return withTicket(t => request<{ orders: VipOrder[] }>(`/vip/orders?ticket=${encodeURIComponent(t.ticket)}`));
+}
+
+export type GrandShopItem = {
+  id: number;
+  group: number;
+  number: number;
+  name: string;
+  level: number;
+  skill: boolean;
+  luck: boolean;
+  optionLevel: number;
+  /** Bit mask of the excellent options (63 = all six). */
+  excellent: number;
+  price: number;
+};
+
+/** What the grand reset shop sells, for coins. */
+export function grandShop() {
+  return request<{ items: GrandShopItem[] }>('/grand-shop');
+}

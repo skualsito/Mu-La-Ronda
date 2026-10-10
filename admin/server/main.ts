@@ -9,6 +9,7 @@ import * as vip from './vip';
 import * as skills from './skills';
 import * as messages from './messages';
 import * as vipCodes from './vipCodes';
+import * as grandShop from './grandShop';
 import * as shops from './shops';
 import * as drops from './drops';
 import * as monsters from './monsters';
@@ -16,7 +17,7 @@ import * as events from './events';
 import * as survey from './survey';
 import { hasTerrain, terrainOf } from './terrain';
 import { openmuLogs, openmuStatus, restartOpenmu } from './docker';
-import { disconnectAccount, onlinePlayers, vaultInGame, type VaultOperation } from './openmuApi';
+import { configurePluginInGame, disconnectAccount, onlinePlayers, setPluginInGame, vaultInGame, type VaultOperation } from './openmuApi';
 
 /**
  * Mu La Ronda's admin panel API (admin.<DOMAIN>/api). nginx serves the page
@@ -404,8 +405,20 @@ async function route(req: Request, url: URL, ip: string): Promise<Response> {
     return json(await game.getConfig(sql));
   }
   if (path === '/api/config/reset' && method === 'PATCH') {
-    await game.updateResetConfig(sql, await body(req));
-    return json(await game.getConfig(sql));
+    const written = await game.updateResetConfig(sql, await body(req));
+    // Also in the running servers, so it counts without a restart.
+    const live = await configurePluginInGame(sql, written.typeId, written.config, written.active);
+    return json({ ...(await game.getConfig(sql)), live });
+  }
+  if (path === '/api/config/rates' && method === 'PATCH') {
+    const written = await game.updateDropRates(sql, await body(req));
+    const live = await configurePluginInGame(sql, written.typeId, written.config, written.active);
+    return json({ ...(await game.getConfig(sql)), live });
+  }
+  if (path === '/api/config/grand-reset' && method === 'PATCH') {
+    const written = await game.updateGrandReset(sql, await body(req));
+    const live = await configurePluginInGame(sql, written.typeId, written.config, written.active);
+    return json({ ...(await game.getConfig(sql)), live });
   }
   if (path === '/api/config/fast' && method === 'PATCH') {
     await game.updateFastSettings(sql, await body(req));
@@ -415,7 +428,9 @@ async function route(req: Request, url: URL, ip: string): Promise<Response> {
     const id = idFrom(path, '/api/config/plugins/');
     const { active } = await body(req);
     await game.setPlugin(sql, id, !!active);
-    return json(await game.getConfig(sql));
+    // Also in the running servers, so it counts without a restart.
+    const live = await setPluginInGame(sql, id, !!active);
+    return json({ ...(await game.getConfig(sql)), live });
   }
 
   // ---- shops ------------------------------------------------------------------------
@@ -451,6 +466,27 @@ async function route(req: Request, url: URL, ip: string): Promise<Response> {
     else if (method === 'DELETE') await vipCodes.deleteCode(sql, vipCode[1]);
     else throw new HttpError(405, 'Metodo no permitido');
     return json(await vipCodes.listCodes(sql));
+  }
+
+  // ---- VIP paid with Mercado Pago -------------------------------------------------
+  if (path === '/api/vip-payments') {
+    if (method === 'PATCH') await grandShop.setVipPrices(sql, await body(req));
+    else if (method !== 'GET') throw new HttpError(405, 'Metodo no permitido');
+    return json(await grandShop.vipPayments(sql));
+  }
+
+  // ---- grand reset shop -----------------------------------------------------------
+  if (path === '/api/grand-shop') {
+    if (method === 'POST') await grandShop.addGrandShopItem(sql, await body(req));
+    else if (method !== 'GET') throw new HttpError(405, 'Metodo no permitido');
+    return json(await grandShop.listGrandShop(sql));
+  }
+  const grandItem = path.match(/^\/api\/grand-shop\/(\d+)$/);
+  if (grandItem) {
+    if (method === 'PATCH') await grandShop.updateGrandShopItem(sql, Number(grandItem[1]), await body(req));
+    else if (method === 'DELETE') await grandShop.deleteGrandShopItem(sql, Number(grandItem[1]));
+    else throw new HttpError(405, 'Metodo no permitido');
+    return json(await grandShop.listGrandShop(sql));
   }
 
   // ---- automatic messages -------------------------------------------------------

@@ -4,8 +4,8 @@
 -- y despues se reinicia OpenMU, que lee la configuracion al arrancar.
 -- Tiene que ser idempotente: correrlo dos veces deja lo mismo.
 --
--- Lo que se cambie aca pisa lo que se haya tocado a mano en el panel admin
--- para estos mismos campos.
+-- Lo que se cambia a mano en el panel admin gana: 99-admin-config.sql lo
+-- vuelve a poner despues de este archivo (ver 00-admin-snapshot.sql).
 
 BEGIN;
 

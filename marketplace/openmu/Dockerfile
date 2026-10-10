@@ -47,10 +47,19 @@ RUN dotnet publish "MUnique.OpenMU.Startup.csproj" \
     -o /app/publish \
     -p:ci=true
 
+# Mu La Ronda: .NET's diagnostics, to see what the server is doing when it eats CPU:
+#   docker compose -f deploy/docker-compose.yml exec openmu /tools/dotnet-stack report -p 1
+#   docker compose -f deploy/docker-compose.yml exec openmu /tools/dotnet-counters monitor -p 1
+RUN dotnet tool install --tool-path /tools dotnet-stack \
+    && dotnet tool install --tool-path /tools dotnet-counters
+
 FROM base AS final
 WORKDIR /app
 
 COPY --from=publish /app/publish .
+COPY --from=publish /tools /tools
+# The tools are built for an older .NET; this lets them run on the server's.
+ENV DOTNET_ROLL_FORWARD=Major
 
 RUN mkdir -p /app/logs /app/data-protection-keys && chmod 777 /app/logs /app/data-protection-keys
 

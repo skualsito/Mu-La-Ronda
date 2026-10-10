@@ -3,7 +3,7 @@ import { api, type Config } from '../api';
 import { Card, Confirm, ErrorBox, Loading, NumberField, PageHeader, Toggle, formatNumber, useDraft, useLoad, useToast } from '../ui';
 
 const TABS = [
-  { id: 'juego', label: 'Experiencia' },
+  { id: 'juego', label: 'Juego' },
   { id: 'resets', label: 'Resets' },
   { id: 'fast', label: 'Server fast' },
   { id: 'mapas', label: 'Mapas' },
@@ -35,9 +35,10 @@ export function ConfigPage({ tab = 'juego' }: { tab?: string }) {
 
   const save = async (path: string, body: unknown, done: string) => {
     try {
-      setData(await api<Config>(path, { method: 'PATCH', body }));
-      setPending(true);
-      toast(done);
+      const config = await api<Config>(path, { method: 'PATCH', body });
+      setData(config);
+      if (!config.live) setPending(true);
+      toast(config.live ? `${done} (ya en el juego)` : done);
     } catch (err) {
       toast(err instanceof Error ? err.message : String(err), 'error');
     }
@@ -66,8 +67,20 @@ export function ConfigPage({ tab = 'juego' }: { tab?: string }) {
 
       {pending && <RestartHint onRestart={() => setConfirmRestart(true)} />}
 
-      {tab === 'juego' && <GameTab config={data} onSave={body => save('/config/game', body, 'Experiencia guardada')} />}
-      {tab === 'resets' && <ResetTab config={data} onSave={body => save('/config/reset', body, 'Resets guardados')} />}
+      {tab === 'juego' && (
+        <GameTab
+          config={data}
+          onSave={body => save('/config/game', body, 'Juego guardado')}
+          onSaveRates={body => save('/config/rates', body, 'Rates de drop guardados')}
+        />
+      )}
+      {tab === 'resets' && (
+        <ResetTab
+          config={data}
+          onSave={body => save('/config/reset', body, 'Resets guardados')}
+          onSaveGrand={body => save('/config/grand-reset', body, 'Grand Reset guardado')}
+        />
+      )}
       {tab === 'fast' && <FastTab config={data} onSave={body => save('/config/fast', body, 'Server fast guardado')} />}
       {tab === 'mapas' && <MapsTab config={data} onSave={body => save('/config/game', body, 'Mapas guardados')} />}
       {tab === 'plugins' && (
@@ -75,8 +88,7 @@ export function ConfigPage({ tab = 'juego' }: { tab?: string }) {
       )}
 
       <p className="muted small footnote">
-        Ojo: si se modifica el archivo correspondiente en <code>deploy/config/*.sql</code> del repo, el próximo deploy lo
-        vuelve a aplicar y pisa estos valores.
+        Lo que se cambia acá queda fijo: los deploys no lo pisan (<code>deploy/config/99-admin-config.sql</code>).
       </p>
 
       {confirmRestart && (
@@ -108,26 +120,135 @@ function SaveRow({ dirty, onSave, onReset }: { dirty: boolean; onSave: () => voi
   );
 }
 
-function GameTab({ config, onSave }: { config: Config; onSave: (body: unknown) => void }) {
+function GameTab({ config, onSave, onSaveRates }: { config: Config; onSave: (body: unknown) => void; onSaveRates: (body: unknown) => void }) {
   const [current, update, reset] = useDraft(config.game, g => g);
   const draft = current ?? config.game;
-  const setDraft = (next: Config['game']) => update(() => next);
+  type Game = Config['game'];
+  const set = <K extends keyof Game>(k: K, v: Game[K]) => update(() => ({ ...draft, [k]: v }));
+  const num = <K extends keyof Game>(k: K, fallback: number) => (v: number | null) => set(k, (v ?? fallback) as Game[K]);
   const dirty = JSON.stringify(draft) !== JSON.stringify(config.game);
+  const save = <SaveRow dirty={dirty} onSave={() => onSave(draft)} onReset={reset} />;
 
   return (
-    <Card title="Experiencia y niveles">
-      <div className="form-grid">
-        <NumberField label="Rate de experiencia" value={draft.experienceRate} min={1} onChange={v => setDraft({ ...draft, experienceRate: v ?? 1 })} hint="Multiplicador global (9999 = beta)" />
-        <NumberField label="Rate de experiencia master" value={draft.masterExperienceRate} min={1} onChange={v => setDraft({ ...draft, masterExperienceRate: v ?? 1 })} />
-        <NumberField label="Nivel máximo" value={draft.maximumLevel} min={1} max={1000} onChange={v => setDraft({ ...draft, maximumLevel: v ?? 400 })} />
-        <NumberField label="Master level máximo" value={draft.maximumMasterLevel} min={0} max={1000} onChange={v => setDraft({ ...draft, maximumMasterLevel: v ?? 200 })} />
+    <>
+      <div className="grid-2">
+        <Card title="Experiencia y niveles">
+          <div className="form-grid">
+            <NumberField label="Rate de experiencia" value={draft.experienceRate} min={1} onChange={num('experienceRate', 1)} hint="Multiplicador global (9999 = beta)" />
+            <NumberField label="Rate de experiencia master" value={draft.masterExperienceRate} min={1} onChange={num('masterExperienceRate', 1)} />
+            <NumberField label="Nivel máximo" value={draft.maximumLevel} min={1} max={1000} onChange={num('maximumLevel', 400)} />
+            <NumberField label="Master level máximo" value={draft.maximumMasterLevel} min={0} max={1000} onChange={num('maximumMasterLevel', 200)} />
+            <NumberField
+              label="Nivel mínimo del bicho para exp master"
+              value={draft.minimumMonsterLevelForMasterExperience}
+              min={0}
+              max={1000}
+              onChange={num('minimumMonsterLevelForMasterExperience', 95)}
+            />
+          </div>
+          <Toggle
+            label="Un nivel por bicho"
+            hint="La experiencia que sobra al subir se descarta (PreventExperienceOverflow)."
+            checked={draft.preventExperienceOverflow}
+            onChange={v => set('preventExperienceOverflow', v)}
+          />
+          {save}
+        </Card>
+        <DropRatesCard rates={config.rates} onSave={onSaveRates} />
       </div>
-      <Toggle
-        label="Un nivel por bicho"
-        hint="La experiencia que sobra al subir se descarta (PreventExperienceOverflow)."
-        checked={draft.preventExperienceOverflow}
-        onChange={v => setDraft({ ...draft, preventExperienceOverflow: v })}
-      />
+
+      <div className="grid-2">
+        <Card title="Drop">
+          <div className="form-grid">
+            <NumberField label="Segundos de los items en el piso" value={draft.itemDropDuration} min={5} max={3600} onChange={num('itemDropDuration', 60)} />
+            <NumberField
+              label="Opción máxima que sale en un drop"
+              value={draft.maximumItemOptionLevelDrop}
+              min={1}
+              max={4}
+              onChange={num('maximumItemOptionLevelDrop', 3)}
+              hint={`Hasta +${draft.maximumItemOptionLevelDrop * 4}`}
+            />
+            <NumberField
+              label="Niveles de diferencia para excelentes"
+              value={draft.excellentItemDropLevelDelta}
+              min={0}
+              max={255}
+              onChange={num('excellentItemDropLevelDelta', 25)}
+              hint="Un excelente sale de bichos con este tanto de nivel más que el item"
+            />
+          </div>
+          <Toggle label="Los bichos tiran zen" checked={draft.shouldDropMoney} onChange={v => set('shouldDropMoney', v)} />
+          {save}
+        </Card>
+
+        <Card title="Personajes y cuentas">
+          <div className="form-grid">
+            <NumberField label="Personajes por cuenta" value={draft.maximumCharactersPerAccount} min={1} max={5} onChange={num('maximumCharactersPerAccount', 5)} />
+            <NumberField label="Integrantes del party" value={draft.maximumPartySize} min={1} max={5} onChange={num('maximumPartySize', 5)} />
+            <NumberField
+              label="Zen máximo en el inventario"
+              value={draft.maximumInventoryMoney}
+              min={0}
+              onChange={num('maximumInventoryMoney', 2_000_000_000)}
+              hint={formatNumber(draft.maximumInventoryMoney)}
+            />
+            <NumberField
+              label="Zen máximo en el baúl"
+              value={draft.maximumVaultMoney}
+              min={0}
+              onChange={num('maximumVaultMoney', 2_000_000_000)}
+              hint={formatNumber(draft.maximumVaultMoney)}
+            />
+            <NumberField label="Cartas guardadas" value={draft.maximumLetters} min={0} max={1000} onChange={num('maximumLetters', 50)} />
+            <NumberField label="Precio de mandar una carta" value={draft.letterSendPrice} min={0} onChange={num('letterSendPrice', 1000)} />
+          </div>
+          {save}
+        </Card>
+      </div>
+
+      <Card title="Combate y desgaste">
+        <div className="form-grid">
+          <NumberField
+            label="Daño recibido por punto de durabilidad"
+            value={draft.damagePerOneItemDurability}
+            min={1}
+            onChange={num('damagePerOneItemDurability', 2000)}
+            hint="Más alto = la armadura se gasta más lento"
+          />
+          <NumberField
+            label="Golpes por punto de durabilidad"
+            value={draft.hitsPerOneItemDurability}
+            min={1}
+            onChange={num('hitsPerOneItemDurability', 10000)}
+            hint="Más alto = las armas se gastan más lento"
+          />
+        </div>
+        <Toggle label="PvP habilitado" checked={draft.pvpEnabled} onChange={v => set('pvpEnabled', v)} />
+        <Toggle
+          label="Los poderes de área pegan a otros jugadores"
+          checked={draft.areaSkillHitsPlayer}
+          onChange={v => set('areaSkillHitsPlayer', v)}
+        />
+        {save}
+      </Card>
+    </>
+  );
+}
+
+function DropRatesCard({ rates, onSave }: { rates: Config['rates']; onSave: (body: unknown) => void }) {
+  const [current, update, reset] = useDraft(rates, r => r);
+  const draft = current ?? rates;
+  const dirty = JSON.stringify(draft) !== JSON.stringify(rates);
+  const set = (k: keyof Config['rates']) => (v: number | null) => update(() => ({ ...draft, [k]: v ?? 100 }));
+  return (
+    <Card title="Rates de drop">
+      <p className="muted small">En porcentaje: 100 es el drop como está configurado, 200 el doble. Se aplica en el juego al instante.</p>
+      <div className="form-grid">
+        <NumberField label="Items" value={draft.itemDropRate} min={0} max={100000} onChange={set('itemDropRate')} hint={`${draft.itemDropRate}%`} />
+        <NumberField label="Excelentes y ancients" value={draft.excellentDropRate} min={0} max={100000} onChange={set('excellentDropRate')} hint={`${draft.excellentDropRate}%`} />
+        <NumberField label="Zen" value={draft.zenDropRate} min={0} max={100000} onChange={set('zenDropRate')} hint={`${draft.zenDropRate}% de la cantidad`} />
+      </div>
       <SaveRow dirty={dirty} onSave={() => onSave(draft)} onReset={reset} />
     </Card>
   );
@@ -139,6 +260,8 @@ type ResetConfig = {
   LevelAfterReset: number;
   RequiredMoney: number;
   MultiplyRequiredMoneyByResetCount: boolean;
+  RequiredMoneyStepFrom: number | null;
+  RequiredMoneyStep: number;
   ResetStats: boolean;
   PointsPerReset: number;
   MultiplyPointsByResetCount: boolean;
@@ -147,7 +270,7 @@ type ResetConfig = {
   LogOut: boolean;
 };
 
-function ResetTab({ config, onSave }: { config: Config; onSave: (body: unknown) => void }) {
+function ResetTab({ config, onSave, onSaveGrand }: { config: Config; onSave: (body: unknown) => void; onSaveGrand: (body: unknown) => void }) {
   type Draft = ResetConfig & { active: boolean };
   const initialOf = (r: Config['reset']) => ({ active: r.active, ...(r.config as Partial<ResetConfig>) }) as Draft;
   const initial = initialOf(config.reset);
@@ -157,7 +280,13 @@ function ResetTab({ config, onSave }: { config: Config; onSave: (body: unknown) 
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => update(d => ({ ...d, [k]: v }));
 
   const example = (n: number) => {
-    const money = draft.MultiplyRequiredMoneyByResetCount ? draft.RequiredMoney * n : draft.RequiredMoney;
+    // As the server does (ResetProgressionCalculator): the step first, capped at what a character carries.
+    const stepFrom = draft.RequiredMoneyStepFrom ?? 0;
+    const money = stepFrom > 0
+      ? Math.min(n <= stepFrom ? draft.RequiredMoney * n : draft.RequiredMoney * stepFrom + (draft.RequiredMoneyStep ?? 0) * (n - stepFrom), 2_147_483_647)
+      : draft.MultiplyRequiredMoneyByResetCount
+        ? draft.RequiredMoney * n
+        : draft.RequiredMoney;
     const points = draft.MultiplyPointsByResetCount ? draft.PointsPerReset * n : draft.PointsPerReset;
     return `Reset ${n}: cuesta ${formatNumber(money)} zen y deja ${formatNumber(points)} puntos${draft.ReplacePointsPerReset ? '' : ' extra'}.`;
   };
@@ -173,6 +302,22 @@ function ResetTab({ config, onSave }: { config: Config; onSave: (body: unknown) 
           <NumberField label="Límite de resets" value={draft.ResetLimit} min={0} onChange={v => set('ResetLimit', v)} hint="Vacío = sin límite" />
         </div>
         <Toggle label="El zen se multiplica por la cantidad de resets" checked={!!draft.MultiplyRequiredMoneyByResetCount} onChange={v => set('MultiplyRequiredMoneyByResetCount', v)} />
+        <div className="form-grid">
+          <NumberField
+            label="Desde el reset"
+            value={draft.RequiredMoneyStepFrom}
+            min={0}
+            onChange={v => set('RequiredMoneyStepFrom', v)}
+            hint="Hasta este reset suma el zen requerido por reset; vacío = sin escalón"
+          />
+          <NumberField
+            label="Zen extra por reset después"
+            value={draft.RequiredMoneyStep}
+            min={0}
+            onChange={v => set('RequiredMoneyStep', v ?? 0)}
+            hint={formatNumber(draft.RequiredMoneyStep)}
+          />
+        </div>
       </Card>
       <Card title="Recompensa">
         <div className="form-grid">
@@ -185,7 +330,10 @@ function ResetTab({ config, onSave }: { config: Config; onSave: (body: unknown) 
         <Toggle label="Desconectar al resetear" checked={!!draft.LogOut} onChange={v => set('LogOut', v)} />
         <div className="examples">
           <p>{example(1)}</p>
+          <p>{example(2)}</p>
           <p>{example(10)}</p>
+          <p>{example(11)}</p>
+          <p>{example(12)}</p>
         </div>
       </Card>
       <div className="span-2">
@@ -198,7 +346,31 @@ function ResetTab({ config, onSave }: { config: Config; onSave: (body: unknown) 
           onReset={reset}
         />
       </div>
+      <GrandResetCard grand={config.grandReset} onSave={onSaveGrand} />
     </div>
+  );
+}
+
+function GrandResetCard({ grand, onSave }: { grand: Config['grandReset']; onSave: (body: unknown) => void }) {
+  const [current, update, reset] = useDraft(grand, g => g);
+  const draft = current ?? grand;
+  const dirty = JSON.stringify(draft) !== JSON.stringify(grand);
+  const set = <K extends keyof Config['grandReset']>(k: K, v: Config['grandReset'][K]) => update(() => ({ ...draft, [k]: v }));
+  return (
+    <Card title="Grand Reset" className="span-2">
+      <p className="muted small">
+        El NPC de Grand Reset (Lorencia, al lado de Leo) vuelve el personaje a nivel 1, sin resets y con los stats de su clase, y le da
+        monedas para la <a href="#/tienda-gr">tienda Grand Reset</a>. Se aplica en el juego al instante.
+      </p>
+      <Toggle label="Grand Reset habilitado" checked={draft.active} onChange={v => set('active', v)} />
+      <div className="form-grid">
+        <NumberField label="Nivel requerido" value={draft.RequiredLevel} min={1} max={1000} onChange={v => set('RequiredLevel', v ?? 400)} />
+        <NumberField label="Resets requeridos" value={draft.RequiredResets} min={0} onChange={v => set('RequiredResets', v ?? 0)} />
+        <NumberField label="Zen requerido" value={draft.RequiredMoney} min={0} onChange={v => set('RequiredMoney', v ?? 0)} hint={formatNumber(draft.RequiredMoney)} />
+        <NumberField label="Monedas por Grand Reset" value={draft.CoinsPerGrandReset} min={0} onChange={v => set('CoinsPerGrandReset', v ?? 0)} />
+      </div>
+      <SaveRow dirty={dirty} onSave={() => onSave(draft)} onReset={reset} />
+    </Card>
   );
 }
 
@@ -291,24 +463,37 @@ function MapsTab({ config, onSave }: { config: Config; onSave: (body: unknown) =
 }
 
 function PluginsTab({ config, onToggle }: { config: Config; onToggle: (id: string, active: boolean) => void }) {
-  const groups = [...new Set(config.plugins.map(p => p.group))];
+  const [q, setQ] = useState('');
+  const query = q.trim().toLowerCase();
+  const shown = config.plugins.filter(p => !query || `${p.name} ${p.description}`.toLowerCase().includes(query));
+  const groups = [...new Set(shown.map(p => p.group))];
   return (
-    <div className="grid-2">
-      {groups.map(group => (
-        <Card key={group} title={group}>
-          {config.plugins
-            .filter(p => p.group === group)
-            .map(p => (
-              <Toggle
-                key={p.id}
-                label={p.name}
-                hint={p.description + (p.active === null ? ' (OpenMU todavía no lo registró)' : '')}
-                checked={!!p.active}
-                onChange={v => onToggle(p.id, v)}
-              />
-            ))}
-        </Card>
-      ))}
-    </div>
+    <>
+      <Card>
+        <div className="toolbar">
+          <input className="search" placeholder="Buscar comando… (ej. /move)" value={q} onChange={e => setQ(e.target.value)} />
+          <span className="muted small">
+            Se aplican en el juego al instante. {shown.filter(p => p.active).length} de {shown.length} activos.
+          </span>
+        </div>
+      </Card>
+      <div className="grid-2">
+        {groups.map(group => (
+          <Card key={group} title={group}>
+            {shown
+              .filter(p => p.group === group)
+              .map(p => (
+                <Toggle
+                  key={p.id}
+                  label={p.name}
+                  hint={p.description + (p.active === null ? ' (OpenMU todavía no lo registró)' : '')}
+                  checked={!!p.active}
+                  onChange={v => onToggle(p.id, v)}
+                />
+              ))}
+          </Card>
+        ))}
+      </div>
+    </>
   );
 }

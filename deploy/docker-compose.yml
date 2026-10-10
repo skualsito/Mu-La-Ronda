@@ -144,6 +144,10 @@ services:
       MARKETPLACE_DB: /data/market.sqlite
       DATABASE_URL: postgres://postgres:${DB_PASSWORD}@127.0.0.1:${DB_PORT:-5432}/openmu
       PRESENCE_URL: http://127.0.0.1:${PRESENCE_PORT:-3001}
+      # VIP Plata y Oro con Mercado Pago (marketplace/server/vipPayments.ts).
+      MP_ACCESS_TOKEN: ${MP_ACCESS_TOKEN:-}
+      PUBLIC_URL: https://${DOMAIN}
+      OPENMU_API_URL: http://127.0.0.1:${ADMIN_PORT:-8090}
     volumes:
       - ..:/app:ro
       - marketdata:/data

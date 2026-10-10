@@ -10,8 +10,8 @@ using MUnique.OpenMU.Persistence;
 using MUnique.OpenMU.PlugIns;
 
 /// <summary>
-/// Mu La Ronda: /vip shows the account's VIP; /vip bronce|plata|oro buys 30 days
-/// of it with the character's zen (the beta's way to pay). Buying the tier one
+/// Mu La Ronda: /vip shows the account's VIP; /vip bronce buys 30 days of bronze with
+/// the character's zen (silver and gold are paid with Mercado Pago, from the VIP window). Buying the tier one
 /// already has adds to it; a lower one can't be bought; a higher one waits and
 /// starts when the current one ends (Vip.NextOf). /vip codigo X checks a discount
 /// code for the VIP window, which shows the prices with it.
@@ -69,6 +69,12 @@ public class VipChatCommandPlugIn : IChatCommandPlugIn
         if (Vip.Find(parts[0]) is not { } tier || months < 1 || months > MaximumMonths)
         {
             await player.ShowBlueMessageAsync($"VIP: elegi bronce, plata u oro y los meses (1 a {MaximumMonths}), por ejemplo /vip oro 3 (y un codigo de descuento al final, si tenes).").ConfigureAwait(false);
+            return;
+        }
+
+        if (!Vip.IsBoughtWithZen(tier))
+        {
+            await player.ShowBlueMessageAsync($"VIP: el {tier.Name} se paga con Mercado Pago, desde la ventana VIP. Con zen se compra el Bronce.").ConfigureAwait(false);
             return;
         }
 
@@ -138,15 +144,11 @@ public class VipChatCommandPlugIn : IChatCommandPlugIn
 
         // The months add up: on top of what is left of the same tier, or - for a higher tier - on
         // top of what already waits for the current one to end.
-        var now = DateTime.UtcNow;
-        var granted = queue
-            ? Vip.SetNext(player, tier, (next.Number == tier.Number ? nextDays : 0) + (Vip.Duration.TotalDays * months))
-            : Vip.Grant(player, tier, (current.Number > 0 && expires > now ? expires : now) + (Vip.Duration * months));
-        if (!granted)
+        if (Vip.AddMonths(player, tier, months) is { } notAdded)
         {
             // Nothing was granted: the zen goes back.
             player.TryAddMoney((int)price);
-            await player.ShowBlueMessageAsync("VIP: no se pudo activar, avisale a un GM.").ConfigureAwait(false);
+            await player.ShowBlueMessageAsync($"VIP: {notAdded}").ConfigureAwait(false);
             return;
         }
 

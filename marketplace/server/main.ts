@@ -1,5 +1,6 @@
 import { createApp } from './app';
 import { postgresBoxes } from './boxes';
+import { handleVipRoute, sweepVipPayments } from './vipPayments';
 
 /**
  * The marketplace service: the catalogue, the tickets, and the escrow tokens
@@ -37,8 +38,25 @@ const app = createApp({
 Bun.serve({
   port: PORT,
   hostname: HOSTNAME,
-  fetch: (req, server) => app.fetch(req, server),
+  fetch: async (req, server) => {
+    // Mu La Ronda: the VIP paid with Mercado Pago and the grand reset shop (vipPayments.ts).
+    const url = new URL(req.url);
+    if (req.method !== 'OPTIONS' && (url.pathname.startsWith('/api/market/vip/') || url.pathname === '/api/market/grand-shop')) {
+      try {
+        const routed = await handleVipRoute(req, url, {});
+        if (routed) return routed;
+      } catch (error) {
+        console.error('vip:', error instanceof Error ? error.message : error);
+        return new Response(JSON.stringify({ error: 'Algo falló, probá de nuevo.' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+      }
+    }
+    return app.fetch(req, server);
+  },
 });
+
+setInterval(() => {
+  void sweepVipPayments();
+}, 60_000);
 
 /** What the sweep timer runs; exported so it can be called on demand. */
 export const sweep = app.sweep;

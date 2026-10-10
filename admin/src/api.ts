@@ -111,11 +111,33 @@ export type Config = {
     maximumLevel: number;
     maximumMasterLevel: number;
     preventExperienceOverflow: boolean;
+    minimumMonsterLevelForMasterExperience: number;
+    shouldDropMoney: boolean;
+    /** Seconds. */
+    itemDropDuration: number;
+    maximumItemOptionLevelDrop: number;
+    excellentItemDropLevelDelta: number;
+    maximumInventoryMoney: number;
+    maximumVaultMoney: number;
+    maximumCharactersPerAccount: number;
+    maximumPartySize: number;
+    areaSkillHitsPlayer: boolean;
+    maximumLetters: number;
+    letterSendPrice: number;
+    damagePerOneItemDurability: number;
+    hitsPerOneItemDurability: number;
+    pvpEnabled: boolean;
   };
+  /** Percent; 100 = the drops as configured. */
+  rates: { itemDropRate: number; excellentDropRate: number; zenDropRate: number };
+  /** Mu La Ronda: the grand reset NPC. */
+  grandReset: { active: boolean; RequiredLevel: number; RequiredResets: number; RequiredMoney: number; CoinsPerGrandReset: number };
   reset: { active: boolean; config: Record<string, unknown> };
   maps: MapRow[];
   fast: { spawnFactor: number; respawnSeconds: number; available: boolean };
   plugins: Plugin[];
+  /** On a plugin change: whether the running game servers took it too (no restart needed). */
+  live?: boolean;
 };
 
 export type ServerStatus = { available: boolean; state?: string; status?: string; error?: string };
@@ -338,4 +360,45 @@ export type SurveyResponse = {
   answers: import('../../src/common/surveyRules').SurveyAnswers;
   staff: boolean;
   createdAt: string;
+};
+
+/** Mu La Ronda: a row of the grand reset shop (server/grandShop.ts). */
+export type GrandShopRow = {
+  id: number;
+  definitionId: string;
+  name: string;
+  group: number;
+  number: number;
+  level: number;
+  skill: boolean;
+  luck: boolean;
+  optionLevel: number;
+  /** Bit mask of the excellent options (63 = all six). */
+  excellent: number;
+  price: number;
+  sort: number;
+  active: boolean;
+};
+
+/** Mu La Ronda: a VIP paid with Mercado Pago. */
+export type VipPayment = {
+  id: string;
+  login: string;
+  tier: number;
+  months: number;
+  amount: number;
+  status: 'pending' | 'paid' | 'granted' | 'rejected' | 'cancelled';
+  mpPaymentId: string | null;
+  note: string | null;
+  createdAt: string;
+  paidAt: string | null;
+  grantedAt: string | null;
+};
+
+export type VipPayments = {
+  payments: VipPayment[];
+  /** Per account, what was paid during the beta: to give again in production. */
+  totals: { login: string; silverMonths: number; goldMonths: number; amount: number }[];
+  /** Pesos per month. */
+  prices: { silver: number; gold: number };
 };

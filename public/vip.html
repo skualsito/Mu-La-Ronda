@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mu La Ronda · VIP</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #0d0b08; color: #e8dcc0;
+         font: 16px/1.5 system-ui, sans-serif; padding: 16px; box-sizing: border-box; }
+  main { max-width: 420px; text-align: center; border: 1px solid #5a4a2a; border-radius: 8px; padding: 28px 24px; background: #17130d; }
+  h1 { margin: 0 0 8px; font-size: 22px; color: #f2c14e; }
+  p { margin: 8px 0; }
+  .muted { color: #a89a7c; font-size: 14px; }
+</style>
+</head>
+<body>
+<main>
+  <h1 id="title">Gracias por tu pago</h1>
+  <p id="text">El VIP se acredita solo en tu cuenta en unos segundos. Ya podés cerrar esta pestaña y volver al juego.</p>
+  <p class="muted">Lo que pagues durante la beta queda guardado: al salir a producción te damos los mismos VIP.</p>
+</main>
+<script>
+  // Mercado Pago comes back here (marketplace/server/vipPayments.ts, back_urls) with ?estado=.
+  var state = new URLSearchParams(location.search).get('estado');
+  if (state === 'pending') {
+    document.getElementById('title').textContent = 'Pago en proceso';
+    document.getElementById('text').textContent = 'Mercado Pago todavía está procesando el pago. Cuando se apruebe, el VIP se acredita solo.';
+  } else if (state === 'failed') {
+    document.getElementById('title').textContent = 'El pago no se hizo';
+    document.getElementById('text').textContent = 'No se cobró nada. Podés volver al juego y probar de nuevo desde la ventana VIP.';
+  }
+</script>
+</body>
+</html>

@@ -115,7 +115,7 @@ public static class VipDiscountCodes
         return await command.ExecuteNonQueryAsync().ConfigureAwait(false) > 0;
     }
 
-    private static void AddParameter(DbCommand command, string name, object value)
+    internal static void AddParameter(DbCommand command, string name, object value)
     {
         var parameter = command.CreateParameter();
         parameter.ParameterName = name;
@@ -123,7 +123,7 @@ public static class VipDiscountCodes
         command.Parameters.Add(parameter);
     }
 
-    private static async ValueTask<DbConnection?> OpenAsync()
+    internal static async ValueTask<DbConnection?> OpenAsync()
     {
         var type = Type.GetType("Npgsql.NpgsqlConnection, Npgsql");
         var host = Environment.GetEnvironmentVariable("DB_HOST");

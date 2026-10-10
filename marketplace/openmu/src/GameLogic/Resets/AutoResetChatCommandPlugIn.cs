@@ -31,6 +31,8 @@ public class AutoResetChatCommandPlugIn : IChatCommandPlugIn
 {
     private const string Command = "/autoreset";
 
+    private const string NeedsVipMessage = "el auto reset es para VIP Plata y Oro (ventana VIP).";
+
     /// <summary>How often a character with auto reset on is looked at.</summary>
     private static readonly TimeSpan CheckInterval = TimeSpan.FromSeconds(5);
 
@@ -97,6 +99,14 @@ public class AutoResetChatCommandPlugIn : IChatCommandPlugIn
             return;
         }
 
+        // Mu La Ronda: auto reset comes with VIP silver and gold.
+        if (!VipSystem.Vip.CanAutoReset(VipSystem.Vip.Of(player).Tier))
+        {
+            Distributions.TryRemove(player, out _);
+            await player.ShowBlueMessageAsync("Auto reset: " + NeedsVipMessage).ConfigureAwait(false);
+            return;
+        }
+
         var configuration = player.GameContext.FeaturePlugIns.GetPlugIn<ResetFeaturePlugIn>()?.Configuration;
         if (configuration is null || player.SelectedCharacter is not { } character)
         {
@@ -146,6 +156,13 @@ public class AutoResetChatCommandPlugIn : IChatCommandPlugIn
                 if (player.PlayerState.CurrentState != PlayerState.EnteredWorld || player.Attributes is null)
                 {
                     continue;
+                }
+
+                // The VIP ran out: auto reset ends with it.
+                if (!VipSystem.Vip.CanAutoReset(VipSystem.Vip.Of(player).Tier))
+                {
+                    await player.ShowBlueMessageAsync("Auto reset desactivado: " + NeedsVipMessage).ConfigureAwait(false);
+                    break;
                 }
 
                 var configuration = player.GameContext.FeaturePlugIns.GetPlugIn<ResetFeaturePlugIn>()?.Configuration;

@@ -8,13 +8,17 @@ import { observable, runInAction } from 'mobx';
  * The window (rondaPanels, game menu → VIP) asks with /vip when it opens.
  */
 
-export type VipTierInfo = { tier: number; name: string; price: number; bonus: number };
+/**
+ * `price` is zen for a tier bought in the game; a `paid` one is paid with Mercado Pago and its
+ * price in pesos comes from the marketplace service (marketplace/server/vipPayments.ts).
+ */
+export type VipTierInfo = { tier: number; name: string; price: number; bonus: number; paid: boolean; autoReset: boolean };
 
-/** The same tiers, prices and bonuses as the server's Vip.cs (zen during the beta). */
+/** The same tiers, prices and bonuses as the server's Vip.cs. */
 export const VIP_TIERS: readonly VipTierInfo[] = [
-  { tier: 1, name: 'Bronce', price: 200_000_000, bonus: 10 },
-  { tier: 2, name: 'Plata', price: 500_000_000, bonus: 20 },
-  { tier: 3, name: 'Oro', price: 1_000_000_000, bonus: 30 },
+  { tier: 1, name: 'Bronce', price: 1_500_000_000, bonus: 10, paid: false, autoReset: false },
+  { tier: 2, name: 'Plata', price: 0, bonus: 20, paid: true, autoReset: true },
+  { tier: 3, name: 'Oro', price: 0, bonus: 30, paid: true, autoReset: true },
 ];
 
 export const vipState = observable({

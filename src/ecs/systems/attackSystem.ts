@@ -90,8 +90,8 @@ const NPC_TYPE_OVERRIDES = new Set([
   367, 368, 369, 370, 371, 375, 376, 377, 378, 379, 380, 381, 382, 383, 384,
   385, 406, 407, 408, 414, 415, 416, 417, 450, 452, 453, 464, 465, 467, 468,
   469, 470, 471, 472, 473, 474, 475, 478, 479, 492, 522, 540, 541, 542, 543,
-  544, 545, 546, 547, 566, 568, 577, 578, 579,
-]); // 566 Mercenary Guild Felicia, 568 Wandering Merchant Zyro (OpenMU NpcInitialization, PassiveNpc)
+  544, 545, 546, 547, 566, 568, 577, 578, 579, 760,
+]); // 566 Mercenary Guild Felicia, 568 Wandering Merchant Zyro (OpenMU NpcInitialization, PassiveNpc), 760 Grand Reset (Mu La Ronda)
 
 export function isNpcOrTrapType(type: number): boolean {
   if (type === 200) return false;

@@ -203,7 +203,7 @@ export function sectionOf(path: string, method: string): Section | 'usuarios' | 
   if (path.startsWith('/api/monster-stats')) return 'monstruos';
   if (path.startsWith('/api/events')) return 'eventos';
   if (path.startsWith('/api/spawns/') || /^\/api\/maps\/[^/]+\/(spawns|terrain)$/.test(path)) return 'spots';
-  if (path.startsWith('/api/shops')) return 'shops';
+  if (path.startsWith('/api/shops') || path.startsWith('/api/grand-shop')) return 'shops';
   // The inventory, shop and drop editors search the item catalogue.
   if (path.startsWith('/api/item-definitions')) return 'any';
   if (path.startsWith('/api/characters') || path === '/api/classes') return 'personajes';
@@ -213,7 +213,7 @@ export function sectionOf(path: string, method: string): Section | 'usuarios' | 
   if (/^\/api\/accounts\/[^/]+\/vip$/.test(path)) return 'vault';
   if (path.startsWith('/api/accounts')) return 'cuentas';
   if (path.startsWith('/api/messages')) return 'mensajes';
-  if (path.startsWith('/api/vip-codes')) return 'vip';
+  if (path.startsWith('/api/vip-codes') || path.startsWith('/api/vip-payments')) return 'vip';
   if (path.startsWith('/api/survey')) return 'encuesta';
   if (path.startsWith('/api/config')) return 'config';
   if (path.startsWith('/api/server')) return 'servidor';

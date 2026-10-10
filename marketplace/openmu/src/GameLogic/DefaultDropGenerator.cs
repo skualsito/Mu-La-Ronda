@@ -60,6 +60,9 @@ public class DefaultDropGenerator : IDropGenerator
     private readonly byte _maxItemOptionLevelDrop;
     private readonly byte _excellentItemDropLevelDelta;
 
+    /// <summary>Mu La Ronda: the drop rates of the drop being generated (PlugIns/MlrDropRatesPlugIn.cs).</summary>
+    private PlugIns.MlrDropRatesConfiguration? _rates;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="DefaultDropGenerator" /> class.
     /// </summary>
@@ -95,6 +98,7 @@ public class DefaultDropGenerator : IDropGenerator
         this._guaranteedDropGroups.Clear();
         this._chanceDropGroups.Clear();
         this._mapDropGroups = map.DropItemGroups ?? [];
+        this._rates = player.GameContext.FeaturePlugIns.GetPlugIn<PlugIns.MlrDropRatesPlugIn>()?.Configuration;
 
         if (BossDropTables.Contains(monster.Number) && monster.DropItemGroups?.Count > 0)
         {
@@ -118,6 +122,11 @@ public class DefaultDropGenerator : IDropGenerator
 
         uint money = 0;
         var (droppedItems, moneyResult) = this.GenerateDrops(monster, gainedExperience);
+        if (moneyResult > 0 && this._rates is { ZenDropRate: not 100 } zenRates)
+        {
+            moneyResult = (uint)Math.Clamp(moneyResult * Math.Max(0, zenRates.ZenDropRate) / 100.0, 0, uint.MaxValue);
+        }
+
 
         // Mu La Ronda: a golden invasion monster drops one Box of Kundun of its map's level
         // (PlugIns/InvasionEvents/GoldenInvasion.cs), instead of the box of its own definition.
@@ -371,12 +380,12 @@ public class DefaultDropGenerator : IDropGenerator
             double totalChance = 0;
             foreach (var group in this._chanceDropGroups)
             {
-                totalChance += group.Chance;
+                totalChance += this.RatedChance(group);
             }
 
             for (int i = 0; i < remainingDrops; i++)
             {
-                var group = this.SelectRandomGroup(this._chanceDropGroups, totalChance);
+                var group = this.SelectRandomGroup(this._chanceDropGroups, totalChance, this.RatedChance);
                 if (group is null)
                 {
                     continue;
@@ -554,10 +563,15 @@ public class DefaultDropGenerator : IDropGenerator
 
             if (this._randomizer.NextRandomBool(excellentOptions.AddChance))
             {
-                var newOption = excellentOptions.PossibleOptions.SelectRandom(this._randomizer);
-                while (item.ItemOptions.Any(o => object.Equals(o.ItemOption, newOption)))
+                // Mu La Ronda: drawn from the options the item doesn't have yet. Drawing from all of
+                // them until one was new never ended when the item already had every one, and that
+                // thread spun forever at full CPU.
+                var newOption = excellentOptions.PossibleOptions
+                    .Where(p => !item.ItemOptions.Any(o => object.Equals(o.ItemOption, p)))
+                    .SelectRandom(this._randomizer);
+                if (newOption is null)
                 {
-                    newOption = excellentOptions.PossibleOptions.SelectRandom(this._randomizer);
+                    break;
                 }
 
                 if (newOption is not null)
@@ -624,7 +638,22 @@ public class DefaultDropGenerator : IDropGenerator
         };
     }
 
-    private DropItemGroup? SelectRandomGroup(IEnumerable<DropItemGroup> groups, double totalChance)
+    /// <summary>
+    /// Mu La Ronda: the chance of a drawn group with the drop rates: excellent and ancient groups
+    /// with the excellent rate, the rest but zen with the item rate.
+    /// </summary>
+    private double RatedChance(DropItemGroup group)
+    {
+        if (this._rates is not { } rates || group.ItemType == SpecialItemType.Money)
+        {
+            return group.Chance;
+        }
+
+        var rate = group.ItemType is SpecialItemType.Excellent or SpecialItemType.Ancient ? rates.ExcellentDropRate : rates.ItemDropRate;
+        return group.Chance * Math.Max(0, rate) / 100.0;
+    }
+
+    private DropItemGroup? SelectRandomGroup(IEnumerable<DropItemGroup> groups, double totalChance, Func<DropItemGroup, double>? chanceOf = null)
     {
         var remainingThreshold = this._randomizer.NextDouble();
         if (totalChance > 1.0)
@@ -634,9 +663,10 @@ public class DefaultDropGenerator : IDropGenerator
 
         foreach (var group in groups)
         {
-            if (remainingThreshold > group.Chance)
+            var chance = chanceOf?.Invoke(group) ?? group.Chance;
+            if (remainingThreshold > chance)
             {
-                remainingThreshold -= group.Chance;
+                remainingThreshold -= chance;
             }
             else
             {

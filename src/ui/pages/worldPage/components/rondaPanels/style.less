@@ -260,6 +260,10 @@
 
 .ronda-vip-foot {
   margin-top: 12px;
+
+  &.is-bad {
+    color: #e07a6a;
+  }
 }
 
 .ronda-vip-options {
@@ -384,4 +388,29 @@
   tr.is-done td {
     opacity: 0.45;
   }
+}
+
+// Mu La Ronda: the grand reset window.
+.ronda-grand-head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ronda-grand-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ronda-grand-details {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.ronda-grand-price {
+  white-space: nowrap;
+  color: #f2c14e;
+  text-align: right;
 }

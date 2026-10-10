@@ -247,6 +247,7 @@ import {
 } from './common/itemStorage';
 import { NetStats } from './common/netStats';
 import { readVipCodeLine, readVipLine } from './common/vip';
+import { readGrandResetLine } from './common/grandReset';
 import { pointsFromWire, readPointsLine } from './common/widePoints';
 import { readSpotsLine } from './common/mapSpots';
 import { clearInvasions, readInvasionLine } from './common/invasionTally';
@@ -2954,13 +2955,38 @@ function applyObjectEffect(obj: Parameters<typeof setBuffVisual>[1], effectId: n
 }
 
 function setObjectEffect(objectId: number, effectId: number, active: boolean) {
+  const maskedId = objectId & 0x7fff;
+  // The buff bar first: it is the hero's even while the world is being rebuilt (a warp).
+  if (maskedId === Store.playerId) {
+    Store.setBuff(effectId, active);
+    if (SHORT_DEBUFFS.has(effectId)) {
+      if (active) shortDebuffSince.set(effectId, performance.now());
+      else shortDebuffSince.delete(effectId);
+    }
+  }
   const world = Store.world;
   if (!world) return;
-  const maskedId = objectId & 0x7fff;
-  if (maskedId === Store.playerId) Store.setBuff(effectId, active);
   const obj = world.getByNetId(maskedId);
   if (obj) applyObjectEffect(obj, effectId, active);
 }
+
+/**
+ * Mu La Ronda: poison (55), ice (56), freeze (57) and stun (61) last seconds on the server
+ * (10 s at most), which never sends their length. When their end did not reach the client - a
+ * warp, a death in between - the icon (and the frost on the body) stayed for good. They are
+ * taken off here SHORT_DEBUFF_MAX_MS after they came, if the end never did.
+ */
+const SHORT_DEBUFFS = new Set([55, 56, 57, 61]);
+const SHORT_DEBUFF_MAX_MS = 30_000;
+const shortDebuffSince = new Map<number, number>();
+setInterval(() => {
+  const now = performance.now();
+  for (const [effectId, since] of shortDebuffSince) {
+    if (now - since < SHORT_DEBUFF_MAX_MS) continue;
+    shortDebuffSince.delete(effectId);
+    if (Store.playerId !== undefined) setObjectEffect(Store.playerId, effectId, false);
+  }
+}, 5000);
 
 EventBus.on('MagicEffectStatus', packet => {
   const p = new MagicEffectStatusPacket(packet);
@@ -3724,6 +3750,8 @@ EventBus.on('ServerMessage', packet => {
       // Mu La Ronda: the VIP window's code check is an answer for it, not a line to show.
       if (readVipCodeLine(text)) break;
       readVipLine(text);
+      // Mu La Ronda: the grand reset window's state (common/grandReset.ts).
+      readGrandResetLine(text);
       // Mu La Ronda: the map's monster spots, for the TAB map (common/mapSpots.ts).
       if (readSpotsLine(text)) break;
       // Mu La Ronda: the running invasion's counts, for the events window (common/invasionTally.ts).

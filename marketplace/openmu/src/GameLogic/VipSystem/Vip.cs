@@ -15,8 +15,9 @@ using MUnique.OpenMU.GameLogic.Attributes;
 /// definitions only this code uses (deploy/config/10-vip.sql), so nothing else
 /// adds elements to them. The bonuses themselves are elements on the
 /// character's attribute system, added whenever it enters the world.
-/// During the beta it is bought with zen (/vip); later with Mercado Pago, which
-/// will only have to write the same two attributes (as the admin panel does).
+/// Bronze is bought with zen (/vip bronce); silver and gold are paid with Mercado Pago
+/// (marketplace/server/vipPayments.ts), which grants them through Web/AdminPanel/API/MlrVipController.cs
+/// or, with the account offline, writes the same attributes.
 /// </summary>
 public static class Vip
 {
@@ -44,10 +45,50 @@ public static class Vip
     public static IReadOnlyList<VipTier> Tiers { get; } =
     [
         new(0, "Sin VIP", 0, 0f),
-        new(1, "Bronce", 200_000_000, 0.10f),
-        new(2, "Plata", 500_000_000, 0.20f),
-        new(3, "Oro", 1_000_000_000, 0.30f),
+        new(1, "Bronce", 1_500_000_000, 0.10f),
+        new(2, "Plata", 0, 0.20f),
+        new(3, "Oro", 0, 0.30f),
     ];
+
+    /// <summary>Whether the tier is bought with zen in the game (bronze); the others are paid with Mercado Pago.</summary>
+    /// <param name="tier">The tier.</param>
+    /// <returns>True for a tier with a zen price.</returns>
+    public static bool IsBoughtWithZen(VipTier tier) => tier.Price > 0;
+
+    /// <summary>Whether the tier comes with /autoreset (silver and gold).</summary>
+    /// <param name="tier">The tier.</param>
+    /// <returns>True for silver and gold.</returns>
+    public static bool CanAutoReset(VipTier tier) => tier.Number >= 2;
+
+    /// <summary>
+    /// Adds months of a tier the way a purchase does: on top of what is left of the same tier (or
+    /// from now), or - for a higher tier than the current one - waiting for the current one to end.
+    /// </summary>
+    /// <param name="player">The player of the account.</param>
+    /// <param name="tier">The tier.</param>
+    /// <param name="months">How many months.</param>
+    /// <returns>Null when added; otherwise why not.</returns>
+    public static string? AddMonths(Player player, VipTier tier, int months)
+    {
+        var (current, expires) = Of(player);
+        var (next, nextDays) = NextOf(player);
+        var queue = current.Number > 0 && tier.Number > current.Number;
+        if (current.Number > tier.Number)
+        {
+            return $"tenes VIP {current.Name}, no podes sumar uno mas bajo.";
+        }
+
+        if (queue && next.Number > 0 && next.Number != tier.Number)
+        {
+            return $"ya tenes VIP {next.Name} esperando a que termine el {current.Name}.";
+        }
+
+        var now = DateTime.UtcNow;
+        var granted = queue
+            ? SetNext(player, tier, (next.Number == tier.Number ? nextDays : 0) + (Duration.TotalDays * months))
+            : Grant(player, tier, (current.Number > 0 && expires > now ? expires : now) + (Duration * months));
+        return granted ? null : "no se pudo activar, avisale a un GM.";
+    }
 
     /// <summary>The tier and expiry of the player's account; tier 0 when there is none or it ran out.</summary>
     public static (VipTier Tier, DateTime Expires) Of(Player player)
@@ -188,11 +229,11 @@ public static class Vip
         var (tier, expires) = Of(player);
         if (tier.Number == 0)
         {
-            return "VIP: no tenes VIP. Bronce, Plata u Oro con /vip bronce|plata|oro.";
+            return "VIP: no tenes VIP. Bronce con zen (/vip bronce); Plata y Oro con Mercado Pago, desde la ventana VIP.";
         }
 
         var until = expires.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture);
-        var line = $"VIP {tier.Name} activo hasta {until}: +{tier.Bonus * 100:0}% experiencia y zen.";
+        var line = $"VIP {tier.Name} activo hasta {until}: +{tier.Bonus * 100:0}% experiencia y zen{(CanAutoReset(tier) ? " y /autoreset" : string.Empty)}.";
         var (next, days) = NextOf(player);
         if (next.Number > 0)
         {
@@ -224,6 +265,6 @@ public static class Vip
 /// <summary>A VIP tier.</summary>
 /// <param name="Number">1 bronze, 2 silver, 3 gold (0 none).</param>
 /// <param name="Name">The name the players see.</param>
-/// <param name="Price">Zen for 30 days, during the beta.</param>
+/// <param name="Price">Zen for 30 days; 0 for a tier paid with Mercado Pago.</param>
 /// <param name="Bonus">Added to the experience and zen rates (0.1 = +10%).</param>
 public sealed record VipTier(int Number, string Name, int Price, float Bonus);

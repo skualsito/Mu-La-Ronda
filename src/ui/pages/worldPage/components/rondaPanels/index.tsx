@@ -25,6 +25,9 @@ import { ScrollBar } from '../../../../components/optionsWindow/scrollbar';
 import { playUiSound } from '../../../../../libs/sfx';
 import { ConfirmBox } from '../../../../components/optionsWindow/dialogs';
 import { Social } from '../../../../../social';
+import { loadVipPrices, payWithMercadoPago, pesos, vipPay } from '../../../../../common/vipPayments';
+import { grandResetState } from '../../../../../common/grandReset';
+import { grandShop, type GrandShopItem } from '../../../../../marketplace/api';
 import {
   checkingVipCode,
   discounted,
@@ -399,9 +402,12 @@ const VipWindow = observer(() => {
   // A code that can't be used stops the purchase; one still being checked doesn't (the server checks it again).
   const badCode = checked && vipCode.refusal !== null;
 
-  // What the account has comes from the server's answer to /vip.
+  const pay = vipPay;
+
+  // What the account has comes from the server's answer to /vip; the prices in pesos, from the service.
   useEffect(() => {
     if (!vipState.known) Social.sendChat('/vip');
+    void loadVipPrices();
   }, []);
 
   // The code is checked once the typing stops: the prices then show with its discount.
@@ -423,10 +429,10 @@ const VipWindow = observer(() => {
       id="ronda-vip"
       title="VIP"
       width={620}
-      height={510}
+      height={540}
       headerHeight={44}
       noScroll
-      contentKey={`${current}-${vipState.until}-${next?.name}-${vipState.buying}`}
+      contentKey={`${current}-${vipState.until}-${next?.name}-${vipState.buying}-${pay.busy}-${pay.message?.text}-${!!pay.prices}`}
       header={
         <p className="ronda-note ronda-vip-head">
           {!vipState.known ? (
@@ -454,7 +460,7 @@ const VipWindow = observer(() => {
         <OptionsButton label="-" width={28} style={STEPPER_BUTTON} disabled={months <= 1} onClick={() => setMonths(m => Math.max(1, m - 1))} />
         <b className="ronda-vip-months">{months}</b>
         <OptionsButton label="+" width={28} style={STEPPER_BUTTON} disabled={months >= VIP_MAX_MONTHS} onClick={() => setMonths(m => Math.min(VIP_MAX_MONTHS, m + 1))} />
-        <span className="ronda-vip-code-label">Código de descuento</span>
+        <span className="ronda-vip-code-label">Código (Bronce)</span>
         <input
           className="ronda-vip-code"
           value={code}
@@ -475,15 +481,18 @@ const VipWindow = observer(() => {
       </p>
       <div className="ronda-vip-tiers">
         {VIP_TIERS.map(tier => {
-          const full = tier.price * months;
-          const total = discounted(full, percent);
+          // Bronze is zen (and takes the discount code); silver and gold, pesos with Mercado Pago.
+          const full = tier.paid ? (pay.prices?.[tier.tier] ?? 0) * months : tier.price * months;
+          const total = tier.paid ? full : discounted(full, percent);
           // A lower tier than the one running can't be bought; a higher one waits for it to end,
           // and only one higher tier can wait at a time.
           const lower = tier.tier < currentTier;
           const waits = currentTier > 0 && tier.tier > currentTier;
           const blocked = waits && !!next && next.name !== tier.name;
-          const short = money < total;
-          const label = vipState.buying ? '…' : current === tier.name || next?.name === tier.name ? 'Sumar' : 'Comprar';
+          const short = !tier.paid && money < total;
+          const unavailable = tier.paid && !pay.enabled;
+          const busy = tier.paid ? pay.busy : vipState.buying;
+          const verb = current === tier.name || next?.name === tier.name ? 'Sumar' : tier.paid ? 'Pagar' : 'Comprar';
           return (
             <div
               key={tier.tier}
@@ -492,16 +501,17 @@ const VipWindow = observer(() => {
               <h3>{tier.name}</h3>
               <p className="ronda-vip-bonus">+{tier.bonus}% experiencia</p>
               <p className="ronda-vip-bonus">+{tier.bonus}% zen</p>
-              <p className="ronda-vip-price">{zen(total)} zen</p>
+              <p className="ronda-vip-bonus">{tier.autoReset ? '/autoreset' : ' '}</p>
+              <p className="ronda-vip-price">{tier.paid ? (pay.prices ? pesos(total) : '…') : `${zen(total)} zen`}</p>
               <p className="ronda-vip-days">
                 {total !== full && <s className="ronda-vip-full">{zen(full)}</s>}
                 {total !== full && ' · '}
-                {months * 30} días
+                {months * 30} días{tier.paid ? ' · Mercado Pago' : ''}
               </p>
               <OptionsButton
-                label={label}
+                label={busy ? '…' : verb}
                 width={110}
-                disabled={lower || blocked || badCode || short || vipState.buying}
+                disabled={lower || blocked || short || busy || unavailable || (!tier.paid && badCode)}
                 onClick={() => {
                   playUiSound('click');
                   setConfirm(tier);
@@ -514,6 +524,8 @@ const VipWindow = observer(() => {
                 <p className="ronda-vip-short">Ya tenés {next!.name} en espera</p>
               ) : short ? (
                 <p className="ronda-vip-short">Te faltan {zen(total - money)} zen</p>
+              ) : unavailable ? (
+                <p className="ronda-vip-short">Pagos todavía no habilitados</p>
               ) : waits ? (
                 <p className="ronda-vip-days">Empieza cuando termine el {current}</p>
               ) : null}
@@ -521,25 +533,34 @@ const VipWindow = observer(() => {
           );
         })}
       </div>
-      <p className="ronda-note ronda-vip-foot">
-        Durante la beta el VIP se paga con zen. Más adelante se va a poder pagar con Mercado Pago.
+      <p className={`ronda-note ronda-vip-foot ${pay.message?.ok === false ? 'is-bad' : ''}`}>
+        {pay.message?.text ??
+          'Bronce se compra con zen; Plata y Oro con Mercado Pago. Lo que pagues en la beta queda guardado: al salir a producción te damos los mismos VIP.'}
       </p>
 
       {confirm && (
         <ConfirmBox
           text={(() => {
+            const when =
+              currentTier > 0 && confirm.tier > currentTier ? ` Empieza cuando termine tu VIP ${current}.` : '';
+            if (confirm.paid) {
+              const amount = pesos((pay.prices?.[confirm.tier] ?? 0) * months);
+              return `¿Pagar ${months} mes(es) de VIP ${confirm.name} por ${amount} con Mercado Pago?${when} Se abre Mercado Pago en otra pestaña. Lo que pagues en la beta queda guardado y te lo devolvemos al salir a producción.`;
+            }
             const full = confirm.price * months;
             const price = percent
               ? `${zen(discounted(full, percent))} zen (${percent}% de descuento con ${cleanCode})`
               : `${zen(full)} zen`;
-            const when =
-              currentTier > 0 && confirm.tier > currentTier ? ` Empieza cuando termine tu VIP ${current}.` : '';
             return `¿Comprar ${months} mes(es) de VIP ${confirm.name} por ${price}?${when}`;
           })()}
           onAnswer={yes => {
             const tier = confirm;
             setConfirm(null);
             if (!yes) return;
+            if (tier.paid) {
+              void payWithMercadoPago(tier, months);
+              return;
+            }
             const command = `/vip ${tier.name.toLowerCase()} ${months}${cleanCode ? ` ${cleanCode}` : ''}`;
             if (Social.sendChat(command)) markVipBuying();
           }}
@@ -748,6 +769,140 @@ const EventsWindow = observer(() => {
   );
 });
 
+// ---------------------------------------------------------------------------
+// Grand Reset (the NPC in Lorencia, next to Leo)
+// ---------------------------------------------------------------------------
+
+/** What the shop row says about the item besides its name. */
+function grandItemDetails(item: GrandShopItem): string {
+  const parts: string[] = [];
+  if (item.level > 0) parts.push(`+${item.level}`);
+  if (item.skill) parts.push('Skill');
+  if (item.luck) parts.push('Luck');
+  if (item.optionLevel > 0) parts.push(`Opción +${item.optionLevel * 4}`);
+  if (item.excellent) {
+    const count = [1, 2, 4, 8, 16, 32].filter(bit => item.excellent & bit).length;
+    parts.push(count >= 6 ? 'Excelente full' : `Excelente (${count})`);
+  }
+  return parts.join(' · ');
+}
+
+const GrandResetWindow = observer(() => {
+  const [shop, setShop] = useState<GrandShopItem[] | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [confirm, setConfirm] = useState<'reset' | GrandShopItem | null>(null);
+  const state = grandResetState;
+  const level = Store.playerData.level;
+  const money = Store.playerData.money;
+  // The resets are not in the protocol: the server checks them, and says so when they are short.
+  const ready = state.known && state.enabled && level >= state.requiredLevel && money >= state.requiredMoney;
+
+  useEffect(() => {
+    Social.sendWindowCommand('/grandreset');
+    grandShop()
+      .then(r => setShop(r.items))
+      .catch(() => setFailed(true));
+  }, []);
+
+  return (
+    <Panel
+      id="ronda-grand-reset"
+      title="Grand Reset"
+      width={560}
+      height={520}
+      headerHeight={92}
+      contentKey={`${state.coins}-${state.count}-${shop?.length}-${failed}`}
+      header={
+        <div className="ronda-grand-head">
+          {!state.known ? (
+            <p className="ronda-note">Consultando…</p>
+          ) : !state.enabled ? (
+            <p className="ronda-note">El Grand Reset no está habilitado.</p>
+          ) : (
+            <>
+              <p className="ronda-note">
+                Volvés a nivel 1 con los stats de tu clase y sin resets, y ganás{' '}
+                <b>{state.coinsPerGrandReset} monedas</b> para esta tienda. Pide nivel {state.requiredLevel} y{' '}
+                {state.requiredResets} resets{state.requiredMoney > 0 ? ` y ${zen(state.requiredMoney)} zen` : ''}.
+              </p>
+              <div className="ronda-grand-row">
+                <span>
+                  Grand resets: <b>{state.count}</b> · Monedas: <b className="ronda-vip-name">{state.coins}</b>
+                </span>
+                <OptionsButton
+                  label="Hacer Grand Reset"
+                  width={150}
+                  disabled={!ready}
+                  onClick={() => {
+                    playUiSound('click');
+                    setConfirm('reset');
+                  }}
+                  style={{ position: 'relative' }}
+                />
+              </div>
+            </>
+          )}
+        </div>
+      }
+    >
+      {failed ? (
+        <p className="ronda-note">No se pudo cargar la tienda. Probá de nuevo en un rato.</p>
+      ) : !shop ? (
+        <p className="ronda-note">Cargando la tienda…</p>
+      ) : !shop.length ? (
+        <p className="ronda-note">La tienda todavía no tiene items.</p>
+      ) : (
+        <table className="ronda-table ronda-grand-shop">
+          <tbody>
+            {shop.map(item => (
+              <tr key={item.id}>
+                <td>
+                  {itemBaseName(item.group, item.number) ?? item.name}
+                  <div className="ronda-grand-details">{grandItemDetails(item)}</div>
+                </td>
+                <td className="ronda-grand-price">{item.price} monedas</td>
+                <td className="ronda-lahap-actions">
+                  <OptionsButton
+                    label="Comprar"
+                    width={90}
+                    disabled={state.coins < item.price}
+                    onClick={() => {
+                      playUiSound('click');
+                      setConfirm(item);
+                    }}
+                    style={{ position: 'relative', display: 'inline-block' }}
+                  />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      {confirm && (
+        <ConfirmBox
+          text={
+            confirm === 'reset'
+              ? `¿Hacer el Grand Reset? Tu personaje vuelve a nivel 1, sin resets y con los stats de su clase, y ganás ${state.coinsPerGrandReset} monedas. Te lleva a la selección de personaje.`
+              : `¿Comprar ${itemBaseName(confirm.group, confirm.number) ?? confirm.name} por ${confirm.price} monedas?`
+          }
+          onAnswer={yes => {
+            const what = confirm;
+            setConfirm(null);
+            if (!yes) return;
+            if (what === 'reset') {
+              closeRondaPanel();
+              Social.sendWindowCommand('/grandreset confirmar');
+            } else {
+              Social.sendWindowCommand(`/grandshop ${what.id}`);
+            }
+          }}
+        />
+      )}
+    </Panel>
+  );
+});
+
 export const RondaPanels = observer(() => (
   <>
     {rondaPanels.open === 'events' && <EventsWindow />}
@@ -755,5 +910,6 @@ export const RondaPanels = observer(() => (
     {rondaPanels.open === 'commands' && <CommandsWindow />}
     {rondaPanels.open === 'rankings' && <RankingsWindow />}
     {rondaPanels.open === 'vip' && <VipWindow />}
+    {rondaPanels.open === 'grandReset' && <GrandResetWindow />}
   </>
 ));

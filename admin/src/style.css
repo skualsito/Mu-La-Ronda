@@ -1991,3 +1991,11 @@ input.invalid {
 .drop-filters .drop-map {
   white-space: nowrap;
 }
+
+/* Mu La Ronda: a heading between groups of cards on one page (VIP). */
+.section-title {
+  margin: 28px 0 12px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--muted, inherit);
+}

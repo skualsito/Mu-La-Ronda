@@ -74,10 +74,13 @@ public abstract class MlrBossInvasionPlugIn : SimpleInvasionPlugIn
             return;
         }
 
+        // Mu La Ronda: started from the admin panel, the coordinates are for the admins only (the
+        // event's details show them); the players get the map.
+        var where = this.WasStartedByAdmin(state.Context) ? string.Empty : $" en {spot.X}, {spot.Y}";
         var mapName = state.Context.Configuration.Maps.FirstOrDefault(m => m.Number == mapId)?.Name;
         await state.Context.ForEachPlayerAsync(player =>
         {
-            var message = $"[{mapName?.GetTranslation(player.Culture)}] ¡{this.BossName} apareció en {spot.X}, {spot.Y}!";
+            var message = $"[{mapName?.GetTranslation(player.Culture)}] ¡{this.BossName} apareció{where}!";
             return player.InvokeViewPlugInAsync<IShowMessagePlugIn>(p => p.ShowMessageAsync(message, MessageType.GoldenCenter)).AsTask();
         }).ConfigureAwait(false);
     }

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { api, type VipCode } from '../api';
+import { VipPaymentsSection } from './vipPayments';
 import { Badge, Card, Confirm, ErrorBox, Loading, NumberField, PageHeader, TextField, Toggle, formatDate, useLoad, useToast } from '../ui';
 
 /**
@@ -99,10 +100,11 @@ export function VipCodesPage() {
 
   return (
     <>
-      <PageHeader
-        title="Códigos VIP"
-        subtitle="Descuentos para comprar VIP. Se usan en la ventana VIP del juego (Esc → VIP) o con /vip oro 3 CODIGO. Los cambios valen al instante."
-      />
+      <PageHeader title="VIP" subtitle="Pagos con Mercado Pago (Plata y Oro) y códigos de descuento para el Bronce, que se compra con zen." />
+
+      <VipPaymentsSection />
+
+      <h2 className="section-title">Códigos de descuento (Bronce)</h2>
 
       <Card title="Nuevo código">
         <CodeForm draft={draft} onChange={setDraft} />

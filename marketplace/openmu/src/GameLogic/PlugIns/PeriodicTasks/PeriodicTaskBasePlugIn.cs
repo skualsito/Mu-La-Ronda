@@ -34,6 +34,9 @@ public abstract class PeriodicTaskBasePlugIn<TConfiguration, TState> : IPeriodic
 
     private DateTime _forcedStartUtc = DateTime.MinValue;
 
+    /// <summary>Mu La Ronda: the game servers whose current run an admin started (not the timetable).</summary>
+    private readonly ConcurrentDictionary<IGameContext, bool> _startedByAdmin = new();
+
     /// <summary>
     /// Gets or sets configuration for periodic invasion.
     /// </summary>
@@ -129,6 +132,7 @@ public abstract class PeriodicTaskBasePlugIn<TConfiguration, TState> : IPeriodic
                         return;
                     }
 
+                    this._startedByAdmin[gameContext] = this.IsStartForced(gameContext);
                     this._forcedStartTaken[gameContext] = this._forcedStartUtc;
                     state.NextRunUtc = DateTime.UtcNow.Add(configuration.PreStartMessageDelay);
                     await this.OnPrepareEventAsync(state).ConfigureAwait(false);
@@ -189,6 +193,14 @@ public abstract class PeriodicTaskBasePlugIn<TConfiguration, TState> : IPeriodic
     {
         return this.IsStartForced(gameContext) || (this.Configuration?.IsItTimeToStart(gameContext.ServerTimeZone) ?? false);
     }
+
+    /// <summary>
+    /// Gets a value indicating whether the current (or last) run on this game server was started by
+    /// an admin (the own panel's start button, a GM command) rather than by the timetable.
+    /// </summary>
+    /// <param name="gameContext">The game context of the server.</param>
+    /// <returns><c>true</c> when an admin started it.</returns>
+    protected bool WasStartedByAdmin(IGameContext gameContext) => this._startedByAdmin.GetValueOrDefault(gameContext);
 
     /// <summary>
     /// Gets a value indicating whether an admin asked for the task to start now on this game server

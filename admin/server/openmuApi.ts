@@ -241,3 +241,25 @@ export async function controlEvent(sql: Sql, id: string, action: 'start' | 'stop
   const result = await post(sql, `/api/mlr/events/${id}/${action}`, {}, action === 'start' ? 'arrancar el evento' : 'parar el evento');
   if (result === 'offline') throw new Error('Ese evento no está activo en OpenMU.');
 }
+
+/**
+ * Turns a plugin on or off in the running game servers (MlrPlugInsController), so it counts without
+ * a restart. False when OpenMU did not take it (down, or without the endpoint yet).
+ */
+export async function setPluginInGame(sql: Sql, id: string, active: boolean): Promise<boolean> {
+  try {
+    return (await post(sql, `/api/mlr/plugins/${id}`, { active }, 'cambiar el plugin')) === 'applied';
+  } catch {
+    return false;
+  }
+}
+
+/** Gives a plugin a new configuration in the running game servers (the resets, the drop rates). */
+export async function configurePluginInGame(sql: Sql, id: string, configuration: string, active: boolean): Promise<boolean> {
+  try {
+    // game.ts pluginJson already leaves OpenMU's reference metadata out.
+    return (await post(sql, `/api/mlr/plugins/${id}/configuration`, { configuration, active }, 'configurar el plugin')) === 'applied';
+  } catch {
+    return false;
+  }
+}

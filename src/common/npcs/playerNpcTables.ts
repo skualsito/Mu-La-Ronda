@@ -29,6 +29,7 @@ const RUNE_BLADE: Item = { group: GROUP_SWORD, num: 31 };
 const SPIKED_SHIELD: Item = { group: GROUP_SHIELD, num: 7 };
 const SWORD_OF_DESTRUCTION: Item = { group: GROUP_SWORD, num: 16 };
 const WINGS_OF_HEAVEN: Item = { group: 12, num: 1 };
+const WINGS_OF_DRAGON: Item = { group: 12, num: 5 };
 
 /** Armour sets by items.json index, named as the original's `MODEL_*` are. */
 const DARK_STEEL = 27;
@@ -135,6 +136,17 @@ export const GEARED_NPC_TABLE: Readonly<Record<number, NpcGear>> = {
     set: RED_WING,
     mainHand: DEMONIC_STICK,
     scale: 1.0,
+  },
+  // Mu La Ronda: the Grand Reset NPC (GrandReset.NpcNumber, Lorencia next to Leo). Not in the
+  // original: the Dragon set at +13 with the Wings of Dragon, so it stands out in the square.
+  760: {
+    charClass: CharacterClassNumber.BladeKnight,
+    playerClass: PlayerClass.DarkKnight,
+    set: DRAGON,
+    level: 13,
+    mainHand: SWORD_OF_DESTRUCTION,
+    offHand: DRAGON_SHIELD,
+    wings: WINGS_OF_DRAGON,
   },
   // Chaos Card Master (ZzzCharacter.cpp:14347-14367): Venom Mist +9 with
   // MODEL_WINGS_OF_HEAVEN (group 12, index 1) and no weapon.
