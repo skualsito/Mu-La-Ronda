@@ -30,4 +30,11 @@ public interface IMlrEventControl
     /// <param name="gameContext">The game context of the server.</param>
     /// <returns>True when it was running.</returns>
     bool ForceFinish(IGameContext gameContext);
+
+    /// <summary>
+    /// Gets the monsters the running event put on the maps and are still alive, with where they are.
+    /// </summary>
+    /// <param name="gameContext">The game context of the server.</param>
+    /// <returns>Monster number, name, map number and coordinates; empty for an event without monsters.</returns>
+    IReadOnlyList<(short Number, string Name, ushort Map, byte X, byte Y)> GetLiveMonsters(IGameContext gameContext);
 }

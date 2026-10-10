@@ -69,6 +69,7 @@ import {
   ROWS,
   SHOP_BUTTON_X,
   SHOP_SPRITE,
+  DELETE_SPRITE,
   SHOP_TOOLTIP,
   SQUARE,
   SQUARES,
@@ -731,12 +732,13 @@ export const Inventory = observer(() => {
         data-no-drag="true"
         style={{ left: DELETE_BUTTON_X, top: BUTTON_Y }}
       >
-        <button
-          type="button"
-          className={`delete-button${Store.deleteMode ? ' checked' : ''}`}
-          style={{ width: BUTTON_WIDTH, height: BUTTON_HEIGHT }}
+        <MuButton
+          file={DELETE_SPRITE}
+          width={BUTTON_WIDTH}
+          height={BUTTON_HEIGHT}
+          frames={BUTTON_FRAMES}
+          checked={Store.deleteMode}
           onClick={() => {
-            playUiSound('click');
             // A carried bag item dropped on the button asks for it at once.
             const carried = Store.pickedItem;
             if (carried) {
@@ -748,11 +750,8 @@ export const Inventory = observer(() => {
             Store.toggleDeleteMode();
           }}
         >
-          <svg viewBox="0 0 16 16" aria-hidden="true">
-            <path d="M6 1.5h4M2.5 3.5h11M4 3.5l.8 10.5h6.4L12 3.5M6.5 6v5.5M9.5 6v5.5" />
-          </svg>
           <span className="button-tooltip">{t(DELETE_TOOLTIP)}</span>
-        </button>
+        </MuButton>
       </div>
 
       {}

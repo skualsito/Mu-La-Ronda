@@ -29,6 +29,7 @@ import {
 import { itemBaseName } from './itemsDatabase';
 import { itemLevelName } from './itemLevelLook';
 import { harmonyOf, socketOf, SOCKET_EMPTY } from './itemExtraOptions';
+import { isOptionWing, wingOptionKind, wingOptionLines } from './wingOptions';
 import { isStackedMaterial } from './stackedMaterials';
 import { learnableSkill } from './skillItems';
 import { skillDisplayName } from './skillNames';
@@ -651,8 +652,9 @@ function equipmentLines(
   // Options (`RenderDefaultOptionText`), skill, luck, excellent.
   const optionLevel = item.optionLevel ?? 0;
   const excellentFlags = item.excellentFlags ?? (item.isExcellent ? 0 : 0);
+  const wingFlags = item.wingOptions ?? 0;
   const hasOptions =
-    optionLevel > 0 || item.luck || item.hasSkill || excellentFlags > 0;
+    optionLevel > 0 || item.luck || item.hasSkill || excellentFlags > 0 || wingFlags > 0;
 
   if (hasOptions) out.blank();
 
@@ -666,7 +668,16 @@ function equipmentLines(
     out.add(t('item.luckCritical'), 'blue');
   }
 
-  if (optionLevel > 0) {
+  // Mu La Ronda: a wing's option is one of several kinds (common/wingOptions.ts).
+  if (optionLevel > 0 && isOptionWing(def.group, def.index)) {
+    const bonus = optionLevel * 4;
+    const kind = wingOptionKind(def.group, def.index, item.wingOptionKind ?? 0);
+    if (kind === 'hpRecovery') out.add(t('item.wing.hpRecovery', { value: optionLevel }), 'blue');
+    else if (kind === 'wizardry') out.add(t('item.additionalWizardry', { value: bonus }), 'blue');
+    else if (kind === 'curse') out.add(t('item.additionalCurse', { value: bonus }), 'blue');
+    else if (kind === 'defense') out.add(t('item.additionalDefense', { value: bonus }), 'blue');
+    else out.add(t('item.additionalDamage', { value: bonus }), 'blue');
+  } else if (optionLevel > 0) {
     const bonus = optionLevel * 4;
     if (isStaff(def)) out.add(t('item.additionalWizardry', { value: bonus }), 'blue');
     else if (isWeapon(def)) out.add(t('item.additionalDamage', { value: bonus }), 'blue');
@@ -677,6 +688,10 @@ function equipmentLines(
   if (def.group === 13 && def.index === 37) fenrirLines(out, excellentFlags, hero.level);
   else if (excellentFlags > 0) {
     excellentLines(out, def, excellentFlags, hero.level);
+  }
+
+  for (const line of wingOptionLines(def.group, def.index, wingFlags, level)) {
+    out.add(t(line.key, { value: line.value }), 'blue');
   }
 
   if (item.isAncient) ancientLines(out, def, item, equipped);

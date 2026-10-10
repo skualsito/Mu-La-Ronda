@@ -61,6 +61,11 @@ public class InvasionGameServerState : PeriodicTaskGameServerState
     public int AliveCount => this._monsters.Count;
 
     /// <summary>
+    /// Gets the monsters of this run still alive (Mu La Ronda: where they are, for the admin panel).
+    /// </summary>
+    public IEnumerable<Monster> AliveMonsters => this._monsters.Keys;
+
+    /// <summary>
     /// Gets, per monster number, how many this run spawned and how many of them are dead.
     /// </summary>
     public IEnumerable<(ushort Number, int Killed, int Total)> Tally

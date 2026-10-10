@@ -289,6 +289,29 @@ export type GameEventRow = {
   testedBy: string | null;
 };
 export type EventList = { events: GameEventRow[]; error: string | null };
+export type EventMonster = { number: number; name: string; map: number; mapName: string; x: number; y: number };
+export type EventDetails = {
+  id: string;
+  type: string;
+  name: string;
+  setup: {
+    timetable: string[];
+    durationMinutes: number;
+    mobs: { number: number; name: string; count: number; maps: string[]; x: number | null; y: number | null }[] | null;
+  } | null;
+  places: { x: number; y: number }[] | null;
+  servers: {
+    server: number;
+    description: string;
+    state: GameEventRow['state'];
+    running: boolean;
+    players: number;
+    lastStartUtc: string | null;
+    nextStepUtc: string;
+    nextStartUtc: string | null;
+    monsters: EventMonster[];
+  }[];
+};
 
 export type SectionKey = 'inicio' | 'personajes' | 'cuentas' | 'spots' | 'shops' | 'drops' | 'monstruos' | 'eventos' | 'mensajes' | 'vip' | 'encuesta' | 'config' | 'servidor';
 

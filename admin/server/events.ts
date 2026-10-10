@@ -1,5 +1,5 @@
 import type { Sql } from 'postgres';
-import { controlEvent, gameEvents, type GameEvent } from './openmuApi';
+import { controlEvent, gameEventDetails, gameEvents, type GameEvent, type GameEventDetails } from './openmuApi';
 
 /**
  * Events: the periodic events OpenMU runs (Blood Castle, Devil Square, Chaos
@@ -80,6 +80,12 @@ export async function saveNote(sql: Sql, id: string, input: { status?: unknown; 
       "Note" = COALESCE(${note ?? null}, mlr.event_notes."Note"),
       "TestedAt" = CASE WHEN ${!!input.tested} THEN now() ELSE mlr.event_notes."TestedAt" END,
       "TestedBy" = CASE WHEN ${!!input.tested} THEN ${user} ELSE mlr.event_notes."TestedBy" END`;
+}
+
+/** One event in full, with its panel name: setup, and per server its state and live monsters. */
+export async function eventDetails(sql: Sql, id: string): Promise<GameEventDetails | null> {
+  const detail = await gameEventDetails(sql, id);
+  return detail ? { ...detail, name: NAMES[detail.type] ?? detail.name } : null;
 }
 
 export async function startEvent(sql: Sql, id: string) {

@@ -12,7 +12,10 @@ import { Social } from '../../../../../social';
  * Mu La Ronda: the experience each kill gave, in the top left - the original
  * prints the experience there as a system line (`ReceiveDieExp`,
  * GlobalText 486), in the blue of the system lines. A few lines at most,
- * each one fading out on its own; the newest at the bottom.
+ * each one fading out on its own; the newest at the bottom. Master experience
+ * says so, in gold. The shares of one kill come as several packets on a high
+ * rate server (the plain packet carries 65 535 at most): they add up into one
+ * line.
  */
 
 /** 640x480 UI space: under the buff row, and under the performance readout when it shows. */
@@ -29,6 +32,10 @@ const FADE_MS = 600;
 
 /** The chat's system line (common/chat.ts, ChatLineType.System). */
 const COLOR = 'rgb(100,150,255)';
+/** Master experience: the gold of the master level window. */
+const MASTER_COLOR = 'rgb(255,204,26)';
+/** Packets of the same kill this close together are one share. */
+const SAME_KILL_MS = 250;
 const BACKGROUND = 'rgba(0,0,0,0.59)';
 
 /** Where the party list ends, in the page's own pixels; null when it is not on screen. */
@@ -39,7 +46,10 @@ function partyListBottom(feed: HTMLElement | null): number | null {
   return list.getBoundingClientRect().bottom - parent.getBoundingClientRect().top;
 }
 
-type Line = { id: number; text: string; at: number };
+type Line = { id: number; amount: number; master: boolean; killedNetId: number; at: number };
+
+const lineText = (line: Line) =>
+  t(line.master ? 'exp.gainedMaster' : 'exp.gained', { amount: line.amount.toLocaleString(i18n.language) });
 
 export const ExpFeed = observer(() => {
   const scale = useUiStageScale();
@@ -47,9 +57,16 @@ export const ExpFeed = observer(() => {
   const nextId = useRef(1);
   const feedRef = useRef<HTMLDivElement>(null);
 
-  useEventBus('experienceGained', ({ added }) => {
-    const line = { id: nextId.current++, text: t('exp.gained', { amount: added.toLocaleString(i18n.language) }), at: performance.now() };
-    setLines(old => [...old.slice(-(MAX_LINES - 1)), line]);
+  useEventBus('experienceGained', ({ added, master, killedNetId }) => {
+    const now = performance.now();
+    setLines(old => {
+      const last = old.at(-1);
+      if (last && last.master === master && last.killedNetId === killedNetId && now - last.at < SAME_KILL_MS) {
+        return [...old.slice(0, -1), { ...last, amount: last.amount + added }];
+      }
+      const line = { id: nextId.current++, amount: added, master, killedNetId, at: now };
+      return [...old.slice(-(MAX_LINES - 1)), line];
+    });
   });
 
   // Drop the lines that have faded out; nothing runs while there are none.
@@ -73,11 +90,11 @@ export const ExpFeed = observer(() => {
       {lines.map((line, index) => (
         <MuText
           key={line.id}
-          color={COLOR}
+          color={line.master ? MASTER_COLOR : COLOR}
           background={BACKGROUND}
           className="exp-feed-line"
           style={{ top: index * LINE_HEIGHT, animationDelay: `${LIFE_MS - FADE_MS}ms`, animationDuration: `${FADE_MS}ms` }}
-          text={line.text}
+          text={lineText(line)}
         />
       ))}
     </div>

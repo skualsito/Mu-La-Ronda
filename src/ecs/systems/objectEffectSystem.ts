@@ -5,6 +5,7 @@ import { playUiSound } from '../../sound/ui';
 import { TerrainDecal } from '../../common/moveTargetEffect';
 import { dropTier, type DropTier } from '../../common/dropTier';
 import { lighting } from '../../lighting';
+import { playMasterLevelUp, warmMasterLevelUp } from '../../effects/masterLevelUp';
 import type { Entity, ISystemFactory } from '../world';
 
 /**
@@ -66,6 +67,7 @@ export function showObjectEffect(scene: Scene, entity: Entity, effect: BurstKind
 
 export const ObjectEffectSystem: ISystemFactory = world => {
   const drops = world.with('droppedItem', 'transform');
+  warmMasterLevelUp(world);
   const glows = new Map<Entity, TerrainDecal>();
   const pool: TerrainDecal[] = [];
   let glowSeq = 0;
@@ -73,6 +75,15 @@ export const ObjectEffectSystem: ISystemFactory = world => {
   const lastLevelUp = new WeakMap<Entity, number>();
 
   EventBus.on('objectEffect', ({ entity, effect }) => {
+    // Mu La Ronda: a master level-up (ShowEffect 32, MasterLevelUpEffectPlugIn.cs) is the golden
+    // pillar, and the plain level-up OpenMU sends right after it falls in the throttle below.
+    if (effect === 'masterLevelUp') {
+      lastLevelUp.set(entity, performance.now());
+      playUiSound('changeUp');
+      playMasterLevelUp(world.scene, entity);
+      lighting.objectEffect(world.scene, entity, 'masterLevelUp');
+      return;
+    }
     if (effect === 'levelUp') {
       const now = performance.now();
       if (now - (lastLevelUp.get(entity) ?? -Infinity) < LEVEL_UP_EVERY_MS) return;

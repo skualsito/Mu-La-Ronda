@@ -16938,7 +16938,7 @@
     "MG": 1,
     "DL": 1,
     "SUM": 1,
-    "RF": 0,
+    "RF": 1,
     "szModelFolder": "Player/",
     "szModelName": "Helper01.glb",
     "RequiredLvl": 23
@@ -16970,7 +16970,7 @@
     "MG": 1,
     "DL": 1,
     "SUM": 1,
-    "RF": 0,
+    "RF": 1,
     "szModelFolder": "Player/",
     "szModelName": "Helper02.glb",
     "RequiredLvl": 28
@@ -17002,7 +17002,7 @@
     "MG": 1,
     "DL": 1,
     "SUM": 1,
-    "RF": 0,
+    "RF": 1,
     "szModelFolder": "Player/",
     "szModelName": "Helper03.glb",
     "RequiredLvl": 25
@@ -17034,7 +17034,7 @@
     "MG": 1,
     "DL": 1,
     "SUM": 1,
-    "RF": 0,
+    "RF": 1,
     "szModelFolder": "Player/",
     "szModelName": "Helper04.glb",
     "RequiredLvl": 110
@@ -17160,7 +17160,7 @@
     "MG": 1,
     "DL": 1,
     "SUM": 1,
-    "RF": 0,
+    "RF": 1,
     "szModelFolder": "Item/",
     "szModelName": "Ring01.glb"
   },
@@ -17191,7 +17191,7 @@
     "MG": 1,
     "DL": 1,
     "SUM": 1,
-    "RF": 0,
+    "RF": 1,
     "szModelFolder": "Item/",
     "szModelName": "Ring02.glb"
   },
@@ -17222,7 +17222,7 @@
     "MG": 1,
     "DL": 1,
     "SUM": 1,
-    "RF": 0,
+    "RF": 1,
     "szModelFolder": "Item/",
     "szModelName": "Ring01.glb"
   },
@@ -17284,7 +17284,7 @@
     "MG": 1,
     "DL": 1,
     "SUM": 1,
-    "RF": 0,
+    "RF": 1,
     "szModelFolder": "Item/",
     "szModelName": "Necklace01.glb"
   },
@@ -17315,7 +17315,7 @@
     "MG": 1,
     "DL": 1,
     "SUM": 1,
-    "RF": 0,
+    "RF": 1,
     "szModelFolder": "Item/",
     "szModelName": "Necklace02.glb"
   },
@@ -17532,7 +17532,7 @@
     "MG": 1,
     "DL": 1,
     "SUM": 1,
-    "RF": 0,
+    "RF": 1,
     "szModelFolder": "Item/",
     "szModelName": "MagicRing00.glb"
   },
@@ -17563,7 +17563,7 @@
     "MG": 1,
     "DL": 1,
     "SUM": 1,
-    "RF": 0,
+    "RF": 1,
     "szModelFolder": "Item/",
     "szModelName": "firering.glb"
   },
@@ -17594,7 +17594,7 @@
     "MG": 1,
     "DL": 1,
     "SUM": 1,
-    "RF": 0,
+    "RF": 1,
     "szModelFolder": "Item/",
     "szModelName": "groundring.glb"
   },
@@ -17625,7 +17625,7 @@
     "MG": 1,
     "DL": 1,
     "SUM": 1,
-    "RF": 0,
+    "RF": 1,
     "szModelFolder": "Item/",
     "szModelName": "windring.glb"
   },
@@ -17656,7 +17656,7 @@
     "MG": 1,
     "DL": 1,
     "SUM": 1,
-    "RF": 0,
+    "RF": 1,
     "szModelFolder": "Item/",
     "szModelName": "manaring.glb"
   },
@@ -17687,7 +17687,7 @@
     "MG": 1,
     "DL": 1,
     "SUM": 1,
-    "RF": 0,
+    "RF": 1,
     "szModelFolder": "Item/",
     "szModelName": "icenecklace.glb"
   },
@@ -17718,7 +17718,7 @@
     "MG": 1,
     "DL": 1,
     "SUM": 1,
-    "RF": 0,
+    "RF": 1,
     "szModelFolder": "Item/",
     "szModelName": "windnecklace.glb"
   },
@@ -17749,7 +17749,7 @@
     "MG": 1,
     "DL": 1,
     "SUM": 1,
-    "RF": 0,
+    "RF": 1,
     "szModelFolder": "Item/",
     "szModelName": "waternecklace.glb"
   },
@@ -17780,7 +17780,7 @@
     "MG": 1,
     "DL": 1,
     "SUM": 1,
-    "RF": 0,
+    "RF": 1,
     "szModelFolder": "Item/",
     "szModelName": "agnecklace.glb"
   },
@@ -18060,7 +18060,7 @@
     "MG": 1,
     "DL": 1,
     "SUM": 2,
-    "RF": 0,
+    "RF": 1,
     "szModelFolder": "Item/",
     "szModelName": "FR_6.glb",
     "RequiredLvl": 300
@@ -18092,7 +18092,7 @@
     "MG": 1,
     "DL": 1,
     "SUM": 1,
-    "RF": 0,
+    "RF": 1,
     "szModelFolder": "Item/",
     "szModelName": "kanneck2.glb"
   },
@@ -18123,7 +18123,7 @@
     "MG": 1,
     "DL": 1,
     "SUM": 1,
-    "RF": 0,
+    "RF": 1,
     "szModelFolder": "Item/",
     "szModelName": "Ring01.glb"
   },
@@ -18154,7 +18154,7 @@
     "MG": 1,
     "DL": 1,
     "SUM": 1,
-    "RF": 0,
+    "RF": 1,
     "szModelFolder": "Item/",
     "szModelName": "Ring01.glb"
   },
@@ -18185,7 +18185,7 @@
     "MG": 1,
     "DL": 1,
     "SUM": 1,
-    "RF": 0,
+    "RF": 1,
     "szModelFolder": "Item/",
     "szModelName": "Ring01.glb"
   },
@@ -18216,7 +18216,7 @@
     "MG": 1,
     "DL": 1,
     "SUM": 1,
-    "RF": 0,
+    "RF": 1,
     "szModelFolder": "Item/",
     "szModelName": "Ring01.glb"
   },
@@ -18495,7 +18495,7 @@
     "MG": 1,
     "DL": 1,
     "SUM": 1,
-    "RF": 0,
+    "RF": 1,
     "szModelFolder": "Item/partcharge4/",
     "szModelName": "demon.glb",
     "RequiredLvl": 1
@@ -18527,7 +18527,7 @@
     "MG": 1,
     "DL": 1,
     "SUM": 1,
-    "RF": 0,
+    "RF": 1,
     "szModelFolder": "Item/partcharge4/",
     "szModelName": "maria.glb",
     "RequiredLvl": 1
@@ -18590,7 +18590,7 @@
     "MG": 1,
     "DL": 1,
     "SUM": 1,
-    "RF": 0,
+    "RF": 1,
     "szModelFolder": "Item/xmas/",
     "szModelName": "xmas_deer.glb",
     "RequiredLvl": 28
@@ -18622,7 +18622,7 @@
     "MG": 1,
     "DL": 1,
     "SUM": 1,
-    "RF": 0,
+    "RF": 1,
     "szModelFolder": "Item/xmas/",
     "szModelName": "xmasring.glb"
   },
@@ -18808,7 +18808,7 @@
     "MG": 1,
     "DL": 1,
     "SUM": 1,
-    "RF": 0,
+    "RF": 1,
     "szModelFolder": "Item/",
     "szModelName": "PandaPetRing.glb"
   },
@@ -18839,7 +18839,7 @@
     "MG": 1,
     "DL": 1,
     "SUM": 1,
-    "RF": 0,
+    "RF": 1,
     "szModelFolder": "Item/",
     "szModelName": "PandaPet.glb",
     "RequiredLvl": 1

@@ -110,6 +110,8 @@ export type NumberRow = RowBase & {
   min?: number;
   max: number;
   display: (value: number) => string;
+  /** Mu La Ronda: a - and a + either side of the bar, a step each - for a bar hard to drag. */
+  stepButtons?: boolean;
 };
 
 export type KeyRow = { kind: 'key'; action: KeyAction; labelKey: TextKey };
@@ -191,7 +193,7 @@ const number = (
   key: NumberKey,
   max: number,
   display: (value: number) => string,
-  extra: Partial<RowBase> & { min?: number } = {}
+  extra: Partial<RowBase> & { min?: number; stepButtons?: boolean } = {}
 ): NumberRow => ({
   kind,
   key,
@@ -206,7 +208,7 @@ const slider = (
   key: NumberKey,
   max: number,
   display: (value: number) => string,
-  extra: Partial<RowBase> & { min?: number } = {}
+  extra: Partial<RowBase> & { min?: number; stepButtons?: boolean } = {}
 ) => number('slider', key, max, display, extra);
 
 const choice = (
@@ -750,9 +752,9 @@ export const CATEGORIES: Category[] = [
           {
             titleKey: 'options.section.windows',
             rows: [
-              slider('uiScale', UI_SCALE_MAX, v =>
-                `${Math.round(uiScaleFactor(v) * 100)}%`
-              ),
+              slider('uiScale', UI_SCALE_MAX, v => `${Math.round(uiScaleFactor(v) * 100)}%`, {
+                stepButtons: true,
+              }),
               toggle('lockWindows'),
               {
                 kind: 'button',

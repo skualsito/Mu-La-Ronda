@@ -44,10 +44,10 @@ export type Events = CSEvents &
     /** Server asked to show an effect on an object (level-up beam, shield potion/lost). */
     objectEffect: {
       entity: With<Entity, 'transform'>;
-      effect: 'levelUp' | 'shieldPotion' | 'shieldLost' | 'swirl';
+      effect: 'levelUp' | 'masterLevelUp' | 'shieldPotion' | 'shieldLost' | 'swirl';
     };
     /** Local player gained experience (already applied to Store.playerData). */
-    experienceGained: { added: number; killedNetId: number };
+    experienceGained: { added: number; killedNetId: number; master: boolean };
     /**
      * The server answered an `IncreaseCharacterStatPoint` (already applied to
      * Store.playerData). `added` is 0 when the point was refused.

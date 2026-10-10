@@ -101,6 +101,7 @@ export const Vault = observer(() => {
       id={WINDOW_ID}
       className="vault"
       column={column}
+      dockLeftOf={Store.inventoryEnabled ? 'inventory' : undefined}
       label={t(TITLE)}
       onClose={() => Economy.closeVault()}
     >

@@ -20,7 +20,19 @@ public abstract class PeriodicTaskBasePlugIn<TConfiguration, TState> : IPeriodic
 {
     private static readonly ConcurrentDictionary<Type, ConcurrentDictionary<IGameContext, TState>> States = new();
 
-    private bool _isStartForced = false;
+    /// <summary>
+    /// Mu La Ronda: how long a forced start waits for a game server to take it up.
+    /// </summary>
+    private static readonly TimeSpan ForcedStartValidity = TimeSpan.FromMinutes(1);
+
+    /// <summary>
+    /// Mu La Ronda: one instance serves every game server (the channels), and a single flag was
+    /// cleared by the first one to start - the others never did. Each server now takes up the
+    /// latest forced start on its own.
+    /// </summary>
+    private readonly ConcurrentDictionary<IGameContext, DateTime> _forcedStartTaken = new();
+
+    private DateTime _forcedStartUtc = DateTime.MinValue;
 
     /// <summary>
     /// Gets or sets configuration for periodic invasion.
@@ -28,17 +40,11 @@ public abstract class PeriodicTaskBasePlugIn<TConfiguration, TState> : IPeriodic
     public TConfiguration? Configuration { get; set; }
 
     /// <summary>
-    /// Gets a value indicating whether an admin asked for the task to start now (Mu La Ronda: an
-    /// event that skips days of its timetable still starts on demand).
-    /// </summary>
-    protected bool IsStartForced => this._isStartForced;
-
-    /// <summary>
-    /// Forces to start the task on the next start check.
+    /// Forces to start the task on the next start check, on every game server.
     /// </summary>
     public void ForceStart()
     {
-        this._isStartForced = true;
+        this._forcedStartUtc = DateTime.UtcNow;
     }
 
     /// <inheritdoc />
@@ -64,6 +70,9 @@ public abstract class PeriodicTaskBasePlugIn<TConfiguration, TState> : IPeriodic
             .Min();
         return TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(next, DateTimeKind.Unspecified), gameContext.ServerTimeZone);
     }
+
+    /// <inheritdoc />
+    public virtual IReadOnlyList<(short Number, string Name, ushort Map, byte X, byte Y)> GetLiveMonsters(IGameContext gameContext) => [];
 
     /// <inheritdoc />
     public bool ForceFinish(IGameContext gameContext)
@@ -116,11 +125,11 @@ public abstract class PeriodicTaskBasePlugIn<TConfiguration, TState> : IPeriodic
 
                     if (this.IsPreviousEventStillRunning(state))
                     {
-                        this._isStartForced = false;
+                        this._forcedStartTaken[gameContext] = this._forcedStartUtc;
                         return;
                     }
 
-                    this._isStartForced = false;
+                    this._forcedStartTaken[gameContext] = this._forcedStartUtc;
                     state.NextRunUtc = DateTime.UtcNow.Add(configuration.PreStartMessageDelay);
                     await this.OnPrepareEventAsync(state).ConfigureAwait(false);
                     state.State = PeriodicTaskState.Prepared;
@@ -178,8 +187,18 @@ public abstract class PeriodicTaskBasePlugIn<TConfiguration, TState> : IPeriodic
     /// </returns>
     protected virtual bool IsItTimeToStart(IGameContext gameContext)
     {
-        return this._isStartForced || (this.Configuration?.IsItTimeToStart(gameContext.ServerTimeZone) ?? false);
+        return this.IsStartForced(gameContext) || (this.Configuration?.IsItTimeToStart(gameContext.ServerTimeZone) ?? false);
     }
+
+    /// <summary>
+    /// Gets a value indicating whether an admin asked for the task to start now on this game server
+    /// (Mu La Ronda: an event that skips days of its timetable still starts on demand).
+    /// </summary>
+    /// <param name="gameContext">The game context of the server.</param>
+    /// <returns><c>true</c> while a forced start is pending on this server.</returns>
+    protected bool IsStartForced(IGameContext gameContext)
+        => this._forcedStartUtc > this._forcedStartTaken.GetValueOrDefault(gameContext, DateTime.MinValue)
+           && DateTime.UtcNow - this._forcedStartUtc < ForcedStartValidity;
 
     /// <summary>
     /// Determines whether the previous event run is still within its configured task duration.

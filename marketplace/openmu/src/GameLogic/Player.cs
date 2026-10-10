@@ -1700,6 +1700,16 @@ public class Player : AsyncDisposable, IBucketMapObserver, IAttackable, IAttacke
     /// <param name="character">The character.</param>
     private void RemoveDuplicateStatAttributes(Character character)
     {
+        // Mu La Ronda: a stat attribute whose definition did not load (null) made the attribute
+        // system throw on its dictionary key, and the character could not enter the game at all -
+        // stuck on the character list (2026-10-10, two characters after a crash in the Lorencia ring).
+        // It holds nothing usable: it goes, on the character and on its account alike.
+        RemoveUndefinedStatAttributes(character.Attributes, character.Name);
+        if (this.Account is { } account)
+        {
+            RemoveUndefinedStatAttributes(account.Attributes, character.Name);
+        }
+
         var duplicateGroups = character.Attributes
             .GroupBy(a => a.Definition)
             .Where(group => group.Count() > 1)
@@ -1717,6 +1727,21 @@ public class Player : AsyncDisposable, IBucketMapObserver, IAttackable, IAttacke
                 duplicates.Key,
                 character.Name);
         }
+    }
+
+    private void RemoveUndefinedStatAttributes(ICollection<StatAttribute> attributes, string characterName)
+    {
+        var undefined = attributes.Where(a => a.Definition is null).ToList();
+        if (undefined.Count == 0)
+        {
+            return;
+        }
+
+        undefined.ForEach(attribute => attributes.Remove(attribute));
+        this.Logger.LogWarning(
+            "Removed {Count} stat attribute(s) without a definition from character '{Character}' or its account.",
+            undefined.Count,
+            characterName);
     }
 
     private async ValueTask OnPlayerEnteredWorldAsync()

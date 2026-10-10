@@ -68,6 +68,7 @@ import {
   ExperienceGainedPacket,
   ShowEffectPacket,
   ShowEffectEffectTypeEnum,
+  ExperienceGainedExtendedAddResultEnum,
   ShowSwirlPacket,
   GameServerEnteredPacket,
   InventoryItemUpgradedPacket,
@@ -249,6 +250,7 @@ import { readVipCodeLine, readVipLine } from './common/vip';
 import { pointsFromWire, readPointsLine } from './common/widePoints';
 import { readSpotsLine } from './common/mapSpots';
 import { clearInvasions, readInvasionLine } from './common/invasionTally';
+import { inMasterProgression } from './skills/masterLevel';
 import { readVaultLine } from './common/extraVaults';
 import { Notices } from './common/notices';
 import { SlideHelp } from './common/slideHelp';
@@ -1756,8 +1758,10 @@ EventBus.on('ChatMessage', packet => {
   }
 
   if (p.Type === ChatMessageChatMessageTypeEnum.Whisper) {
-    // SOUND_WHISPER for an incoming whisper; the name is offered as the next
-    // whisper target (`RegistWhisperID`).
+    // SOUND_WHISPER for an incoming whisper. Mu La Ronda: the whisper field is
+    // left as it is - filling it with the sender (`RegistWhisperID`) swapped
+    // the name mid-conversation when a third player whispered. The reply key
+    // (chat box) still answers whoever whispered last.
     if (Social.blockWhisper) return;
     // `IsWhisperSound()` (NewUIChatLogWindow.cpp:360).
     if (GameOptions.whisperBeep) playUiSound('whisper');
@@ -1765,7 +1769,6 @@ EventBus.on('ChatMessage', packet => {
     runInAction(() => {
       Social.lastWhisperFrom = sender;
     });
-    if (!Social.whisperTarget) Social.setWhisperTarget(sender);
     return;
   }
 
@@ -3929,10 +3932,12 @@ EventBus.on('NpcWindowResponse', packet => {
     case NpcWindowResponseNpcWindowEnum.Merchant1:
       Store.openNpcShop();
       break;
-    case NpcWindowResponseNpcWindowEnum.VaultStorage:
+    case NpcWindowResponseNpcWindowEnum.VaultStorage: {
+      const keeper = Store.pendingNpcNetId;
       Store.dropNpcTalk();
-      Economy.openVault();
+      Economy.openVault(keeper);
       break;
+    }
     case NpcWindowResponseNpcWindowEnum.ChaosMachine:
       Store.dropNpcTalk();
       Economy.openMix();
@@ -4389,27 +4394,48 @@ EventBus.on('MasterCharacterLevelUpdate', packet => {
 
 // C3 16 - sent for every kill share. Without this handler the exp bar only
 // moved on relog (CharacterInformation).
-function applyExperienceGained(p: { AddedExperience: number; KilledObjectId: number }) {
+//
+// Mu La Ronda: master experience comes in the same packets. The extended one
+// says which it is; the plain one does not, and a hero at level 400 in master
+// progression only gains master experience. It went into the regular bar and
+// read as plain experience; now the master bar takes it
+// (skills/masterLevel.ts) and the feed calls it master experience.
+function applyExperienceGained(
+  p: { AddedExperience: number; KilledObjectId: number },
+  type?: ExperienceGainedExtendedAddResultEnum
+) {
   const added = p.AddedExperience;
   if (added <= 0) return;
 
-  runInAction(() => {
-    Store.playerData.exp += added;
-  });
+  const master =
+    type !== undefined
+      ? type === ExperienceGainedExtendedAddResultEnum.Master
+      : inMasterProgression() && Store.playerData.level >= MAX_REGULAR_LEVEL;
+
+  if (!master) {
+    runInAction(() => {
+      Store.playerData.exp += added;
+    });
+  }
 
   EventBus.emit('experienceGained', {
     added,
     killedNetId: p.KilledObjectId & 0x7fff,
+    master,
   });
 }
+
+/** The last regular level; past it every kill share is master experience. */
+const MAX_REGULAR_LEVEL = 400;
 
 EventBus.on('ExperienceGained', packet =>
   applyExperienceGained(new ExperienceGainedPacket(packet))
 );
 // Extended plug-in variant (exp > 65535 per kill, master exp).
-EventBus.on('ExperienceGainedExtended', packet =>
-  applyExperienceGained(new ExperienceGainedExtendedPacket(packet))
-);
+EventBus.on('ExperienceGainedExtended', packet => {
+  const p = new ExperienceGainedExtendedPacket(packet);
+  applyExperienceGained(p, p.Type);
+});
 
 function emitObjectEffect(
   netId: number,
@@ -4437,6 +4463,9 @@ function playSwirlSounds(netId: number) {
   for (const seconds of SWIRL_BLOOM_SECONDS) delay(seconds, bloom);
 }
 
+/** Mu La Ronda: ShowEffect's number for a master level-up (MasterLevelUpEffectPlugIn.cs). */
+const MASTER_LEVEL_UP_EFFECT = 32 as ShowEffectEffectTypeEnum;
+
 // C1 48 - level-up beam, shield potion, shield lost.
 EventBus.on('ShowEffect', packet => {
   const p = new ShowEffectPacket(packet);
@@ -4446,6 +4475,10 @@ EventBus.on('ShowEffect', packet => {
     case ShowEffectEffectTypeEnum.LevelUp:
       // SOUND_LEVEL_UP rides the burst (objectEffectSystem), the hero's included.
       emitObjectEffect(netId, 'levelUp');
+      break;
+    // Mu La Ronda: our own number for a master level-up (MasterLevelUpEffectPlugIn.cs).
+    case MASTER_LEVEL_UP_EFFECT:
+      emitObjectEffect(netId, 'masterLevelUp');
       break;
     case ShowEffectEffectTypeEnum.ShieldPotion:
       emitObjectEffect(netId, 'shieldPotion');

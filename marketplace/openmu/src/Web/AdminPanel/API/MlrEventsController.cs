@@ -87,6 +87,79 @@ public class MlrEventsController : Controller
         return this.Ok(rows);
     }
 
+    /// <summary>
+    /// Everything about one event: its timetable and setup, and on each game server (channel) its
+    /// state and, while it runs, the monsters it put on the maps with where they are.
+    /// </summary>
+    /// <param name="id">The plugin's type id.</param>
+    /// <returns>200, or 404 for an unknown or inactive event.</returns>
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> DetailsAsync(Guid id)
+    {
+        object? setup = null;
+        object? places = null;
+        string? name = null;
+        string? typeName = null;
+        var servers = new List<object>();
+        foreach (var server in this.Servers)
+        {
+            var context = server.Context;
+            var configuration = context.Configuration;
+            string MapName(ushort number) => configuration.Maps.FirstOrDefault(m => m.Number == number)?.Name.ValueInNeutralLanguage ?? $"Mapa {number}";
+            string MonsterName(int number) => configuration.Monsters.FirstOrDefault(m => m.Number == number)?.Designation.ValueInNeutralLanguage ?? $"#{number}";
+
+            foreach (var plugIn in EventsOf(context).Where(p => IdOf(p) == id))
+            {
+                var type = plugIn.GetType();
+                name ??= type.GetCustomAttribute<DisplayAttribute>()?.GetName() ?? type.Name;
+                typeName ??= type.Name;
+                setup ??= Setup(type.GetProperty("Configuration")?.GetValue(plugIn), MapName, MonsterName);
+                places ??= (plugIn as GameLogic.PlugIns.InvasionEvents.MlrBossInvasionPlugIn)?.SpawnPlaces.Select(p => new { x = p.X, y = p.Y });
+
+                var control = (IMlrEventControl)plugIn;
+                var (state, nextRunUtc, lastRunUtc) = control.GetStatus(context);
+                var players = 0;
+                var running = state == PeriodicTaskState.Started;
+                if (plugIn is IPeriodicMiniGameStartPlugIn miniGame)
+                {
+                    foreach (var definition in configuration.MiniGameDefinitions.Where(d => d.Type == miniGame.Key))
+                    {
+                        if (await miniGame.GetMiniGameContextAsync(context, definition).ConfigureAwait(false) is { } game)
+                        {
+                            running = true;
+                            players += game.PlayerCount;
+                        }
+                    }
+                }
+
+                servers.Add(new
+                {
+                    server = server.Id,
+                    description = server.Description,
+                    state = state.ToString(),
+                    running,
+                    players,
+                    lastStartUtc = lastRunUtc == DateTime.MinValue ? (DateTime?)null : lastRunUtc,
+                    nextStepUtc = nextRunUtc,
+                    nextStartUtc = control.GetNextScheduledStartUtc(context),
+                    monsters = control.GetLiveMonsters(context).Select(m => new
+                    {
+                        number = m.Number,
+                        name = m.Name,
+                        map = m.Map,
+                        mapName = MapName(m.Map),
+                        x = m.X,
+                        y = m.Y,
+                    }),
+                });
+            }
+        }
+
+        return name is null
+            ? this.NotFound(new { error = "Ese evento no existe o no esta activo." })
+            : this.Ok(new { id, type = typeName, name, setup, places, servers });
+    }
+
     /// <summary>Starts the event now on every game server (at the next check, within a second).</summary>
     /// <param name="id">The plugin's type id.</param>
     /// <returns>200, or 404 for an unknown or inactive event.</returns>
@@ -141,6 +214,30 @@ public class MlrEventsController : Controller
         }
 
         return found > 0 ? this.Ok(new { stopped }) : this.NotFound(new { error = "Ese evento no existe o no esta activo." });
+    }
+
+    /// <summary>The setup of an event as the admin panel shows it: timetable, length and monsters.</summary>
+    private static object? Setup(object? configuration, Func<ushort, string> mapName, Func<int, string> monsterName)
+    {
+        if (configuration is not PeriodicTaskConfiguration periodic)
+        {
+            return null;
+        }
+
+        return new
+        {
+            timetable = periodic.Timetable.Order().Select(t => t.ToString("HH:mm")),
+            durationMinutes = periodic.TaskDuration.TotalMinutes,
+            mobs = (configuration as GameLogic.PlugIns.InvasionEvents.PeriodicInvasionConfiguration)?.Mobs.Select(m => new
+            {
+                number = m.MonsterId,
+                name = monsterName(m.MonsterId),
+                count = m.Count,
+                maps = m.MapIds.Select(mapName),
+                x = m.X,
+                y = m.Y,
+            }),
+        };
     }
 
     private static IEnumerable<IPeriodicTaskPlugIn> EventsOf(IGameContext context)

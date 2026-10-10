@@ -75,6 +75,8 @@ export const MuWindows = new (class _MuWindows {
   order: string[] = [];
   private closers = new Map<string, WindowCloser>();
   private sizes = new Map<string, WindowSize>();
+  /** Mu La Ronda: windows held at the interface scale they opened with (`freezeInterfaceScale`). */
+  private frozenInterface = new Map<string, number>();
   /** Observable mirror of the stage size, so scales re-fit on resize. */
   private viewport = getUiViewport();
 
@@ -125,8 +127,22 @@ export const MuWindows = new (class _MuWindows {
    * scale, capped so the whole window still fits.
    */
   scaleOf(id: string): number {
-    const wanted = this.placement(id).scale * this.interfaceScale();
+    const wanted = this.placement(id).scale * (this.frozenInterface.get(id) ?? this.interfaceScale());
     return Math.min(wanted, this.fitScaleOf(id));
+  }
+
+  /**
+   * Mu La Ronda: keeps a window at the interface scale it has now, whatever
+   * the Size option is set to, until `thawInterfaceScale`. The options window
+   * holds still while its own Size bar is moved - it grew and shrank under the
+   * mouse dragging it - and the rest of the interface shows the new size.
+   */
+  freezeInterfaceScale(id: string): void {
+    this.frozenInterface.set(id, this.interfaceScale());
+  }
+
+  thawInterfaceScale(id: string): void {
+    this.frozenInterface.delete(id);
   }
 
   /** Every window back to its default corner and size. */

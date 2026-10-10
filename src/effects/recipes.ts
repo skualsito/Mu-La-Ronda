@@ -376,6 +376,8 @@ export const MODEL = {
   arrowsRe06: 'Effect/arrowsre06.glb',
   volcanoStone: 'Effect/volcano_stone.glb',
   changeUp: 'Effect/Change_Up_Eff.glb',
+  /** MODEL_CHANGE_UP_NASA (changup_nasa.bmd): the spiral round the master level-up pillar. */
+  changeUpNasa: 'Effect/changup_nasa.glb',
   iceStone: 'Effect/ice_stone00.glb',
   /** MODEL_SUMMONER_CASTING_EFFECT2 / 22 / 222: Weakness and Innovation's turning circles. */
   suhwanzin2: 'Effect/Suhwanzin2.glb',

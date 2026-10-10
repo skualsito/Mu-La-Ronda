@@ -226,6 +226,13 @@ export const OptionsWindow = observer(() => {
     },
   });
 
+  // Mu La Ronda: the window keeps the size it opened at while its Size bar moves (windowState.ts).
+  useEffect(() => {
+    if (!Store.optionsEnabled) return;
+    MuWindows.freezeInterfaceScale(WINDOW_ID);
+    return () => MuWindows.thawInterfaceScale(WINDOW_ID);
+  }, [Store.optionsEnabled]);
+
   useEffect(() => {
     if (Store.optionsEnabled) return;
     setCapturing(null);

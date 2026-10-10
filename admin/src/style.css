@@ -1924,6 +1924,34 @@ input.invalid {
   max-width: 280px;
 }
 
+.events-details {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+
+  section > div code {
+    margin-right: 6px;
+  }
+}
+
+.events-monsters {
+  margin: 4px 0 0;
+  padding-left: 18px;
+
+  code {
+    margin-left: 4px;
+  }
+}
+
+.events-server {
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+
+  &:first-of-type {
+    border-top: 0;
+  }
+}
+
 .events-note-edit {
   display: flex;
   gap: 6px;

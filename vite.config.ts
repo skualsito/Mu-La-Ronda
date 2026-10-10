@@ -1,5 +1,17 @@
 /// <reference types="vitest/config" />
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
+
+/** Mu La Ronda: one id per build - see `BUILD_ID` below and src/common/buildCheck.ts. */
+const BUILD = process.env.GITHUB_SHA?.slice(0, 12) || Date.now().toString(36);
+
+/** Writes `build.json` next to index.html: what an open page compares its own build against. */
+const buildManifest = (): Plugin => ({
+  name: 'mu-build-manifest',
+  apply: 'build',
+  generateBundle() {
+    this.emitFile({ type: 'asset', fileName: 'build.json', source: JSON.stringify({ build: BUILD }) });
+  },
+});
 
 // Game versions are selected at runtime (versions/registry.ts, loaded by
 // src/main.tsx before the app boots); one build carries all of them.
@@ -14,7 +26,7 @@ export default defineConfig(({ command }) => ({
    * Warnings and errors stay.
    */
   esbuild: command === 'build' ? { pure: ['console.log', 'console.debug'] } : {},
-  plugins: [],
+  plugins: [buildManifest()],
   /**
    * The two services the UI talks to, each its own process. Proxied here so
    * they are same-origin in dev; in production the shop is published under
@@ -66,7 +78,7 @@ export default defineConfig(({ command }) => ({
     APP_VERSION: JSON.stringify(process.env.npm_package_version),
     // Mu La Ronda: one per build - the asset cache worker is registered with it, so a deploy
     // installs a new worker that drops what the old build left cached (public/sw.js).
-    BUILD_ID: JSON.stringify(process.env.GITHUB_SHA?.slice(0, 12) || Date.now().toString(36)),
+    BUILD_ID: JSON.stringify(BUILD),
     APP_STAGE: JSON.stringify(process.env.APP_ENV || 'unk'),
     QA_ENABLED: JSON.stringify(process.env.QA ? 'true' : ''),
     'import.meta.env.QA_ENABLED': JSON.stringify(

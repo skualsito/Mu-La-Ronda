@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { api, type EventList, type EventStatus, type GameEventRow } from '../api';
+import { api, type EventDetails, type EventList, type EventMonster, type EventStatus, type GameEventRow } from '../api';
 import { Badge, Card, Confirm, ErrorBox, Loading, PageHeader, formatDate, useLoad, useToast } from '../ui';
 
 /**
@@ -38,6 +38,7 @@ export function EventsPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [confirmStop, setConfirmStop] = useState<GameEventRow | null>(null);
   const [editing, setEditing] = useState<{ id: string; note: string } | null>(null);
+  const [details, setDetails] = useState<GameEventRow | null>(null);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -146,6 +147,9 @@ export function EventsPage() {
                   </td>
                   <td>
                     <div className="row-actions">
+                      <button className="btn btn-small" onClick={() => setDetails(e)}>
+                        Detalles
+                      </button>
                       <button className="btn btn-small btn-primary" disabled={busy === e.id || e.running} onClick={() => void act(e, 'start', {}, `${e.name}: arranca en unos segundos`)}>
                         Empezar
                       </button>
@@ -168,6 +172,8 @@ export function EventsPage() {
         </div>
       </Card>
 
+      {details && <EventDetailsModal event={details} onClose={() => setDetails(null)} />}
+
       {confirmStop && (
         <Confirm
           title={`Parar ${confirmStop.name}`}
@@ -182,5 +188,138 @@ export function EventsPage() {
         />
       )}
     </>
+  );
+}
+
+/** How often the details ask again while open: a boss that moves, monsters that die. */
+const DETAILS_REFRESH_MS = 5_000;
+
+/** The live monsters of one server: each one when they are few, else how many of each and where the first are. */
+function LiveMonsters({ monsters }: { monsters: EventMonster[] }) {
+  if (!monsters.length) return <div className="muted small">No quedan monstruos del evento vivos.</div>;
+  if (monsters.length <= 12) {
+    return (
+      <ul className="events-monsters">
+        {monsters.map((m, i) => (
+          <li key={i}>
+            <strong>{m.name}</strong> — {m.mapName} <code>{m.x}, {m.y}</code>
+          </li>
+        ))}
+      </ul>
+    );
+  }
+  const byName = new Map<string, EventMonster[]>();
+  for (const m of monsters) byName.set(m.name, [...(byName.get(m.name) ?? []), m]);
+  return (
+    <ul className="events-monsters">
+      {[...byName.entries()].map(([name, list]) => (
+        <li key={name}>
+          <strong>
+            {name} ×{list.length}
+          </strong>{' '}
+          — {list[0].mapName}:{' '}
+          {list.slice(0, 6).map((m, i) => (
+            <code key={i}>
+              {m.x}, {m.y}
+            </code>
+          ))}
+          {list.length > 6 && <span className="muted"> …</span>}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/**
+ * Everything about one event: its timetable, length and monsters, the places a boss may come to,
+ * and on each server (channel) what it is doing now - while it runs, every monster it put on the
+ * map still alive and where it is, so a boss can be found right after starting it.
+ */
+function EventDetailsModal({ event, onClose }: { event: GameEventRow; onClose: () => void }) {
+  const detail = useLoad(() => api<EventDetails>(`/events/${event.id}`), [event.id]);
+
+  useEffect(() => {
+    const timer = setInterval(() => detail.reload(), DETAILS_REFRESH_MS);
+    return () => clearInterval(timer);
+  }, [detail]);
+
+  const d = detail.data;
+  return (
+    <div className="modal-backdrop" onMouseDown={onClose}>
+      <div className="modal modal-wide" role="dialog" aria-modal="true" onMouseDown={e => e.stopPropagation()}>
+        <h2>{d?.name ?? event.name}</h2>
+        {detail.error && !d && <ErrorBox error={detail.error} onRetry={detail.reload} />}
+        {!d && !detail.error && <Loading />}
+        {d && (
+          <div className="events-details">
+            {d.setup && (
+              <section>
+                <h3 className="subhead">Horario</h3>
+                <div>
+                  {d.setup.timetable.length ? d.setup.timetable.join(' · ') : <span className="muted">sin horario</span>}
+                  <span className="muted small"> (hora del servidor, UTC)</span>
+                </div>
+                <div className="muted small">Dura {Math.round(d.setup.durationMinutes)} min, o hasta que mueren todos.</div>
+              </section>
+            )}
+            {!!d.places?.length && (
+              <section>
+                <h3 className="subhead">Dónde puede aparecer</h3>
+                <div>
+                  {d.places.map((p, i) => (
+                    <code key={i}>
+                      {p.x}, {p.y}
+                    </code>
+                  ))}
+                </div>
+                <div className="muted small">Uno de estos lugares al azar cada vez (o la celda libre más cercana).</div>
+              </section>
+            )}
+            {!!d.setup?.mobs?.length && (
+              <section>
+                <h3 className="subhead">Monstruos que trae</h3>
+                <ul className="events-monsters">
+                  {d.setup.mobs.map(m => (
+                    <li key={m.number}>
+                      <strong>
+                        {m.name} ×{m.count}
+                      </strong>{' '}
+                      — {m.maps.join(', ')}
+                      {m.x !== null && m.y !== null && !d.places?.length && (
+                        <>
+                          {' '}
+                          en <code>{m.x}, {m.y}</code>
+                        </>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+            <section>
+              <h3 className="subhead">Ahora</h3>
+              {d.servers.map(s => (
+                <div key={s.server} className="events-server">
+                  <div>
+                    <strong>Server {s.server}</strong>
+                    {s.description && s.description !== `Server ${s.server}` && <span className="muted small"> — {s.description}</span>}{' '}
+                    {s.running ? <Badge tone="ok">En curso</Badge> : <span className="muted">{STATE[s.state]}</span>}
+                    {s.running && s.players > 0 && <span className="muted small"> · {s.players} jugador{s.players === 1 ? '' : 'es'}</span>}
+                  </div>
+                  {s.lastStartUtc && <div className="muted small">último: {formatDate(s.lastStartUtc)}</div>}
+                  {s.running && <LiveMonsters monsters={s.monsters} />}
+                  {!s.running && s.nextStartUtc && <div className="muted small">próximo: {inMinutes(s.nextStartUtc)} ({formatDate(s.nextStartUtc)})</div>}
+                </div>
+              ))}
+            </section>
+          </div>
+        )}
+        <div className="modal-actions">
+          <button className="btn" onClick={onClose}>
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

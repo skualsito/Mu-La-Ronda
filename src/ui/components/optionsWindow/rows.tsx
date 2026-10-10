@@ -113,8 +113,24 @@ const Control = observer(
           );
         }
 
+        // Mu La Ronda: a step at a time, by button, for a bar that is hard to drag.
+        const step = (delta: number, label: string) => {
+          const next = value + delta;
+          const enabled = !inert && next >= min && next <= row.max;
+          return (
+            <div
+              className={`options-plate options-step-button${enabled ? '' : ' is-disabled'}`}
+              data-no-drag="true"
+              onClick={enabled ? uiClick(() => write(next)) : undefined}
+            >
+              {label}
+            </div>
+          );
+        };
+
         return (
           <>
+            {row.stepButtons && step(-1, '−')}
             <Slider
               value={value}
               min={min}
@@ -122,6 +138,7 @@ const Control = observer(
               disabled={inert}
               onChange={write}
             />
+            {row.stepButtons && step(1, '+')}
             <FitText
               align="left"
               className="options-value"

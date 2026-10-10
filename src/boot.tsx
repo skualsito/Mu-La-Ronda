@@ -35,6 +35,7 @@ import { SessionResume } from './common/sessionResume';
 import { reaction } from 'mobx';
 import { watchStateWarnings } from './common/stateWarnings';
 import { watchPageTitle } from './common/pageTitle';
+import { startBuildCheck } from './common/buildCheck';
 import {
   preloadPregameSprites,
   preloadWorldSprites,
@@ -57,6 +58,7 @@ watchStateWarnings();
 
 // The browser tab: the client's name until the player is in, the world's after.
 watchPageTitle();
+startBuildCheck();
 
 // The asset cache worker, on every load rather than only once the player
 // opens the download screen: a browser will not offer to install a page it

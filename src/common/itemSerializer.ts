@@ -1,6 +1,7 @@
 import { Item } from '../ecs/world';
 import { castToByte } from './utils';
 import { PET_GROUP, DARK_HORSE, DARK_RAVEN } from './petConstants';
+import { isOptionWing } from './wingOptions';
 
 const LuckFlag = 4;
 const SkillFlag = 128;
@@ -101,6 +102,14 @@ const item: Item = {
     // in the excellent bits (`GetFenrirType`); it is not an excellent item, so
     // the bits stay (pets.ts reads its colour off them) and the flag goes.
     if (itemGroup === 13 && itemNumber === 37) item.isExcellent = false;
+    // Mu La Ronda: wings and capes use those bits for their wing options and for
+    // which kind their additional option is - there are no excellent wings.
+    if (isOptionWing(itemGroup, itemNumber)) {
+      item.wingOptions = array[3] & 0x0f;
+      item.wingOptionKind = (array[3] >> 4) & 0x03;
+      item.excellentFlags = 0;
+      item.isExcellent = false;
+    }
     ReadAncientOption(array[4], item);
 
     if (array[6] !== 0) item.socketBonus = array[6];

@@ -1,5 +1,5 @@
 import './style.less';
-import { useCallback, type CSSProperties } from 'react';
+import { useCallback, useLayoutEffect, useState, type CSSProperties } from 'react';
 import { observer } from 'mobx-react-lite';
 import { MuSpriteFrame, useMuSprite } from '../muSprite';
 import { MuResizeGrip, useWindowChrome } from './useWindowChrome';
@@ -38,12 +38,48 @@ type MuItemWindowProps = {
    * the `keyPressed` broadcast, which closes every window listening for it.
    */
   onClose?: WindowCloser;
+  /**
+   * Mu La Ronda: sits against the left side of this open window, at its scale
+   * and top - the vault beside the bag, wherever the bag was put or however
+   * big it was made. Falls back to the column when there is no room.
+   */
+  dockLeftOf?: string;
   children?: React.ReactNode;
 };
 
+/** Where a docked window goes: against the left of its host, or null to use the column. */
+function useDock(hostId: string | undefined): CSSProperties | null {
+  const [dock, setDock] = useState<CSSProperties | null>(null);
+  // Read so the observer re-renders when the host moves or is resized.
+  const hostPlacement = hostId ? MuWindows.placement(hostId) : null;
+  const hostScale = hostId ? MuWindows.scaleOf(hostId) : 1;
+  const hostX = hostPlacement?.x;
+  const hostY = hostPlacement?.y;
+
+  useLayoutEffect(() => {
+    if (!hostId) return;
+    const measure = () => {
+      const host = document.querySelector<HTMLElement>(`[data-window-id="${hostId}"]`);
+      const rect = host?.getBoundingClientRect();
+      const left = rect ? rect.left - WINDOW_WIDTH * hostScale : -1;
+      const next =
+        rect && left >= 0
+          ? { left, top: rect.top, right: 'auto', bottom: 'auto', transform: `scale(${hostScale})`, transformOrigin: '0 0' }
+          : null;
+      setDock(old => (JSON.stringify(old) === JSON.stringify(next) ? old : next));
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [hostId, hostScale, hostX, hostY]);
+
+  return hostId ? dock : null;
+}
+
 export const MuItemWindow = observer(
-  ({ id, column = 0, className, style, label, onClose, children }: MuItemWindowProps) => {
+  ({ id, column = 0, className, style, label, onClose, dockLeftOf, children }: MuItemWindowProps) => {
     const back = useMuSprite(BACK_SPRITE);
+    const dock = useDock(dockLeftOf);
     const chrome = useWindowChrome(id, {
       width: WINDOW_WIDTH,
       height: WINDOW_HEIGHT,
@@ -63,6 +99,7 @@ export const MuItemWindow = observer(
     return (
       <div
         ref={ref}
+        data-window-id={id}
         role="dialog"
         aria-label={label ?? id.replace(/-/g, ' ')}
         tabIndex={-1}
@@ -74,6 +111,7 @@ export const MuItemWindow = observer(
           backgroundImage: back ? `url(${back.url})` : undefined,
           backgroundSize: '100% 100%',
           ...chrome.style,
+          ...dock,
           ...style,
         }}
       >

@@ -349,6 +349,27 @@
     }
   }
 
+  // Mu La Ronda: the - and + either side of a bar (the interface size).
+  .options-step-button {
+    flex: none;
+    justify-content: center;
+    width: 18px;
+    margin: 0 4px;
+    padding: 0;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+
+    &:hover {
+      border-color: #ffffff;
+    }
+
+    &.is-disabled {
+      opacity: 0.35;
+      cursor: default;
+    }
+  }
+
   .options-stepper {
     display: flex;
     align-items: center;

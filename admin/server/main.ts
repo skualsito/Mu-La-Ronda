@@ -201,6 +201,11 @@ async function route(req: Request, url: URL, ip: string): Promise<Response> {
 
   // ---- events --------------------------------------------------------------
   if (path === '/api/events' && method === 'GET') return json(await events.listEvents(sql));
+  const eventDetail = path.match(/^\/api\/events\/([0-9a-f-]{36})$/i);
+  if (eventDetail && method === 'GET') {
+    const detail = await events.eventDetails(sql, eventDetail[1]);
+    return detail ? json(detail) : json({ error: 'Ese evento no existe o no está activo (o falta deployar el detalle).' }, 404);
+  }
   const eventRoute = path.match(/^\/api\/events\/([0-9a-f-]{36})\/(start|stop|note)$/i);
   if (eventRoute && method === 'POST') {
     const [, id, action] = eventRoute;

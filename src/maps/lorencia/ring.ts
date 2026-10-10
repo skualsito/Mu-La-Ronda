@@ -64,6 +64,14 @@ function seeded(seed: number): () => number {
   };
 }
 
+/**
+ * Mu La Ronda: how much of the logo shows over the slabs, and how much stone
+ * grain shows through it - at 0.92 it read as a sticker lifted off the floor
+ * (2026-10-10); now it reads painted into the stone.
+ */
+const LOGO_OPACITY = 0.6;
+const LOGO_STONE_GRAIN = 0.4;
+
 /** The floor: stone slabs, frosted edges, the logo painted on top. */
 function paintFloor(
   ctx: CanvasRenderingContext2D,
@@ -132,7 +140,7 @@ function paintFloor(
     a.drawImage(logo, 0, 0, art.width, art.height);
     if (stone) {
       a.globalCompositeOperation = 'source-atop';
-      a.globalAlpha = 0.28;
+      a.globalAlpha = LOGO_STONE_GRAIN;
       for (let y = 0; y < art.height; y += PX * 2) {
         for (let x = 0; x < art.width; x += PX * 2) a.drawImage(stone, x, y, PX * 2, PX * 2);
       }
@@ -149,7 +157,7 @@ function paintFloor(
     ctx.save();
     ctx.translate(w / 2, h / 2);
     ctx.rotate(LOGO_TURN);
-    ctx.globalAlpha = 0.92;
+    ctx.globalAlpha = LOGO_OPACITY;
     ctx.drawImage(art, -art.width / 2, -art.height / 2);
     ctx.restore();
   }

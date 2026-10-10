@@ -11,6 +11,7 @@ import {
 } from './exports';
 import { devQuery } from '../../common/devSeams';
 import { installBitmapDecode } from './bitmapDecode';
+import { installPatientShaderCompiles } from './patientCompile';
 
 export function findInChildren(children: Node[], name: string): Node | null {
   for (const child of children) {
@@ -191,6 +192,7 @@ export function createEngine(
   }
 
   deferDeletingCompilingPrograms(engine);
+  installPatientShaderCompiles();
 
   void installBitmapDecode(engine);
 

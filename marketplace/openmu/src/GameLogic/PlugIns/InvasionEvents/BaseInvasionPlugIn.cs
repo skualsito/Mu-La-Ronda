@@ -336,6 +336,14 @@ public abstract class BaseInvasionPlugIn<TConfiguration> : PeriodicTaskBasePlugI
         }
     }
 
+    /// <inheritdoc />
+    public override IReadOnlyList<(short Number, string Name, ushort Map, byte X, byte Y)> GetLiveMonsters(IGameContext gameContext)
+        => this.GetStateByGameContext(gameContext).AliveMonsters
+            .Where(m => m.IsAlive && m.CurrentMap is not null)
+            .Select(m => (m.Definition.Number, m.Definition.Designation.ValueInNeutralLanguage, m.CurrentMap!.MapId, m.Position.X, m.Position.Y))
+            .OrderBy(m => m.Number)
+            .ToList();
+
     /// <summary>
     /// Mu La Ronda: called when the last monster of the run died. By default the next task tick
     /// finishes the run instead of waiting its time out; an event in waves brings the next one.

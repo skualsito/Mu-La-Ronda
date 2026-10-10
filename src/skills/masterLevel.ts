@@ -18,8 +18,6 @@ import { observable, runInAction } from 'mobx';
 import type { ENUM_WORLD } from '../common/types';
 import { EventBus } from '../libs/eventBus';
 import {
-  ExperienceGainedExtendedPacket,
-  ExperienceGainedPacket,
   MasterCharacterLevelUpdateExtendedPacket,
   MasterCharacterLevelUpdatePacket,
   MasterStatsUpdatePacket,
@@ -149,17 +147,15 @@ EventBus.on('MasterCharacterLevelUpdateExtended', packet =>
   levelUp(new MasterCharacterLevelUpdateExtendedPacket(packet))
 );
 
-function gained(p: { AddedExperience: number }): void {
-  if (!state.received || p.AddedExperience <= 0) return;
+// Mu La Ronda: logic.ts tells the master shares from the regular ones (the
+// extended packet's type, else level 400 in master progression); every kill
+// share went into the master bar before, a regular one included.
+EventBus.on('experienceGained', ({ added, master }) => {
+  if (!master || !state.received || added <= 0) return;
   runInAction(() => {
-    state.experience += p.AddedExperience;
+    state.experience += added;
   });
-}
-
-EventBus.on('ExperienceGained', packet => gained(new ExperienceGainedPacket(packet)));
-EventBus.on('ExperienceGainedExtended', packet =>
-  gained(new ExperienceGainedExtendedPacket(packet))
-);
+});
 
 function reset(): void {
   // The server sends master stats once, on entering the game, and nothing

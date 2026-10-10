@@ -66,6 +66,10 @@ export type Item = {
   optionLevel?: number;
   /** Excellent option bits 0-5 of byte 3 (CalcExcellentOptions order). */
   excellentFlags?: number;
+  /** Mu La Ronda: on wings and capes, the wing option bits 0-3 of byte 3 (common/wingOptions.ts). */
+  wingOptions?: number;
+  /** Mu La Ronda: on wings and capes, which kind the additional option is (byte 3 bits 4-5). */
+  wingOptionKind?: number;
   /** Ancient set discriminator (byte 4 bits 0-1) and +5/+10 bonus level (bits 2-3). */
   ancientDiscriminator?: number;
   ancientBonusLevel?: number;

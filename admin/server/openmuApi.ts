@@ -190,6 +190,52 @@ export async function gameEvents(sql: Sql): Promise<GameEvent[]> {
   return (await res.json()) as GameEvent[];
 }
 
+export type GameEventDetails = {
+  id: string;
+  type: string;
+  name: string;
+  setup: {
+    timetable: string[];
+    durationMinutes: number;
+    mobs: { number: number; name: string; count: number; maps: string[]; x: number | null; y: number | null }[] | null;
+  } | null;
+  places: { x: number; y: number }[] | null;
+  servers: {
+    server: number;
+    description: string;
+    state: GameEvent['state'];
+    running: boolean;
+    players: number;
+    lastStartUtc: string | null;
+    nextStepUtc: string;
+    nextStartUtc: string | null;
+    monsters: { number: number; name: string; map: number; mapName: string; x: number; y: number }[];
+  }[];
+};
+
+/** Mu La Ronda: one event in full - setup, and per server its state and live monsters (MlrEventsController). */
+export async function gameEventDetails(sql: Sql, id: string): Promise<GameEventDetails | null> {
+  const get = async () =>
+    fetch(`${OPENMU_API_URL}/api/mlr/events/${id}`, {
+      headers: { 'X-Api-Key': await apiKey(sql) },
+      signal: AbortSignal.timeout(5000),
+    });
+  let res: Response;
+  try {
+    res = await get();
+    if (res.status === 401 || res.status === 403) {
+      cachedKey = null;
+      await sql`DELETE FROM mlr.settings WHERE key = ${KEY_SETTING}`;
+      res = await get();
+    }
+  } catch (err) {
+    throw new Error(`No se pudo hablar con OpenMU: ${err instanceof Error ? err.message : String(err)}`);
+  }
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`OpenMU respondió ${res.status} al detalle del evento`);
+  return (await res.json()) as GameEventDetails;
+}
+
 /** Starts (or stops) an event on every game server. */
 export async function controlEvent(sql: Sql, id: string, action: 'start' | 'stop'): Promise<void> {
   const result = await post(sql, `/api/mlr/events/${id}/${action}`, {}, action === 'start' ? 'arrancar el evento' : 'parar el evento');

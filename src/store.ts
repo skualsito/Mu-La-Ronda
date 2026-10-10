@@ -1101,6 +1101,11 @@ export const Store = new (class _Store {
     return this.pendingNpcTalk?.npcType ?? 0;
   }
 
+  /** Object id of the NPC whose `NpcWindowResponse` is pending, if any. */
+  get pendingNpcNetId(): number | undefined {
+    return this.pendingNpcTalk?.netId;
+  }
+
   /**
    * The game server being dialled, while it is unproven. `ConnectionInfo` names
    * an address the server believes clients reach it at, which is often not the
@@ -1201,10 +1206,20 @@ export const Store = new (class _Store {
       enabled => {
         if (enabled) return;
         this.closeNpcShop();
+        // Mu La Ronda: the vault goes with the bag it opened beside.
+        Economy.closeVault();
         runInAction(() => {
           this.repairMode = false;
           this.deleteMode = false;
         });
+      }
+    );
+
+    // Mu La Ronda: the character window (C) takes the vault's place, as in the original.
+    reaction(
+      () => this.characterInfoEnabled,
+      open => {
+        if (open) Economy.closeVault();
       }
     );
 

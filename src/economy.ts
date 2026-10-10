@@ -507,13 +507,42 @@ export const Economy = new (class _Economy {
   // Vault
   // =========================================================================
 
-  /** `NpcWindowResponse(VaultStorage)`: the warehouse opens next to the bag. */
-  openVault(): void {
+  /** Mu La Ronda: tiles from the vault keeper (or from where it opened) past which the vault closes. */
+  private static readonly VAULT_REACH = 5;
+  private vaultDistanceTimer: ReturnType<typeof setInterval> | null = null;
+
+  /**
+   * `NpcWindowResponse(VaultStorage)`: the warehouse opens next to the bag.
+   * `npcNetId` is the keeper it was opened from; without one (a command),
+   * the spot the hero stood on.
+   */
+  openVault(npcNetId?: number): void {
     runInAction(() => {
       this.vaultOpen = true;
       this.vaultUnlocked = false;
       Store.inventoryEnabled = true;
     });
+    this.watchVaultDistance(npcNetId);
+  }
+
+  /** Mu La Ronda: walking away from the keeper closes the vault, as it does the merchant's shop. */
+  private watchVaultDistance(npcNetId?: number): void {
+    if (this.vaultDistanceTimer) clearInterval(this.vaultDistanceTimer);
+    const start = Store.world?.playerEntity?.transform.pos;
+    const opened = start ? { x: start.x, z: start.z } : null;
+    this.vaultDistanceTimer = setInterval(() => {
+      if (!this.vaultOpen) {
+        if (this.vaultDistanceTimer) clearInterval(this.vaultDistanceTimer);
+        this.vaultDistanceTimer = null;
+        return;
+      }
+      const hero = Store.world?.playerEntity?.transform.pos;
+      const keeper = npcNetId !== undefined ? Store.world?.getByNetId(npcNetId)?.transform.pos : undefined;
+      const anchor = keeper ?? opened;
+      if (!hero || !anchor) return;
+      const tiles = Math.max(Math.abs(hero.x - anchor.x), Math.abs(hero.z - anchor.z));
+      if (tiles > _Economy.VAULT_REACH) this.closeVault();
+    }, 300);
   }
 
   setVaultItems(entries: { slot: number; item: Item }[]): void {

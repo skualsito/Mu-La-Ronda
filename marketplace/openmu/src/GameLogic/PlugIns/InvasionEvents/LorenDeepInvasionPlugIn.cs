@@ -65,7 +65,7 @@ public sealed class LorenDeepInvasionPlugIn : SimpleInvasionPlugIn
         }
 
         var today = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, gameContext.ServerTimeZone).DayOfWeek;
-        return this.IsStartForced || today != DayOfWeek.Sunday;
+        return this.IsStartForced(gameContext) || today != DayOfWeek.Sunday;
     }
 
     /// <inheritdoc />
